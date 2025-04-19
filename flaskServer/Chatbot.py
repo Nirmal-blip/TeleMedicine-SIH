@@ -181,9 +181,14 @@ import requests
 import json
 from datetime import datetime
 from flask_cors import CORS  # Import Flask-CORS
+import speech_recognition as sr  # For speech recognition
+import pyttsx3  # For text-to-speech conversion
 
-app = Flask(__name__)  # Fix the typo: _name_ -> __name__
+app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+
+# Initialize text-to-speech engine
+engine = pyttsx3.init()
 
 # Google Gemini API Key (Replace with your own API Key)
 GEMINI_API_KEY = "AIzaSyDlpNK9Csn0h-B5YHWM3LU2W3o6wJGlda0"
@@ -194,7 +199,7 @@ def gemini_response(prompt):
     headers = {"Content-Type": "application/json"}
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     response = requests.post(GEMINI_API_URL, headers=headers, json=payload)
-   
+    
     if response.status_code == 200:
         response_data = response.json()
         try:
@@ -260,8 +265,28 @@ def chat():
     # Final response including chatbot-generated text and appointment details
     response += f"\n\n{appointment_info}"
 
+    # Convert response to speech
+    engine.say(response)
+    engine.runAndWait()
+
     return jsonify({"response": response})
 
+# Voice input processing endpoint
+@app.route('/voice-chat', methods=['POST'])
+def voice_chat():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        try:
+            audio = recognizer.listen(source)
+            user_input = recognizer.recognize_google(audio)
+            print("User said:", user_input)
+            return chat()
+        except sr.UnknownValueError:
+            return jsonify({"error": "Could not understand audio"})
+        except sr.RequestError:
+            return jsonify({"error": "Could not request results from Google Speech Recognition service"})
+
 # Run the Flask app
-if __name__ == "__main__":  # Fix the typo: _name_ -> __name__
+if __name__ == "__main__":
     app.run(debug=True)
