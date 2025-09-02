@@ -10,3 +10,4 @@ folium
 ipython
 SpeechRecognition
 pyttsx3
+python-dotenv

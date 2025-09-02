@@ -16,10 +16,14 @@ from sklearn.metrics.pairwise import cosine_similarity
 from thefuzz import process
 import speech_recognition as sr
 import pyttsx3
-import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+
+# Load environment variables from backend .env file
+backend_env_path = os.path.join(os.path.dirname(__file__), '..', 'backend', '.env')
+load_dotenv(backend_env_path)
 
 # Initialize text-to-speech engine (only if available)
 try:
@@ -32,8 +36,12 @@ except:
 # CHATBOT MODULE
 # =============================================================================
 
-# Google Gemini API Key (Replace with your own API Key)
-GEMINI_API_KEY = "AIzaSyDlpNK9Csn0h-B5YHWM3LU2W3o6wJGlda0"
+# Google Gemini API Key (loaded from backend .env file)
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if not GEMINI_API_KEY:
+    print("Warning: GEMINI_API_KEY not found in environment variables. AI features may not work.")
+    GEMINI_API_KEY = ""
+
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
 # Function to get a response from Gemini API
@@ -186,9 +194,14 @@ def health_check():
     return jsonify({
         "status": "healthy",
         "services": {
-            "chatbot": "available",
+            "chatbot": "available" if GEMINI_API_KEY else "unavailable - missing API key",
             "medicine_recommendations": "available" if medicine_df is not None else "unavailable",
             "hospital_maps": "available"
+        },
+        "config": {
+            "gemini_api_configured": bool(GEMINI_API_KEY),
+            "env_file_path": backend_env_path,
+            "env_file_exists": os.path.exists(backend_env_path)
         },
         "timestamp": datetime.now().isoformat()
     })
@@ -201,6 +214,10 @@ def chat():
         user_input = request.json.get('input')
         if not user_input:
             return jsonify({"error": "No input provided"}), 400
+
+        # Check if API key is configured
+        if not GEMINI_API_KEY:
+            return jsonify({"error": "Gemini API key not configured. Please add GEMINI_API_KEY to backend/.env file"}), 503
 
         # Get response from Gemini API
         response = gemini_response(user_input)
