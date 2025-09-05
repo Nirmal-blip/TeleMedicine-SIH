@@ -4,6 +4,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from thefuzz import process
 from flask_cors import CORS
+import pytesseract
+from PIL import Image
+import io
 
 app = Flask(__name__)
 CORS(app)  # Allow frontend to communicate with backend
@@ -41,7 +44,7 @@ def recommend_medicine(partial_name, top_n=5):
 
     return recommendations, best_match
 
-# API Route to Get Medicine Recommendations
+# API Route to Get Medicine Recommendations from text
 @app.route("/recommend", methods=["POST"])
 def recommend():
     data = request.get_json()
@@ -55,6 +58,38 @@ def recommend():
         return jsonify({"search": best_match, "recommendations": recommendations})
     else:
         return jsonify({"error": best_match}), 404
+
+# API Route to Get Medicine Recommendations from image (OCR)
+@app.route("/recommend-image", methods=["POST"])
+def recommend_image():
+    if "file" not in request.files:
+        return jsonify({"error": "Image file is required"}), 400
+
+    file = request.files["file"]
+    if not file:
+        return jsonify({"error": "Invalid file"}), 400
+
+    # Read image
+    image = Image.open(io.BytesIO(file.read()))
+
+    # Extract text using OCR
+    extracted_text = pytesseract.image_to_string(image).lower()
+
+    # Try to find a medicine name in extracted text
+    best_match = find_best_match(extracted_text)
+    if not best_match:
+        return jsonify({"error": "No valid medicine name detected from image"}), 404
+
+    # Recommend alternatives
+    recommendations, matched_name = recommend_medicine(best_match)
+    if recommendations:
+        return jsonify({
+            "extracted_text": extracted_text,
+            "search": matched_name,
+            "recommendations": recommendations
+        })
+    else:
+        return jsonify({"error": matched_name}), 404
 
 if __name__ == "__main__":
     app.run(debug=True)

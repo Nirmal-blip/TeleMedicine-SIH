@@ -11,3 +11,7 @@ ipython
 SpeechRecognition
 pyttsx3
 python-dotenv
+pytesseract
+Pillow
+opencv-python
+numpy
