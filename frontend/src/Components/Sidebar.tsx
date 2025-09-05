@@ -16,27 +16,26 @@ const Sidebar: React.FC = () => {
         { name: "Doctors", icon: <FiUser />, path: "/doctors-list" },
         { name: "Appointments", icon: <FiCalendar />, path: "/appointments" },
         { name: "Prescriptions", icon: <FiFileText />, path: "/prescription" },
-        { name: "Consultation History", icon: <FiClock />, path: "/consultation-history" },
-        { name: "Notifications", icon: <FiBell />, path: "/notifications" },
-        { name: "Settings", icon: <FiSettings />, path: "/settings" }
+        { name: "Consultation History", icon: <FiClock />, path: "/consultation-history" }
     ];
 
     return (
-        <aside className="relative z-10 w-64 bg-gradient-to-b from-[#064848] to-[#0d3733] p-6 rounded-r-3xl shadow-2xl backdrop-blur-lg">
-            <h1 className="text-2xl font-bold mb-8 text-[#e6f5ed] drop-shadow-md montserrat">
+        <aside className="relative z-10 w-64 bg-gradient-to-b from-emerald-50 to-emerald-100 border-r border-emerald-200 p-6 shadow-lg">
+            <h1 className="text-2xl font-bold mb-8 text-emerald-800 montserrat">
                 TeleMedicine
             </h1>
             <nav>
-                <ul className="space-y-4">
+                <ul className="space-y-3">
                     {menuItems.map((item) => (
                         <li key={item.name}>
                             <NavLink
                                 to={item.path}
-                                className={`flex items-center p-2 rounded-lg transition-all duration-200 hover:bg-[#326060] active:scale-110 
-                                    ${activeTab === item.name ? "bg-[#326060]" : ""}`}
+                                className={`flex items-center p-3 rounded-xl transition-all duration-300 text-gray-700 hover:bg-gradient-to-r hover:from-yellow-100 hover:to-amber-100 hover:text-emerald-800 hover:shadow-md
+                                    ${activeTab === item.name ? "bg-gradient-to-r from-emerald-100 to-cyan-50 text-emerald-800 shadow-md border-l-4 border-emerald-500" : ""}`}
                                 onClick={() => setActiveTab(item.name)}
                             >
-                                <span className="mr-3">{item.icon}</span> {item.name}
+                                <span className="mr-3 text-lg">{item.icon}</span> 
+                                <span className="font-medium">{item.name}</span>
                             </NavLink>
                         </li>
                     ))}

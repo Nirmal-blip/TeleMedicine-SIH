@@ -48,11 +48,12 @@ const Chatbot: React.FC = () => {
         if (userInput.trim() === '') return;
 
         try {
-            const response = await fetch('http://localhost:5000/chat', {
+            const response = await fetch('http://localhost:3000/api/ai/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include', // Include cookies for authentication
                 body: JSON.stringify({ input: userInput }),
             });
 

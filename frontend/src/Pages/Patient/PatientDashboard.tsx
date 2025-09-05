@@ -22,48 +22,75 @@ const PatientDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-cover bg-center bg-[#D8EFED] text-white relative poppins">
+    <div className="flex h-screen bg-gradient-to-br from-yellow-50 to-cyan-50 relative poppins">
       <Sidebar />
-      <main className="relative z-10 flex-1 p-6">
+      <main className="relative z-10 flex-1 p-6 overflow-y-auto">
         <PatientHeader />
 
-        <section
-          className="w-full relative z-[-10] p-16 rounded-xl mt-6 shadow-lg backdrop-blur-xl bg-[#1f4e3f]/10 text-white flex flex-col justify-center items-center text-center"
-          style={{ backgroundImage: `url(${DeliveryImg})`, backgroundSize: "cover", backgroundPosition: "center" }}
-        >
-          <div className="w-full relative z-10 flex flex-col justify-center items-start">
-            <h3 className="text-3xl font-bold text-white">
-              Expert Prescription
+        <section className="w-full p-8 rounded-2xl mt-6 shadow-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+          <div className="w-full flex flex-col justify-center items-start">
+            <h3 className="text-4xl font-bold text-white mb-2">
+              Welcome to Your Health Dashboard
             </h3>
-            <p className="text-lg mt-2">Better treatment at less cost and less time</p>
+            <p className="text-xl mb-6 text-emerald-50">Better healthcare at your fingertips - anytime, anywhere</p>
 
-            <button className="mt-4 z-10 text-[17px] bg-white text-[#1f4e3f] px-4 py-2 rounded-full font-bold transition-all duration-300 ease-in-out 
-              hover:bg-[#1f4e3f] hover:text-white hover:scale-105 
-              active:scale-95 active:bg-[#163d31]">
-              See Previous Prescription
+            <button 
+              onClick={() => navigate('/prescription')}
+              className="bg-white text-emerald-600 px-6 py-3 rounded-xl font-semibold text-lg transition-all duration-300 ease-in-out 
+              hover:bg-yellow-100 hover:text-emerald-700 hover:shadow-lg transform hover:scale-105">
+              View Previous Prescriptions
             </button>
           </div>
         </section>
 
-        <section className="mt-6">
-          <h3 className="text-2xl font-bold mb-4 text-[#064848]">Specialist</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <section className="mt-8">
+          <h3 className="text-3xl font-bold mb-6 text-gray-800">Quick Access</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {specialties.map((specialty, index) => (
-              <div key={index} onClick={() => navigate(specialty.route)} className="relative z-0 p-8 rounded-xl shadow-lg backdrop-blur-xl bg-gradient-to-b from-[#69afaf] to-[#0e5952] text-white flex flex-col justify-center items-center text-center cursor-pointer">
-                <div className="absolute inset-0 bg-black/40 rounded-xl"></div>
-                <div className="relative z-10">
-                  <h3 className="text-2xl font-semibold text-white">
+              <div 
+                key={index} 
+                onClick={() => navigate(specialty.route)} 
+                className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 hover:border-emerald-200 transform hover:scale-105"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-r from-yellow-100 to-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-8 h-8 bg-emerald-500 rounded-full"></div>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3">
                     {specialty.title}
                   </h3>
-                  <p className="text-sm mt-2 text-gray-300">{specialty.desc}</p>
-                  <button className="mt-4 z-10 text-[17px] bg-white text-[#1f4e3f] px-4 py-2 rounded-full font-bold transition-all duration-300 ease-in-out hover:scale-105">
-                    Explore
+                  <p className="text-gray-600 mb-4 text-sm leading-relaxed">{specialty.desc}</p>
+                  <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 hover:from-emerald-600 hover:to-teal-600 hover:shadow-md">
+                    Get Started
                   </button>
                 </div>
               </div>
             ))}
           </div>
         </section>
+
+        {/* Stats Section */}
+        <section className="mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-r from-yellow-100 to-amber-100 p-6 rounded-xl border border-yellow-200">
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">Upcoming Appointments</h4>
+              <p className="text-3xl font-bold text-amber-600">3</p>
+            </div>
+            <div className="bg-gradient-to-r from-emerald-100 to-green-100 p-6 rounded-xl border border-emerald-200">
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">Active Prescriptions</h4>
+              <p className="text-3xl font-bold text-emerald-600">2</p>
+            </div>
+            <div className="bg-gradient-to-r from-cyan-100 to-blue-100 p-6 rounded-xl border border-cyan-200">
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">Consultations</h4>
+              <p className="text-3xl font-bold text-cyan-600">12</p>
+            </div>
+            <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-6 rounded-xl border border-purple-200">
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">Health Score</h4>
+              <p className="text-3xl font-bold text-purple-600">85%</p>
+            </div>
+          </div>
+        </section>
+        
         <Chatbot />
       </main>
     </div>

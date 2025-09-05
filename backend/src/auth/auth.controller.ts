@@ -19,7 +19,7 @@ export class AuthController {
     const result = await this.authService.register(registerDto);
     
     res.cookie('token', result.token, { 
-      secure: true, 
+      secure: process.env.NODE_ENV === 'production', // Only secure in production 
       sameSite: 'strict',
       httpOnly: true 
     });
@@ -36,7 +36,7 @@ export class AuthController {
     const result = await this.authService.login(loginDto);
     
     res.cookie('token', result.token, { 
-      secure: true, 
+      secure: process.env.NODE_ENV === 'production', // Only secure in production 
       sameSite: 'strict',
       httpOnly: true 
     });
