@@ -9,6 +9,7 @@ import { DoctorsModule } from './doctors/doctors.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { AiMlModule } from './ai-ml/ai-ml.module';
+import { ChatHistoryModule } from './chat-history/chat-history.module';
 
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
@@ -41,6 +42,7 @@ import { AppController } from './app.controller';
     AppointmentsModule,
     UploadsModule,
     AiMlModule,
+    ChatHistoryModule,
   ],
   controllers: [AppController],
 })

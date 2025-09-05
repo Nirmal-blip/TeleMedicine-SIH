@@ -52,7 +52,7 @@ const Sidebar: React.FC = () => {
             <nav className="flex-grow">
                 <ul className="space-y-3">
                     {menuItems.map((item) => (
-                        <li key={item.name}>
+                        <div key={item.name}>
                             <NavLink
                                 to={item.path}
                                 className={`flex items-center p-3 rounded-lg transition-all duration-300 group ${
@@ -69,9 +69,9 @@ const Sidebar: React.FC = () => {
                                     isActive(item.path) ? 'bg-emerald-400' : 'bg-transparent'
                                 }`}></div>
                             </NavLink>
-                        </li>
+                        </div>
                     ))}
-                </ul>
+                </div>
             </nav>
 
             {/* Bottom Navigation */}

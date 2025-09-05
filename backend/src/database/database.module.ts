@@ -7,13 +7,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        // Get database password from environment variable
-        const dbPassword = configService.get<string>('DB_PASSWORD') || 'telemedicine';
+        // Get MongoDB URI from environment variable
+        const mongoUri = configService.get<string>('MONGODB_URI') || 'mongodb+srv://prithraj120_db_user:b9zzQBKCNJP7PZ76@cluster1.zuncx72.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1';
         
-        // MongoDB Atlas connection string
-        const mongoUri = `mongodb+srv://prithraj120_db_user:${dbPassword}@cluster0.jvoziyv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-        
-        console.log('Connecting to MongoDB Atlas...');
+        console.log('Connecting to MongoDB...');
+        console.log('Using URI:', mongoUri.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@')); // Log URI without exposing credentials
         
         return {
           uri: mongoUri,

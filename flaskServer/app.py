@@ -21,9 +21,13 @@ from dotenv import load_dotenv
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Load environment variables from backend .env file
+# Load environment variables from backend .env file (if it exists)
 backend_env_path = os.path.join(os.path.dirname(__file__), '..', 'backend', '.env')
-load_dotenv(backend_env_path)
+if os.path.exists(backend_env_path):
+    try:
+        load_dotenv(backend_env_path)
+    except UnicodeDecodeError:
+        print(f"Warning: Could not load .env file due to encoding issues. Using fallback values.")
 
 # Initialize text-to-speech engine (only if available)
 try:
@@ -36,10 +40,10 @@ except:
 # CHATBOT MODULE
 # =============================================================================
 
-# Google Gemini API Key (loaded from backend .env file)
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+# Google Gemini API Key (loaded from backend .env file or fallback)
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyDlpNK9Csn0h-B5YHWM3LU2W3o6wJGlda0')
 if not GEMINI_API_KEY:
-    print("Warning: GEMINI_API_KEY not found in environment variables. AI features may not work.")
+    print("Warning: GEMINI_API_KEY not found in environment variables and no fallback available.")
     GEMINI_API_KEY = ""
 
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
@@ -148,6 +152,24 @@ def recommend_medicine(partial_name, top_n=5):
 
     return recommendations, best_match
 
+# ----------------------------
+# Load additional CSVs
+# ----------------------------
+diet_df = pd.read_csv("diet.csv")              # disease, recommendation
+precautions_df = pd.read_csv("precautions.csv")
+workout_df = pd.read_csv("workout.csv")
+
+def get_additional_recommendations(disease):
+    diet = diet_df[diet_df["disease"] == disease]["recommendation"].tolist()
+    precautions = precautions_df[precautions_df["disease"] == disease]["recommendation"].tolist()
+    workout = workout_df[workout_df["disease"] == disease]["recommendation"].tolist()
+    return {
+        "diet": diet,
+        "precautions": precautions,
+        "workout": workout
+    }
+
+
 # =============================================================================
 # HOSPITAL MAPS MODULE
 # =============================================================================
@@ -228,10 +250,13 @@ def chat():
             if disease in response.lower():
                 detected_disease = disease
                 break
-
+        additional_recs = get_additional_recommendations(detected_disease) if detected_disease else {}
         # Generate response based on disease detection
         if detected_disease:
             response = f"To treat {detected_disease}, follow these steps:\n\n{response}\n\n{get_recommendations(detected_disease)}"
+            response += f"\nDiet: {', '.join(additional_recs.get('diet', []))}"
+            response += f"\nPrecautions: {', '.join(additional_recs.get('precautions', []))}"
+            response += f"\nWorkout: {', '.join(additional_recs.get('workout', []))}"
 
         # Automatically book an appointment
         appointment_info = book_appointment()

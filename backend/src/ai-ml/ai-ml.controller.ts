@@ -6,7 +6,8 @@ import {
   Query, 
   UseGuards,
   HttpCode,
-  HttpStatus 
+  HttpStatus,
+  Request 
 } from '@nestjs/common';
 import { 
   ApiTags, 
@@ -43,15 +44,17 @@ export class AiMlController {
     schema: { 
       type: 'object', 
       properties: { 
-        input: { type: 'string', description: 'User message to the chatbot' } 
+        input: { type: 'string', description: 'User message to the chatbot' },
+        sessionId: { type: 'string', description: 'Chat session ID for history tracking' }
       },
       required: ['input']
     } 
   })
   @ApiResponse({ status: 200, description: 'AI response with medical recommendations' })
   @ApiResponse({ status: 503, description: 'Chatbot service unavailable' })
-  async chat(@Body('input') input: string) {
-    return this.aiMlService.getChatResponse(input);
+  async chat(@Body() body: { input: string; sessionId?: string }, @Request() req) {
+    const userId = req.user.sub;
+    return this.aiMlService.getChatResponse(body.input, userId, body.sessionId);
   }
 
   @Post('voice-chat')
