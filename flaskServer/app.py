@@ -155,19 +155,34 @@ def recommend_medicine(partial_name, top_n=5):
 # ----------------------------
 # Load additional CSVs
 # ----------------------------
-diet_df = pd.read_csv("diet.csv")              # disease, recommendation
-precautions_df = pd.read_csv("precautions.csv")
-workout_df = pd.read_csv("workout.csv")
+try:
+    diet_df = pd.read_csv(os.path.join(os.path.dirname(__file__), "diet.csv"))
+    precautions_df = pd.read_csv(os.path.join(os.path.dirname(__file__), "precautions.csv"))
+    workout_df = pd.read_csv(os.path.join(os.path.dirname(__file__), "workout.csv"))
+    print("Additional CSV files loaded successfully")
+except Exception as e:
+    print(f"Warning: Could not load additional CSV files: {e}")
+    diet_df = pd.DataFrame()
+    precautions_df = pd.DataFrame()
+    workout_df = pd.DataFrame()
 
 def get_additional_recommendations(disease):
-    diet = diet_df[diet_df["disease"] == disease]["recommendation"].tolist()
-    precautions = precautions_df[precautions_df["disease"] == disease]["recommendation"].tolist()
-    workout = workout_df[workout_df["disease"] == disease]["recommendation"].tolist()
-    return {
-        "diet": diet,
-        "precautions": precautions,
-        "workout": workout
-    }
+    try:
+        diet = diet_df[diet_df["disease"] == disease]["recommendation"].tolist() if not diet_df.empty else []
+        precautions = precautions_df[precautions_df["disease"] == disease]["recommendation"].tolist() if not precautions_df.empty else []
+        workout = workout_df[workout_df["disease"] == disease]["recommendation"].tolist() if not workout_df.empty else []
+        return {
+            "diet": diet,
+            "precautions": precautions,
+            "workout": workout
+        }
+    except Exception as e:
+        print(f"Error getting additional recommendations: {e}")
+        return {
+            "diet": [],
+            "precautions": [],
+            "workout": []
+        }
 
 
 # =============================================================================
@@ -250,13 +265,18 @@ def chat():
             if disease in response.lower():
                 detected_disease = disease
                 break
-        additional_recs = get_additional_recommendations(detected_disease) if detected_disease else {}
+        
         # Generate response based on disease detection
         if detected_disease:
+            additional_recs = get_additional_recommendations(detected_disease)
             response = f"To treat {detected_disease}, follow these steps:\n\n{response}\n\n{get_recommendations(detected_disease)}"
-            response += f"\nDiet: {', '.join(additional_recs.get('diet', []))}"
-            response += f"\nPrecautions: {', '.join(additional_recs.get('precautions', []))}"
-            response += f"\nWorkout: {', '.join(additional_recs.get('workout', []))}"
+            
+            if additional_recs.get('diet'):
+                response += f"\nDiet: {', '.join(additional_recs.get('diet', []))}"
+            if additional_recs.get('precautions'):
+                response += f"\nPrecautions: {', '.join(additional_recs.get('precautions', []))}"
+            if additional_recs.get('workout'):
+                response += f"\nWorkout: {', '.join(additional_recs.get('workout', []))}"
 
         # Automatically book an appointment
         appointment_info = book_appointment()

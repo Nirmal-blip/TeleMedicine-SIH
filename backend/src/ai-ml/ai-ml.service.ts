@@ -27,12 +27,21 @@ export class AiMlService {
           await this.chatHistoryService.addMessage(sessionId, response.data.response, 'bot', userId);
         } catch (error) {
           console.warn('Failed to save chat history:', error.message);
+          console.warn('Chat will continue without history saving');
           // Don't fail the request if chat history save fails
         }
       }
       
       return response.data;
     } catch (error) {
+      console.error('Chat service error:', error.message);
+      
+      // If it's an axios error, log more details
+      if (error.response) {
+        console.error('Flask response status:', error.response.status);
+        console.error('Flask response data:', error.response.data);
+      }
+      
       throw new HttpException(
         'Chatbot service unavailable',
         HttpStatus.SERVICE_UNAVAILABLE

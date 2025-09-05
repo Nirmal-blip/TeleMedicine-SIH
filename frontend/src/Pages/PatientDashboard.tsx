@@ -3,14 +3,12 @@ import Sidebar from '../Components/Sidebar';
 import PatientHeader from '../Components/PatientHeader';
 
 const PatientDashboard: React.FC = () => {
-    const [patientName, setPatientName] = React.useState<string>('Patient');
-
     return (
         <div className="flex min-h-screen bg-gray-50">
             <Sidebar />
             <div className="flex-1 flex flex-col">
                 <main className="flex-1 p-8 lg:p-12">
-                    <PatientHeader patientName={patientName} setPatientName={setPatientName} />
+                    <PatientHeader />
                     <div className="mt-12">
                         {/* Dashboard content goes here */}
                         <h2 className="text-3xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>

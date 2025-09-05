@@ -23,9 +23,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('AI/ML')
 @Controller('api/ai')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth('JWT-auth')
-@ApiCookieAuth('token')
 export class AiMlController {
   constructor(private readonly aiMlService: AiMlService) {}
 
@@ -53,12 +50,16 @@ export class AiMlController {
   @ApiResponse({ status: 200, description: 'AI response with medical recommendations' })
   @ApiResponse({ status: 503, description: 'Chatbot service unavailable' })
   async chat(@Body() body: { input: string; sessionId?: string }, @Request() req) {
-    const userId = req.user.sub;
+    // Extract userId if user is authenticated, otherwise null
+    const userId = req.user?.sub || null;
     return this.aiMlService.getChatResponse(body.input, userId, body.sessionId);
   }
 
   @Post('voice-chat')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiCookieAuth('token')
   async voiceChat() {
     return this.aiMlService.getVoiceChatResponse();
   }
