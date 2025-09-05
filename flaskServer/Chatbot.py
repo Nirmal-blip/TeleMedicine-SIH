@@ -183,6 +183,7 @@ from flask_cors import CORS  # Import Flask-CORS
 import speech_recognition as sr  # For speech recognition
 import pyttsx3  # For text-to-speech conversion
 from dotenv import load_dotenv  # For loading environment variables
+import pandas as pd 
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -196,7 +197,11 @@ if os.path.exists(backend_env_path):
         print(f"Warning: Could not load .env file due to encoding issues. Using fallback API key.")
 
 # Initialize text-to-speech engine
-engine = pyttsx3.init()
+try:
+    engine = pyttsx3.init()
+except:
+    engine = None
+    print("Text-to-speech engine not available")
 
 # Google Gemini API Key from environment variables or fallback
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyDlpNK9Csn0h-B5YHWM3LU2W3o6wJGlda0')
@@ -236,6 +241,25 @@ recommendations = {
     }
 }
 
+# Load additional CSVs for diet, workout, precautions
+try:
+    diet_df = pd.read_csv("diet.csv")           # columns: disease, recommendation
+    precautions_df = pd.read_csv("precautions.csv")
+    workout_df = pd.read_csv("workout.csv")
+except Exception as e:
+    print(f"Warning: Could not load additional CSVs: {e}")
+    diet_df, precautions_df, workout_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+def get_additional_recommendations(disease):
+    diet = diet_df[diet_df["disease"] == disease]["recommendation"].tolist()
+    precautions = precautions_df[precautions_df["disease"] == disease]["recommendation"].tolist()
+    workout = workout_df[workout_df["disease"] == disease]["recommendation"].tolist()
+    return {
+        "diet": diet,
+        "precautions": precautions,
+        "workout": workout
+    }
+
 # Function to provide recommendations based on detected disease
 def get_recommendations(disease):
     if disease in recommendations:
@@ -270,6 +294,15 @@ def chat():
     if detected_disease:
         response = f"To treat {detected_disease}, follow these steps:\n\n{response}\n\n{get_recommendations(detected_disease)}"
 
+        # Append diet/workout/precautions
+        additional = get_additional_recommendations(detected_disease)
+        if additional.get("diet"):
+            response += f"\nDiet Recommendations: {', '.join(additional['diet'])}"
+        if additional.get("precautions"):
+            response += f"\nPrecautions: {', '.join(additional['precautions'])}"
+        if additional.get("workout"):
+            response += f"\nWorkout: {', '.join(additional['workout'])}"
+            
     # Automatically book an appointment
     appointment_info = book_appointment()
 
