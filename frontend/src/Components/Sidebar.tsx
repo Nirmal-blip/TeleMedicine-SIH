@@ -37,23 +37,21 @@ const Sidebar: React.FC = () => {
     const isActive = (path: string) => location.pathname === path;
 
     return (
-        <aside className="w-80 fixed left-0 top-0 h-screen flex flex-col p-6 bg-gradient-to-b from-white via-emerald-50 to-green-50 border-r-2 border-emerald-200 shadow-xl z-50 hidden lg:flex">
+        <aside className="w-80 fixed left-0 top-0 h-screen flex flex-col py-6 bg-gradient-to-b from-white via-emerald-50 to-green-50  shadow-xl z-50 hidden lg:flex">
         
             {/* User Profile Section */}
-            <div className="mb-8 p-4 bg-gradient-to-r from-emerald-100 to-green-100 rounded-2xl border border-emerald-200">
-                <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">U</span>
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-gray-800 text-sm">Welcome Back!</h3>
-                        <p className="text-emerald-600 text-xs">Patient Dashboard</p>
-                    </div>
-                </div>
+        {/* Logo */}
+        <div className="flex items-center space-x-3 mb-10 px-6 group">
+            <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <FaStethoscope className="text-white text-xl" />
             </div>
+            <span className="text-2xl lg:text-3xl font-bold gradient-text-primary font-secondary">
+              TeleMedicine
+            </span>
+          </div>
 
             {/* Main Navigation */}
-            <nav className="flex-grow">
+            <nav className="flex-grow px-6">
                 <ul className="space-y-3">
                     {menuItems.map((item) => (
                         <div key={item.name}>
@@ -80,11 +78,11 @@ const Sidebar: React.FC = () => {
 
             {/* Section Divider */}
             <div className="my-6">
-                <div className="h-px bg-gradient-to-r from-transparent via-emerald-300 to-transparent"></div>
+                <div className="h-px bg-gradient-to-r from-emerald-200 via-emerald-200 to-emerald-200"></div>
             </div>
 
             {/* Bottom Navigation */}
-            <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200">
+            <div className="bg-emerald-50 px-6  ">
                 <ul className="space-y-3">
                     {bottomMenuItems.map((item) => (
                          <li key={item.name}>

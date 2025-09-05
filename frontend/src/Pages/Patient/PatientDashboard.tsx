@@ -5,6 +5,7 @@ import { FaShield } from "react-icons/fa6";
 import Chatbot from "../../Components/Chatbot";
 import Sidebar from "../../Components/Sidebar";
 import PatientHeader from "../../Components/PatientHeader";
+import girlImage from "../../assets/girl.png";
 
 interface Specialty {
   title: string;
@@ -44,31 +45,34 @@ const PatientDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <Sidebar />
-      <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
+      <main className="lg:ml-80 px-4 lg:px-8 xl:px-10 overflow-y-auto min-h-screen">
         <PatientHeader />
 
         {/* Welcome Hero Section */}
-        <section className="relative overflow-hidden gradient-bg-primary rounded-3xl p-8 mt-6 shadow-xl animate-fade-scale">
+        <section className="relative overflow-hidden gradient-bg-primary rounded-3xl p-4 px-8 mt-6 shadow-xl animate-fade-scale">
           <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-20 translate-x-20 animate-float"></div>
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-16 -translate-x-16 animate-float-delayed"></div>
           
           <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                <FaHeart className="w-8 h-8 text-white" />
-              </div>
+            <div className="grid lg:grid-cols-2 gap-4 items-center">
+              {/* Left Content */}
               <div>
-                <h1 className="text-3xl font-bold text-white mb-1 font-secondary">Hello John! 👋</h1>
-                <p className="text-emerald-100">How can we help you stay healthy today?</p>
-              </div>
-            </div>
-            
-            <p className="text-lg text-white/90 mb-8 max-w-2xl leading-relaxed">
-              Welcome to your personal health companion. We're here to make healthcare accessible, friendly, and stress-free.
-            </p>
-
-            <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                    <FaHeart className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-white mb-1 font-secondary">Hello Patient! 👋</h1>
+                    <p className="text-emerald-100">How can we help you stay healthy today?</p>
+                  </div>
+                </div>
+                
+                <p className="text-lg text-white/90 mb-8 max-w-2xl leading-relaxed">
+                  Welcome to your personal health companion. We're here to make healthcare accessible, friendly, and stress-free.
+                </p>
+                
+                <div className="flex flex-wrap gap-4">
               <button 
                 onClick={() => navigate('/doctors-list')}
                 className="bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl font-medium transition-all duration-300 hover:bg-white/30 hover:scale-105 border border-white/30 flex items-center gap-2">
@@ -81,6 +85,17 @@ const PatientDashboard: React.FC = () => {
                 <FaCalendar className="w-5 h-5" />
                 My Appointments
               </button>
+                </div>
+              </div>
+
+              {/* Right Image */}
+              <div className="flex justify-center lg:justify-end">
+                <img 
+                  src={girlImage} 
+                  alt="Healthcare Professional" 
+                  className="w-64 h-60 lg:w-64 lg:h-60 xl:w-80 xl:h-76 object-cover "
+                />
+              </div>
             </div>
           </div>
         </section>
