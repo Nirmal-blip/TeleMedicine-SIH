@@ -1,18 +1,36 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { ChatHistoryService } from '../chat-history/chat-history.service';
 
 @Injectable()
 export class AiMlService {
   private readonly flaskBaseUrl = 'http://localhost:5000';
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly chatHistoryService: ChatHistoryService,
+  ) {}
 
-  async getChatResponse(input: string) {
+  async getChatResponse(input: string, userId?: string, sessionId?: string) {
     try {
       const response = await firstValueFrom(
         this.httpService.post(`${this.flaskBaseUrl}/api/chat`, { input })
       );
+      
+      // Save to chat history if user is authenticated and sessionId provided
+      if (userId && sessionId) {
+        try {
+          // Save user message
+          await this.chatHistoryService.addMessage(sessionId, input, 'user', userId);
+          // Save bot response
+          await this.chatHistoryService.addMessage(sessionId, response.data.response, 'bot', userId);
+        } catch (error) {
+          console.warn('Failed to save chat history:', error.message);
+          // Don't fail the request if chat history save fails
+        }
+      }
+      
       return response.data;
     } catch (error) {
       throw new HttpException(
