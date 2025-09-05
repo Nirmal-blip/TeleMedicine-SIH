@@ -1,12 +1,26 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const os = require('os');
 
 // Start Flask server
 const flaskPath = path.join(__dirname, '..', 'flaskServer');
-const pythonProcess = spawn('python', ['app.py'], {
+
+// Determine the correct Python command based on system
+let pythonCmd = 'python3';
+if (os.platform() === 'win32') {
+  pythonCmd = 'python';
+}
+
+console.log(`Starting Flask server using ${pythonCmd} in ${flaskPath}`);
+
+const pythonProcess = spawn(pythonCmd, ['app.py'], {
   cwd: flaskPath,
   stdio: 'inherit',
-  shell: true
+  shell: true,
+  env: {
+    ...process.env,
+    PYTHONPATH: flaskPath
+  }
 });
 
 pythonProcess.on('error', (error) => {

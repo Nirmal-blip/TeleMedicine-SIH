@@ -5,7 +5,7 @@ import { ChatHistoryService } from '../chat-history/chat-history.service';
 
 @Injectable()
 export class AiMlService {
-  private readonly flaskBaseUrl = 'http://localhost:5000';
+  private readonly flaskBaseUrl = 'http://localhost:8000';
 
   constructor(
     private readonly httpService: HttpService,

@@ -17,6 +17,9 @@ from thefuzz import process
 import speech_recognition as sr
 import pyttsx3
 from dotenv import load_dotenv
+import pytesseract
+from PIL import Image
+import io
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -164,6 +167,32 @@ def recommend_medicine(partial_name, top_n=5):
 
     return recommendations, best_match
 
+# Function to find medicine name from extracted OCR text
+def find_best_match_medicine(extracted_text):
+    """Find the best matching medicine name from OCR extracted text"""
+    if medicine_df is None:
+        return None
+    
+    # Clean the extracted text
+    text_lower = extracted_text.lower()
+    words = text_lower.split()
+    
+    # Try to find medicine names in the extracted text
+    best_match = None
+    best_score = 0
+    
+    # Check each word and combination of words
+    for i in range(len(words)):
+        for j in range(i + 1, min(i + 4, len(words) + 1)):  # Check up to 3-word combinations
+            phrase = " ".join(words[i:j])
+            if len(phrase) > 2:  # Only check phrases longer than 2 characters
+                result = process.extractOne(phrase, medicine_df["name"])
+                if result and result[1] > best_score and result[1] > 60:  # Lower threshold for OCR
+                    best_match = result[0]
+                    best_score = result[1]
+    
+    return best_match if best_score > 60 else None
+
 # ----------------------------
 # Load additional CSVs
 # ----------------------------
@@ -240,12 +269,28 @@ def get_nearby_hospitals(lat, lon, radius=20000):  # 20km radius
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    # Test OCR availability
+    ocr_status = "unavailable"
+    try:
+        # Create a simple test image with text
+        from PIL import Image, ImageDraw, ImageFont
+        test_img = Image.new('RGB', (200, 100), color='white')
+        draw = ImageDraw.Draw(test_img)
+        draw.text((10, 30), "TEST", fill='black')
+        
+        # Test OCR
+        test_text = pytesseract.image_to_string(test_img).strip()
+        ocr_status = "available" if test_text else "limited"
+    except Exception as e:
+        ocr_status = f"unavailable - {str(e)}"
+    
     return jsonify({
         "status": "healthy",
         "services": {
             "chatbot": "available" if GEMINI_API_KEY else "unavailable - missing API key",
             "medicine_recommendations": "available" if medicine_df is not None else "unavailable",
-            "hospital_maps": "available"
+            "hospital_maps": "available",
+            "ocr": ocr_status
         },
         "config": {
             "gemini_api_configured": bool(GEMINI_API_KEY),
@@ -410,6 +455,111 @@ def recommend():
     except Exception as e:
         return jsonify({"error": f"Medicine recommendation error: {str(e)}"}), 500
 
+@app.route("/api/medicine/recommend-image", methods=["POST"])
+def recommend_image():
+    """OCR-based medicine recommendation endpoint"""
+    try:
+        if "file" not in request.files:
+            return jsonify({"error": "Image file is required"}), 400
+
+        file = request.files["file"]
+        if not file or file.filename == '':
+            return jsonify({"error": "Invalid file"}), 400
+
+        # Validate file type
+        if not file.content_type.startswith('image/'):
+            return jsonify({"error": "Please upload a valid image file"}), 400
+
+        # Read and preprocess image
+        image_data = file.read()
+        image = Image.open(io.BytesIO(image_data))
+        
+        # Convert to RGB if necessary
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        # Resize image if too small (improve OCR accuracy)
+        width, height = image.size
+        if width < 300 or height < 300:
+            # Scale up small images
+            scale_factor = max(300/width, 300/height)
+            new_width = int(width * scale_factor)
+            new_height = int(height * scale_factor)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Extract text using OCR with custom configuration
+        custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 '
+        
+        try:
+            # Try with custom config first
+            extracted_text = pytesseract.image_to_string(image, config=custom_config).strip()
+            
+            # If no text found, try with default settings
+            if not extracted_text:
+                extracted_text = pytesseract.image_to_string(image).strip()
+                
+            # If still no text, try with different PSM mode
+            if not extracted_text:
+                extracted_text = pytesseract.image_to_string(image, config='--psm 8').strip()
+                
+        except Exception as ocr_error:
+            print(f"OCR Error: {ocr_error}")
+            error_msg = str(ocr_error)
+            if "tesseract" in error_msg.lower() or "not found" in error_msg.lower():
+                return jsonify({
+                    "error": "Tesseract OCR engine is not installed or not found in PATH.",
+                    "suggestions": [
+                        "Install Tesseract OCR from: https://github.com/UB-Mannheim/tesseract/wiki",
+                        "For Windows: Download and install from the GitHub releases",
+                        "For macOS: Run 'brew install tesseract'",
+                        "For Ubuntu: Run 'sudo apt install tesseract-ocr'",
+                        "Make sure Tesseract is added to your system PATH",
+                        "Restart the Flask server after installation"
+                    ]
+                }), 500
+            else:
+                return jsonify({"error": f"OCR processing failed: {error_msg}"}), 500
+        
+        if not extracted_text:
+            return jsonify({
+                "error": "No text could be extracted from the image. Please try with a clearer image with visible text.",
+                "suggestions": [
+                    "Ensure the image has good lighting",
+                    "Make sure text is clearly visible",
+                    "Try cropping the image to focus on the medicine name",
+                    "Use a higher resolution image"
+                ]
+            }), 400
+
+        print(f"Extracted text: {extracted_text}")  # Debug log
+
+        # Try to find a medicine name in extracted text
+        best_match = find_best_match_medicine(extracted_text)
+        if not best_match:
+            return jsonify({
+                "error": "No valid medicine name detected from image",
+                "extracted_text": extracted_text,
+                "suggestions": [
+                    "Try uploading an image with a clearer view of the medicine name",
+                    "Ensure the medicine name is in English",
+                    "Check if the text in the image is readable"
+                ]
+            }), 404
+
+        # Recommend alternatives
+        recommendations, matched_name = recommend_medicine(best_match)
+        if recommendations:
+            return jsonify({
+                "extracted_text": extracted_text,
+                "search": matched_name,
+                "recommendations": recommendations
+            })
+        else:
+            return jsonify({"error": matched_name}), 404
+    except Exception as e:
+        print(f"OCR endpoint error: {str(e)}")  # Debug log
+        return jsonify({"error": f"OCR medicine recommendation error: {str(e)}"}), 500
+
 # Hospital maps endpoints
 @app.route('/api/hospitals', methods=['GET'])
 def hospitals():
@@ -446,4 +596,4 @@ def initialize_app():
 
 if __name__ == "__main__":
     initialize_app()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=8000)
