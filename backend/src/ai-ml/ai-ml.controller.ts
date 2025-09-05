@@ -55,6 +55,27 @@ export class AiMlController {
     return this.aiMlService.getChatResponse(body.input, userId, body.sessionId);
   }
 
+  @Post('chat/stream')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Streaming chat with AI medical assistant' })
+  @ApiBody({ 
+    schema: { 
+      type: 'object', 
+      properties: { 
+        input: { type: 'string', description: 'User message to the chatbot' },
+        sessionId: { type: 'string', description: 'Chat session ID for history tracking' }
+      },
+      required: ['input']
+    } 
+  })
+  @ApiResponse({ status: 200, description: 'Streaming AI response with medical recommendations' })
+  @ApiResponse({ status: 503, description: 'Chatbot service unavailable' })
+  async chatStream(@Body() body: { input: string; sessionId?: string }, @Request() req) {
+    // Extract userId if user is authenticated, otherwise null
+    const userId = req.user?.sub || null;
+    return this.aiMlService.getChatStreamResponse(body.input, userId, body.sessionId);
+  }
+
   @Post('voice-chat')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)

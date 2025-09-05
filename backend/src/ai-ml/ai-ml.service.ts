@@ -49,6 +49,40 @@ export class AiMlService {
     }
   }
 
+  async getChatStreamResponse(input: string, userId?: string, sessionId?: string) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(`${this.flaskBaseUrl}/api/chat/stream`, { input }, {
+          responseType: 'stream'
+        })
+      );
+      
+      // Save user message to chat history if user is authenticated and sessionId provided
+      if (userId && sessionId) {
+        try {
+          await this.chatHistoryService.addMessage(sessionId, input, 'user', userId);
+        } catch (error) {
+          console.warn('Failed to save user message to chat history:', error.message);
+        }
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Chat stream service error:', error.message);
+      
+      // If it's an axios error, log more details
+      if (error.response) {
+        console.error('Flask response status:', error.response.status);
+        console.error('Flask response data:', error.response.data);
+      }
+      
+      throw new HttpException(
+        'Chatbot streaming service unavailable',
+        HttpStatus.SERVICE_UNAVAILABLE
+      );
+    }
+  }
+
   async getVoiceChatResponse() {
     try {
       const response = await firstValueFrom(
