@@ -57,7 +57,7 @@ const Sidebar: React.FC = () => {
                         <div key={item.name}>
                             <NavLink
                                 to={item.path}
-                                className={`flex items-center p-4 rounded-xl transition-all duration-300 group relative overflow-hidden ${
+                                className={`flex items-center p-4 rounded-xl border-transparenttransition-all duration-300 group relative  ${
                                     isActive(item.path)
                                         ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg transform scale-105'
                                         : 'text-gray-700 hover:bg-emerald-100 hover:text-emerald-700 hover:shadow-md'
@@ -67,9 +67,7 @@ const Sidebar: React.FC = () => {
                                     {item.icon}
                                 </span>
                                 <span className="font-semibold text-sm">{item.name}</span>
-                                <div className={`absolute right-0 w-1 h-full rounded-l-lg transition-all duration-300 ${
-                                    isActive(item.path) ? 'bg-white' : 'bg-transparent group-hover:bg-emerald-300'
-                                }`}></div>
+                             
                             </NavLink>
                         </div>
                     ))}
