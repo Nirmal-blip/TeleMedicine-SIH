@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import Sidebar from "../../Components/Sidebar"
 import PatientHeader from '../../Components/PatientHeader'
-import { FiFileText, FiCalendar, FiUser, FiDownload, FiEye, FiFilter, FiSearch, FiPackage } from 'react-icons/fi'
+import { FiFileText, FiCalendar, FiUser, FiDownload, FiEye, FiFilter, FiSearch, FiPackage, FiClock, FiCheckCircle, FiAlertCircle, FiShield } from 'react-icons/fi'
+import { RiCapsuleLine, RiMedicineBottleLine, RiStethoscopeLine } from 'react-icons/ri'
 
 interface Medication {
   name: string;
@@ -123,7 +124,7 @@ const Prescription: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
         <PatientHeader />
@@ -131,8 +132,8 @@ const Prescription: React.FC = () => {
         <div className="mt-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">My Prescriptions</h1>
-              <p className="text-gray-600">Track your medications and prescription history</p>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">My Prescriptions 💊</h1>
+              <p className="text-gray-600">Keep track of your medications and stay healthy</p>
             </div>
             <div className="flex items-center gap-3">
               <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-50 transition-colors">

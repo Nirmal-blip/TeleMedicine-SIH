@@ -130,7 +130,7 @@ const DoctorsList: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
         <PatientHeader />

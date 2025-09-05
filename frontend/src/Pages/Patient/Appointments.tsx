@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import Sidebar from '../../Components/Sidebar'
 import PatientHeader from '../../Components/PatientHeader'
-import { FiCalendar, FiClock, FiUser, FiVideo, FiMapPin, FiFilter, FiPlus, FiCheckCircle, FiX, FiPhone } from 'react-icons/fi'
+import { FiCalendar, FiClock, FiUser, FiVideo, FiMapPin, FiFilter, FiPlus, FiCheckCircle, FiX, FiPhone, FiMonitor, FiHeart } from 'react-icons/fi'
+import { RiStethoscopeLine, RiCalendarEventLine, RiVideoOnLine } from 'react-icons/ri'
 
 interface Appointment {
   id: number;
@@ -87,7 +88,7 @@ const Appointments: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
         <PatientHeader />
@@ -95,93 +96,93 @@ const Appointments: React.FC = () => {
         <div className="mt-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">My Appointments</h1>
-              <p className="text-gray-600">Manage your upcoming and past medical appointments</p>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">My Appointments 📅</h1>
+              <p className="text-gray-600">Manage your healthcare appointments with ease</p>
             </div>
-            <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3.5 rounded-2xl font-medium transition-all duration-300 hover:from-emerald-600 hover:to-teal-600 hover:shadow-lg hover:scale-105 flex items-center gap-2 shadow-emerald-200">
+            <button className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3.5 rounded-3xl font-medium transition-all duration-300 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:scale-105 flex items-center gap-2 shadow-blue-200">
               <FiPlus className="w-5 h-5" />
-              Book New Appointment
+              📋 Book New Appointment
             </button>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-amber-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+            <div className="bg-white/95 backdrop-blur-sm p-6 rounded-3xl border border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Upcoming</h3>
-                  <p className="text-3xl font-bold text-amber-600 group-hover:scale-110 transition-transform duration-300">
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Upcoming Appointments</h3>
+                  <p className="text-3xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300">
                     {appointments.filter(a => a.status === 'Upcoming').length}
                   </p>
                 </div>
-                <div className="w-14 h-14 bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl flex items-center justify-center">
-                  <FiCalendar className="w-7 h-7 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-blue-600 rounded-3xl flex items-center justify-center">
+                  <RiCalendarEventLine className="w-8 h-8 text-white" />
                 </div>
               </div>
             </div>
             
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-emerald-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+            <div className="bg-white/95 backdrop-blur-sm p-6 rounded-3xl border border-green-100 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-medium text-gray-600 mb-2">Completed</h3>
-                  <p className="text-3xl font-bold text-emerald-600 group-hover:scale-110 transition-transform duration-300">
+                  <p className="text-3xl font-bold text-green-600 group-hover:scale-110 transition-transform duration-300">
                     {appointments.filter(a => a.status === 'Completed').length}
                   </p>
                 </div>
-                <div className="w-14 h-14 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center">
-                  <FiCheckCircle className="w-7 h-7 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-600 rounded-3xl flex items-center justify-center">
+                  <FiCheckCircle className="w-8 h-8 text-white" />
                 </div>
               </div>
             </div>
             
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+            <div className="bg-white/95 backdrop-blur-sm p-6 rounded-3xl border border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Total</h3>
-                  <p className="text-3xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300">{appointments.length}</p>
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Total Consultations</h3>
+                  <p className="text-3xl font-bold text-purple-600 group-hover:scale-110 transition-transform duration-300">{appointments.length}</p>
                 </div>
-                <div className="w-14 h-14 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl flex items-center justify-center">
-                  <FiUser className="w-7 h-7 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-purple-600 rounded-3xl flex items-center justify-center">
+                  <RiStethoscopeLine className="w-8 h-8 text-white" />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl shadow-lg mb-8 border border-gray-200/50">
-            <div className="flex flex-wrap gap-2">
+          <div className="bg-white/95 backdrop-blur-sm p-6 rounded-3xl shadow-lg mb-8 border border-blue-100">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => setActiveTab('upcoming')}
                 className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 ${
                   activeTab === 'upcoming'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg transform scale-105'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 border border-gray-200'
                 }`}
               >
                 <FiClock className="w-4 h-4" />
-                Upcoming ({appointments.filter(a => a.status === 'Upcoming').length})
+                🕒 Upcoming ({appointments.filter(a => a.status === 'Upcoming').length})
               </button>
               <button
                 onClick={() => setActiveTab('completed')}
                 className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 ${
                   activeTab === 'completed'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg transform scale-105'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:bg-green-50 hover:text-green-600 border border-gray-200'
                 }`}
               >
                 <FiCheckCircle className="w-4 h-4" />
-                Completed ({appointments.filter(a => a.status === 'Completed').length})
+                ✅ Completed ({appointments.filter(a => a.status === 'Completed').length})
               </button>
               <button
                 onClick={() => setActiveTab('all')}
                 className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 ${
                   activeTab === 'all'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg transform scale-105'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:bg-purple-50 hover:text-purple-600 border border-gray-200'
                 }`}
               >
                 <FiCalendar className="w-4 h-4" />
-                All ({appointments.length})
+                📅 All ({appointments.length})
               </button>
             </div>
           </div>
@@ -189,7 +190,7 @@ const Appointments: React.FC = () => {
           {/* Appointments List */}
           <div className="space-y-4">
             {filteredAppointments.map(appointment => (
-              <div key={appointment.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-emerald-200">
+              <div key={appointment.id} className="group bg-white/95 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-blue-100 hover:border-blue-200 hover:-translate-y-1">
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-4">
