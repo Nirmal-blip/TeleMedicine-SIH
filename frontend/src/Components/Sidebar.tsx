@@ -71,7 +71,7 @@ const Sidebar: React.FC = () => {
                             </NavLink>
                         </div>
                     ))}
-                </div>
+                </ul>
             </nav>
 
             {/* Bottom Navigation */}
