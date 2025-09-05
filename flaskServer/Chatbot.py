@@ -3,7 +3,6 @@ import requests
 # from datetime import datetime
 
 # # Google Gemini API Key (Replace with your own API Key)
-# GEMINI_API_KEY = "AIzaSyDlpNK9Csn0h-B5YHWM3LU2W3o6wJGlda0"
 # GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
 # # Function to get a response from Gemini API
@@ -100,7 +99,6 @@ import requests
 # CORS(app)  # Enable CORS for all routes
 
 # # Google Gemini API Key (Replace with your own API Key)
-# GEMINI_API_KEY = "AIzaSyDlpNK9Csn0h-B5YHWM3LU2W3o6wJGlda0"
 # GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
 # # Function to get a response from Gemini API
@@ -179,19 +177,27 @@ import requests
 from flask import Flask, request, jsonify
 import requests
 import json
+import os
 from datetime import datetime
 from flask_cors import CORS  # Import Flask-CORS
 import speech_recognition as sr  # For speech recognition
 import pyttsx3  # For text-to-speech conversion
+from dotenv import load_dotenv  # For loading environment variables
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+# Load environment variables from the backend .env file
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
+
 # Initialize text-to-speech engine
 engine = pyttsx3.init()
 
-# Google Gemini API Key (Replace with your own API Key)
-GEMINI_API_KEY = "AIzaSyDlpNK9Csn0h-B5YHWM3LU2W3o6wJGlda0"
+# Google Gemini API Key from environment variables
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY not found in environment variables. Please check your .env file.")
+
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
 # Function to get a response from Gemini API
