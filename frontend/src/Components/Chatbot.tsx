@@ -1,8 +1,6 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faXmark, faPaperPlane, faMicrophone, faMicrophoneSlash, faVolumeUp, faHistory, faPlus, faTrash, faClock } from '@fortawesome/free-solid-svg-icons';
-import Signup from "./Signup";
-import Signin from "./Signin";
 
 interface Message {
     id: number;
@@ -688,12 +686,6 @@ const Chatbot: React.FC = () => {
                     <FontAwesomeIcon icon={faRobot} className="text-xl" />
                 </button>
             </div>
-
-            {/* Signup Modal */}
-            {isSignupOpen && <Signup setIsSignupOpen={setIsSignupOpen} setIsSigninOpen={setIsSigninOpen} />}
-
-            {/* Signin Modal */}
-            {isSigninOpen && <Signin setIsSigninOpen={setIsSigninOpen} setIsSignupOpen={setIsSignupOpen} />}
         </>
     );
 };

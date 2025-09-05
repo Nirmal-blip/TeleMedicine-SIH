@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaRegCalendarCheck, FaShieldAlt, FaUserMd, FaHeadset, FaArrowRight, FaPlay } from 'react-icons/fa';
 import doctorHero from '../assets/image3.png';
+import { useNavigate } from 'react-router-dom';
 
 // Data for the feature items with enhanced styling
 const features = [
@@ -27,6 +28,11 @@ const features = [
 ];
 
 export const Home: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleBookAppointment = () => {
+    navigate('/signin');
+  };
   return (
     <section className="relative min-h-screen overflow-hidden">
       {/* Gradient Background */}
@@ -71,7 +77,7 @@ export const Home: React.FC = () => {
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mt-8">
-              <button className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+              <button onClick={handleBookAppointment} className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
                 Book Appointment
                 <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
               </button>

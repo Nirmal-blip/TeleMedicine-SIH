@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaBars, FaTimes, FaStethoscope, FaArrowRight } from 'react-icons/fa';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,6 +46,10 @@ const Navbar: React.FC = () => {
       element.scrollIntoView({ behavior: 'smooth' });
     }
     setIsMobileMenuOpen(false);
+  };
+
+  const handleBookAppointment = () => {
+    navigate('/signin');
   };
 
   return (
@@ -87,7 +92,7 @@ const Navbar: React.FC = () => {
 
           {/* CTA Button & Mobile Menu */}
           <div className="flex items-center space-x-4">
-            <button className="hidden lg:flex items-center btn-primary group">
+            <button className="hidden lg:flex items-center btn-primary group" onClick={handleBookAppointment}>
               <span>Book Appointment</span>
               <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
             </button>
@@ -122,7 +127,7 @@ const Navbar: React.FC = () => {
             ))}
             <div className="pt-4">
               <button 
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={() => { handleBookAppointment(); setIsMobileMenuOpen(false); }}
                 className="w-full btn-primary justify-center"
               >
                 <span>Book Appointment</span>

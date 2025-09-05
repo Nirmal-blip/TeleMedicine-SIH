@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaHeartbeat, FaFemale, FaBaby, FaSpa, FaBrain, FaCalendarCheck } from 'react-icons/fa';
 
 const services = [
@@ -41,6 +42,11 @@ const services = [
 ];
 
 export const ConsultationService: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleBookConsultation = () => {
+    navigate('/signin');
+  };
   return (
     <section id="services" className="section-padding gradient-bg-primary relative overflow-hidden">
       {/* Background decoration */}
@@ -97,7 +103,7 @@ export const ConsultationService: React.FC = () => {
           <p className="text-emerald-100 text-lg mb-6">
             Ready to get started with professional healthcare?
           </p>
-          <button className="px-8 py-4 bg-white transition ease-in-out cursor-pointer transform hover:scale-105 duration-500 font-semibold rounded-xl border-2 border-emerald-200 hover:border-white text-emerald-600 hover:text-white hover:bg-emerald-700/10">
+          <button onClick={handleBookConsultation} className="px-8 py-4 bg-white transition ease-in-out cursor-pointer transform hover:scale-105 duration-500 font-semibold rounded-xl border-2 border-emerald-200 hover:border-white text-emerald-600 hover:text-white hover:bg-emerald-700/10">
             Book Your Consultation
           </button>
         </div>
