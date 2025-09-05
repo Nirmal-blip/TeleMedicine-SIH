@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import Sidebar from "../../Components/Sidebar"
 import PatientHeader from '../../Components/PatientHeader'
-import { FiFileText, FiCalendar, FiUser, FiDownload, FiEye, FiFilter, FiSearch, FiPackage, FiClock, FiCheckCircle, FiAlertCircle, FiShield } from 'react-icons/fi'
-import { RiCapsuleLine, RiMedicineBottleLine, RiStethoscopeLine } from 'react-icons/ri'
+import { FaFileExport, FaCalendar, FaUser, FaDownload, FaEye, FaFilter, FaSearch, FaClock, FaCheckCircle, FaExclamationTriangle, FaPills, FaStethoscope, FaHeart, FaFileAlt } from 'react-icons/fa'
+import { FaShield } from "react-icons/fa6";
 
 interface Medication {
   name: string;
@@ -51,7 +51,7 @@ const Prescription: React.FC = () => {
           dosage: "81mg",
           frequency: "Once daily",
           duration: "30 days",
-          instructions: "Take with food to avoid stomach upset"
+          instructions: "Take with water after breakfast"
         }
       ],
       status: "Active",
@@ -65,276 +65,313 @@ const Prescription: React.FC = () => {
       doctorName: "Dr. Michael Chen",
       specialization: "Dermatologist",
       date: "2024-01-10",
-      diagnosis: "Eczema Treatment",
+      diagnosis: "Acne Treatment",
       medications: [
         {
-          name: "Hydrocortisone Cream",
-          dosage: "1%",
+          name: "Tretinoin Cream",
+          dosage: "0.05%",
+          frequency: "Once daily",
+          duration: "60 days",
+          instructions: "Apply to affected areas at bedtime"
+        },
+        {
+          name: "Benzoyl Peroxide",
+          dosage: "5%",
           frequency: "Twice daily",
-          duration: "14 days",
-          instructions: "Apply thin layer to affected areas"
+          duration: "60 days",
+          instructions: "Apply in morning and evening"
         }
       ],
-      status: "Completed",
+      status: "Active",
+      refillsRemaining: 1,
+      nextRefillDate: "2024-02-10",
       consultationFee: 120
     },
     {
       id: 3,
       prescriptionNumber: "RX-2024-003",
       doctorName: "Dr. Emily Rodriguez",
-      specialization: "General Medicine",
-      date: "2024-01-20",
-      diagnosis: "Bacterial Infection",
+      specialization: "Pediatrician",
+      date: "2024-01-05",
+      diagnosis: "Common Cold",
       medications: [
         {
-          name: "Amoxicillin",
-          dosage: "500mg",
-          frequency: "Three times daily",
+          name: "Children's Acetaminophen",
+          dosage: "160mg/5ml",
+          frequency: "Every 6 hours",
           duration: "7 days",
-          instructions: "Take with food. Complete full course"
+          instructions: "Give with food, do not exceed 4 doses per day"
         }
       ],
-      status: "Active",
-      refillsRemaining: 0,
+      status: "Completed",
       consultationFee: 100
+    },
+    {
+      id: 4,
+      prescriptionNumber: "RX-2024-004",
+      doctorName: "Dr. David Wilson",
+      specialization: "Orthopedist",
+      date: "2024-01-02",
+      diagnosis: "Knee Pain Management",
+      medications: [
+        {
+          name: "Ibuprofen",
+          dosage: "400mg",
+          frequency: "Three times daily",
+          duration: "14 days",
+          instructions: "Take with food to reduce stomach irritation"
+        },
+        {
+          name: "Physical Therapy",
+          dosage: "N/A",
+          frequency: "Twice weekly",
+          duration: "4 weeks",
+          instructions: "Follow prescribed exercises"
+        }
+      ],
+      status: "Completed",
+      consultationFee: 180
     }
   ];
 
   const filteredPrescriptions = prescriptions.filter(prescription => {
+    const matchesTab = activeTab === 'all' || prescription.status.toLowerCase() === activeTab;
     const matchesSearch = prescription.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          prescription.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         prescription.prescriptionNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (activeTab === 'active') return prescription.status === 'Active' && matchesSearch;
-    if (activeTab === 'completed') return prescription.status === 'Completed' && matchesSearch;
-    return matchesSearch;
+                         prescription.medications.some(med => med.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesTab && matchesSearch;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'Completed':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'Cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-8 lg:p-12 overflow-y-auto">
         <PatientHeader />
-        
-        <div className="mt-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
+
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
+              <FaFileAlt className="w-8 h-8 text-white" />
+            </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">My Prescriptions 💊</h1>
-              <p className="text-gray-600">Keep track of your medications and stay healthy</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-50 transition-colors">
-                <FiFilter className="w-4 h-4" />
-                Filter
-              </button>
-              <button className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200">
-                <FiDownload className="w-4 h-4" />
-                Export All
-              </button>
+              <h1 className="text-3xl font-bold text-gray-800 font-secondary">My Prescriptions</h1>
+              <p className="text-gray-600">Manage your medications and prescriptions</p>
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-amber-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Active Prescriptions</h3>
-                  <p className="text-3xl font-bold text-amber-600 group-hover:scale-110 transition-transform duration-300">
-                    {prescriptions.filter(p => p.status === 'Active').length}
-                  </p>
-                </div>
-                <div className="w-14 h-14 bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl flex items-center justify-center">
-                  <FiPackage className="w-7 h-7 text-white" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-emerald-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Completed</h3>
-                  <p className="text-3xl font-bold text-emerald-600 group-hover:scale-110 transition-transform duration-300">
-                    {prescriptions.filter(p => p.status === 'Completed').length}
-                  </p>
-                </div>
-                <div className="w-14 h-14 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center">
-                  <FiFileText className="w-7 h-7 text-white" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Total Records</h3>
-                  <p className="text-3xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300">{prescriptions.length}</p>
-                </div>
-                <div className="w-14 h-14 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl flex items-center justify-center">
-                  <FiUser className="w-7 h-7 text-white" />
-                </div>
-              </div>
+          {/* Search */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search prescriptions by doctor, diagnosis, or medication..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-300 bg-gray-50 focus:bg-white"
+              />
             </div>
           </div>
+        </div>
 
-          {/* Search and Filter Section */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg mb-6 border border-gray-100">
-            <div className="flex flex-col md:flex-row gap-4 mb-4">
-              <div className="flex-1 relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search prescriptions..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div className="flex gap-4">
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl w-fit">
+            {[
+              { key: 'active', label: 'Active', count: prescriptions.filter(p => p.status === 'Active').length },
+              { key: 'completed', label: 'Completed', count: prescriptions.filter(p => p.status === 'Completed').length },
+              { key: 'all', label: 'All', count: prescriptions.length }
+            ].map((tab) => (
               <button
-                onClick={() => setActiveTab('active')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  activeTab === 'active'
-                    ? 'bg-emerald-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+                  activeTab === tab.key
+                    ? 'bg-white text-emerald-600 shadow-sm'
+                    : 'text-gray-600 hover:text-emerald-600'
                 }`}
               >
-                Active
+                {tab.label} ({tab.count})
               </button>
-              <button
-                onClick={() => setActiveTab('completed')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  activeTab === 'completed'
-                    ? 'bg-emerald-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Completed
-              </button>
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  activeTab === 'all'
-                    ? 'bg-emerald-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                All
-              </button>
-            </div>
-          </div>
-
-          {/* Prescriptions List */}
-          <div className="space-y-6">
-            {filteredPrescriptions.map(prescription => (
-              <div key={prescription.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-emerald-200">
-                <div className="p-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 bg-gradient-to-r from-emerald-100 to-cyan-100 rounded-full flex items-center justify-center">
-                        <FiFileText className="w-8 h-8 text-emerald-600" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold text-gray-800">{prescription.prescriptionNumber}</h3>
-                          <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(prescription.status)}`}>
-                            {prescription.status}
-                          </div>
-                        </div>
-                        <p className="text-emerald-600 font-medium mb-1">{prescription.doctorName}</p>
-                        <p className="text-gray-600 text-sm">{prescription.specialization}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      <p className="text-gray-600 text-sm mb-1">Date: {new Date(prescription.date).toLocaleDateString()}</p>
-                      {prescription.refillsRemaining !== undefined && (
-                        <p className="text-gray-600 text-sm">Refills: {prescription.refillsRemaining}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Diagnosis */}
-                  <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl border border-yellow-200">
-                    <h4 className="font-semibold text-gray-800 mb-2">Diagnosis</h4>
-                    <p className="text-gray-700">{prescription.diagnosis}</p>
-                  </div>
-
-                  {/* Medications */}
-                  <div className="mb-6">
-                    <h4 className="font-semibold text-gray-800 mb-4">Medications</h4>
-                    <div className="space-y-3">
-                      {prescription.medications.map((medication, index) => (
-                        <div key={index} className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                            <div>
-                              <p className="font-semibold text-gray-800">{medication.name}</p>
-                              <p className="text-sm text-gray-600">{medication.dosage}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-600">Frequency</p>
-                              <p className="font-medium text-gray-800">{medication.frequency}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-600">Duration</p>
-                              <p className="font-medium text-gray-800">{medication.duration}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-600">Instructions</p>
-                              <p className="font-medium text-gray-800 text-sm">{medication.instructions || 'As prescribed'}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-4 border-t border-gray-100">
-                    <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:from-emerald-600 hover:to-teal-600 flex items-center gap-2">
-                      <FiEye />
-                      View Details
-                    </button>
-                    <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-all duration-300 flex items-center gap-2">
-                      <FiDownload />
-                      Download PDF
-                    </button>
-                    {prescription.status === 'Active' && prescription.refillsRemaining && prescription.refillsRemaining > 0 && (
-                      <button className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg font-medium hover:bg-yellow-200 transition-all duration-300">
-                        Request Refill
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
             ))}
           </div>
+        </div>
 
-          {filteredPrescriptions.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiFileText className="w-12 h-12 text-gray-400" />
+        {/* Prescriptions List */}
+        <div className="space-y-6">
+          {filteredPrescriptions.map((prescription, index) => (
+            <div 
+              key={prescription.id} 
+              className="card card-hover p-6 rounded-2xl animate-fade-scale"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                    <FaStethoscope className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-xl">{prescription.doctorName}</h3>
+                    <p className="text-emerald-600 font-medium">{prescription.specialization}</p>
+                    <p className="text-sm text-gray-500">Prescription #{prescription.prescriptionNumber}</p>
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(prescription.status)}`}>
+                    {prescription.status}
+                  </span>
+                  <div className="text-sm text-gray-500 mt-1">
+                    ${prescription.consultationFee}
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No prescriptions found</h3>
-              <p className="text-gray-600 mb-6">You don't have any {activeTab} prescriptions</p>
+
+              {/* Details */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="flex items-center gap-3 text-gray-600">
+                  <FaCalendar className="w-4 h-4 text-emerald-500" />
+                  <div>
+                    <p className="text-sm font-medium">{new Date(prescription.date).toLocaleDateString()}</p>
+                    <p className="text-xs">Prescribed Date</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 text-gray-600">
+                  <FaHeart className="w-4 h-4 text-emerald-500" />
+                  <div>
+                    <p className="text-sm font-medium">{prescription.diagnosis}</p>
+                    <p className="text-xs">Diagnosis</p>
+                  </div>
+                </div>
+                
+                {prescription.nextRefillDate && (
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <FaClock className="w-4 h-4 text-emerald-500" />
+                    <div>
+                      <p className="text-sm font-medium">{new Date(prescription.nextRefillDate).toLocaleDateString()}</p>
+                      <p className="text-xs">Next Refill</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Medications */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <FaPills className="w-4 h-4 text-emerald-500" />
+                  Medications ({prescription.medications.length})
+                </h4>
+                <div className="space-y-3">
+                  {prescription.medications.map((medication, medIndex) => (
+                    <div key={medIndex} className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                      <div className="flex items-start justify-between mb-2">
+                        <h5 className="font-semibold text-gray-800">{medication.name}</h5>
+                        <span className="text-sm text-emerald-600 font-medium">{medication.dosage}</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <FaClock className="w-3 h-3 text-emerald-500" />
+                          <span>{medication.frequency}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <FaClock className="w-3 h-3 text-emerald-500" />
+                          <span>{medication.duration}</span>
+                        </div>
+                        {medication.instructions && (
+                          <div className="md:col-span-3 mt-2 p-2 bg-white rounded-lg">
+                            <p className="text-xs text-gray-500">
+                              <strong>Instructions:</strong> {medication.instructions}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Refill Info */}
+              {prescription.refillsRemaining && prescription.refillsRemaining > 0 && (
+                <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FaCheckCircle className="w-4 h-4 text-blue-600" />
+                    <h4 className="font-semibold text-blue-800">Refill Information</h4>
+                  </div>
+                  <p className="text-blue-700 text-sm">
+                    You have <strong>{prescription.refillsRemaining}</strong> refills remaining. 
+                    Next refill available on {new Date(prescription.nextRefillDate!).toLocaleDateString()}.
+                  </p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <button className="btn-primary flex items-center gap-2">
+                  <FaEye className="w-4 h-4" />
+                  View Details
+                </button>
+                <button className="btn-secondary flex items-center gap-2">
+                  <FaDownload className="w-4 h-4" />
+                  Download PDF
+                </button>
+                {prescription.status === 'Active' && prescription.refillsRemaining && prescription.refillsRemaining > 0 && (
+                  <button className="btn-secondary flex items-center gap-2">
+                    <FaClock className="w-4 h-4" />
+                    Request Refill
+                  </button>
+                )}
+              </div>
             </div>
-          )}
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredPrescriptions.length === 0 && (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FaFileAlt className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No prescriptions found</h3>
+            <p className="text-gray-600 mb-6">You don't have any {activeTab} prescriptions at the moment.</p>
+            <button className="btn-primary">
+              Book Consultation
+            </button>
+          </div>
+        )}
+
+        {/* Important Notice */}
+        <div className="mt-8 card p-6 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 animate-slide-up">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <FaShield className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-2">Important Medication Safety Tips</h3>
+              <div className="text-gray-600 text-sm space-y-2">
+                <p>• Always take medications exactly as prescribed by your doctor</p>
+                <p>• Never share your medications with others</p>
+                <p>• Store medications in a cool, dry place away from children</p>
+                <p>• Check expiration dates and dispose of expired medications properly</p>
+                <p>• Contact your doctor immediately if you experience any side effects</p>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

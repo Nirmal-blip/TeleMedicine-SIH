@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import Sidebar from '../../Components/Sidebar'
 import PatientHeader from '../../Components/PatientHeader'
-import { FiCalendar, FiClock, FiUser, FiVideo, FiMapPin, FiFilter, FiPlus, FiCheckCircle, FiX, FiPhone, FiMonitor, FiHeart } from 'react-icons/fi'
-import { RiStethoscopeLine, RiCalendarEventLine, RiVideoOnLine } from 'react-icons/ri'
+import { FaCalendar, FaClock, FaUser, FaVideo, FaMapPin, FaFilter, FaPlus, FaCheckCircle, FaPhone, FaHeart, FaStethoscope, FaFileAlt } from 'react-icons/fa'
+import { FaX } from "react-icons/fa6";
 
 interface Appointment {
   id: number;
@@ -49,235 +49,220 @@ const Appointments: React.FC = () => {
       doctorName: "Dr. Emily Rodriguez",
       specialization: "Pediatrician",
       date: "2024-01-10",
-      time: "11:00 AM",
+      time: "9:00 AM",
       type: "Online",
       status: "Completed",
-      reason: "Child Health Checkup",
+      reason: "Child Vaccination",
       consultationFee: 100
     },
     {
       id: 4,
-      doctorName: "Dr. David Kumar",
-      specialization: "Neurologist",
-      date: "2024-01-20",
+      doctorName: "Dr. David Wilson",
+      specialization: "Orthopedist",
+      date: "2024-01-05",
       time: "3:00 PM",
+      type: "In-Person",
+      status: "Completed",
+      location: "Orthopedic Clinic",
+      reason: "Knee Pain Consultation",
+      consultationFee: 180
+    },
+    {
+      id: 5,
+      doctorName: "Dr. Lisa Thompson",
+      specialization: "Psychiatrist",
+      date: "2024-01-12",
+      time: "11:30 AM",
       type: "Online",
-      status: "Upcoming",
-      reason: "Headache Consultation",
+      status: "Cancelled",
+      reason: "Mental Health Check",
       consultationFee: 200
     }
   ];
 
   const filteredAppointments = appointments.filter(appointment => {
-    if (activeTab === 'upcoming') return appointment.status === 'Upcoming';
-    if (activeTab === 'completed') return appointment.status === 'Completed';
-    return true;
+    if (activeTab === 'all') return true;
+    return appointment.status.toLowerCase() === activeTab;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Upcoming':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'Completed':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'Cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
+  const getTypeIcon = (type: string) => {
+    return type === 'Online' ? <FaVideo className="w-4 h-4" /> : <FaMapPin className="w-4 h-4" />;
+  };
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-8 lg:p-12 overflow-y-auto">
         <PatientHeader />
-        
-        <div className="mt-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
+
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
+              <FaCalendar className="w-8 h-8 text-white" />
+            </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">My Appointments 📅</h1>
-              <p className="text-gray-600">Manage your healthcare appointments with ease</p>
+              <h1 className="text-3xl font-bold text-gray-800 font-secondary">My Appointments</h1>
+              <p className="text-gray-600">Manage your healthcare appointments</p>
             </div>
-            <button className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3.5 rounded-3xl font-medium transition-all duration-300 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:scale-105 flex items-center gap-2 shadow-blue-200">
-              <FiPlus className="w-5 h-5" />
-              📋 Book New Appointment
-            </button>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white/95 backdrop-blur-sm p-6 rounded-3xl border border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300 group">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Upcoming Appointments</h3>
-                  <p className="text-3xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300">
-                    {appointments.filter(a => a.status === 'Upcoming').length}
-                  </p>
-                </div>
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-blue-600 rounded-3xl flex items-center justify-center">
-                  <RiCalendarEventLine className="w-8 h-8 text-white" />
-                </div>
-              </div>
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="flex gap-2">
+              <button className="btn-primary flex items-center gap-2">
+                <FaPlus className="w-4 h-4" />
+                Book New Appointment
+              </button>
+              <button className="btn-secondary flex items-center gap-2">
+                <FaFilter className="w-4 h-4" />
+                Filter
+              </button>
             </div>
             
-            <div className="bg-white/95 backdrop-blur-sm p-6 rounded-3xl border border-green-100 shadow-lg hover:shadow-xl transition-all duration-300 group">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Completed</h3>
-                  <p className="text-3xl font-bold text-green-600 group-hover:scale-110 transition-transform duration-300">
-                    {appointments.filter(a => a.status === 'Completed').length}
-                  </p>
-                </div>
-                <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-600 rounded-3xl flex items-center justify-center">
-                  <FiCheckCircle className="w-8 h-8 text-white" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white/95 backdrop-blur-sm p-6 rounded-3xl border border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300 group">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Total Consultations</h3>
-                  <p className="text-3xl font-bold text-purple-600 group-hover:scale-110 transition-transform duration-300">{appointments.length}</p>
-                </div>
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-purple-600 rounded-3xl flex items-center justify-center">
-                  <RiStethoscopeLine className="w-8 h-8 text-white" />
-                </div>
-              </div>
+            <div className="text-sm text-gray-500">
+              Total: {appointments.length} appointments
             </div>
           </div>
+        </div>
 
-          {/* Tab Navigation */}
-          <div className="bg-white/95 backdrop-blur-sm p-6 rounded-3xl shadow-lg mb-8 border border-blue-100">
-            <div className="flex flex-wrap gap-3">
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl w-fit">
+            {[
+              { key: 'upcoming', label: 'Upcoming', count: appointments.filter(a => a.status === 'Upcoming').length },
+              { key: 'completed', label: 'Completed', count: appointments.filter(a => a.status === 'Completed').length },
+              { key: 'all', label: 'All', count: appointments.length }
+            ].map((tab) => (
               <button
-                onClick={() => setActiveTab('upcoming')}
-                className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                  activeTab === 'upcoming'
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
-                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 border border-gray-200'
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+                  activeTab === tab.key
+                    ? 'bg-white text-emerald-600 shadow-sm'
+                    : 'text-gray-600 hover:text-emerald-600'
                 }`}
               >
-                <FiClock className="w-4 h-4" />
-                🕒 Upcoming ({appointments.filter(a => a.status === 'Upcoming').length})
+                {tab.label} ({tab.count})
               </button>
-              <button
-                onClick={() => setActiveTab('completed')}
-                className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                  activeTab === 'completed'
-                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform scale-105'
-                    : 'text-gray-600 hover:bg-green-50 hover:text-green-600 border border-gray-200'
-                }`}
-              >
-                <FiCheckCircle className="w-4 h-4" />
-                ✅ Completed ({appointments.filter(a => a.status === 'Completed').length})
-              </button>
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                  activeTab === 'all'
-                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg transform scale-105'
-                    : 'text-gray-600 hover:bg-purple-50 hover:text-purple-600 border border-gray-200'
-                }`}
-              >
-                <FiCalendar className="w-4 h-4" />
-                📅 All ({appointments.length})
-              </button>
-            </div>
-          </div>
-
-          {/* Appointments List */}
-          <div className="space-y-4">
-            {filteredAppointments.map(appointment => (
-              <div key={appointment.id} className="group bg-white/95 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-blue-100 hover:border-blue-200 hover:-translate-y-1">
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 bg-gradient-to-r from-emerald-100 to-cyan-100 rounded-full flex items-center justify-center">
-                        <FiUser className="w-8 h-8 text-emerald-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-800 mb-1">{appointment.doctorName}</h3>
-                        <p className="text-emerald-600 font-medium mb-2">{appointment.specialization}</p>
-                        <p className="text-gray-600 text-sm">{appointment.reason}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium mb-2 ${getStatusColor(appointment.status)}`}>
-                        {appointment.status}
-                      </div>
-                      <p className="text-gray-600 text-sm">Fee: <span className="font-semibold">${appointment.consultationFee}</span></p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <FiCalendar className="text-gray-400" />
-                      <span>{new Date(appointment.date).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <FiClock className="text-gray-400" />
-                      <span>{appointment.time}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      {appointment.type === 'Online' ? (
-                        <FiVideo className="text-emerald-500" />
-                      ) : (
-                        <FiMapPin className="text-blue-500" />
-                      )}
-                      <span>{appointment.type}</span>
-                      {appointment.location && <span className="text-sm">- {appointment.location}</span>}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4 border-t border-gray-100">
-                    {appointment.status === 'Upcoming' && (
-                      <>
-                        {appointment.type === 'Online' && (
-                          <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:from-emerald-600 hover:to-teal-600 flex items-center gap-2">
-                            <FiVideo />
-                            Join Call
-                          </button>
-                        )}
-                        <button className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg font-medium hover:bg-yellow-200 transition-all duration-300">
-                          Reschedule
-                        </button>
-                        <button className="bg-red-100 text-red-800 px-4 py-2 rounded-lg font-medium hover:bg-red-200 transition-all duration-300">
-                          Cancel
-                        </button>
-                      </>
-                    )}
-                    {appointment.status === 'Completed' && (
-                      <>
-                        <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-all duration-300">
-                          View Summary
-                        </button>
-                        <button className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-medium hover:bg-emerald-200 transition-all duration-300">
-                          Book Again
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
             ))}
           </div>
-
-          {filteredAppointments.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiCalendar className="w-12 h-12 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No appointments found</h3>
-              <p className="text-gray-600 mb-6">You don't have any {activeTab} appointments</p>
-              <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:from-emerald-600 hover:to-teal-600">
-                Book Your First Appointment
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Appointments Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {filteredAppointments.map((appointment, index) => (
+            <div 
+              key={appointment.id} 
+              className="card card-hover p-6 rounded-2xl animate-fade-scale"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                    <FaStethoscope className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-lg">{appointment.doctorName}</h3>
+                    <p className="text-emerald-600 font-medium">{appointment.specialization}</p>
+                  </div>
+                </div>
+                
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(appointment.status)}`}>
+                  {appointment.status}
+                </span>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 text-gray-600">
+                  <FaCalendar className="w-4 h-4 text-emerald-500" />
+                  <span>{new Date(appointment.date).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</span>
+                </div>
+                
+                <div className="flex items-center gap-3 text-gray-600">
+                  <FaClock className="w-4 h-4 text-emerald-500" />
+                  <span>{appointment.time}</span>
+                </div>
+                
+                <div className="flex items-center gap-3 text-gray-600">
+                  {getTypeIcon(appointment.type)}
+                  <span>{appointment.type}</span>
+                  {appointment.location && (
+                    <span className="text-sm">• {appointment.location}</span>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-3 text-gray-600">
+                  <FaHeart className="w-4 h-4 text-emerald-500" />
+                  <span>{appointment.reason}</span>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="text-lg font-bold text-emerald-600">
+                  ${appointment.consultationFee}
+                </div>
+                
+                <div className="flex gap-2">
+                  {appointment.status === 'Upcoming' && (
+                    <>
+                      <button className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors duration-300 flex items-center gap-2">
+                        <FaVideo className="w-4 h-4" />
+                        Join
+                      </button>
+                      <button className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-300 flex items-center gap-2">
+                        <FaX className="w-4 h-4" />
+                        Cancel
+                      </button>
+                    </>
+                  )}
+                  
+                  {appointment.status === 'Completed' && (
+                    <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-300 flex items-center gap-2">
+                      <FaFileAlt className="w-4 h-4" />
+                      View Report
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredAppointments.length === 0 && (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FaCalendar className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No appointments found</h3>
+            <p className="text-gray-600 mb-6">You don't have any {activeTab} appointments at the moment.</p>
+            <button className="btn-primary">
+              Book Your First Appointment
+            </button>
+          </div>
+        )}
       </main>
     </div>
   )

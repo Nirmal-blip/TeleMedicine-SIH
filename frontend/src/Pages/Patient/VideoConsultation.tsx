@@ -1,247 +1,393 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { FiVideo, FiVideoOff, FiMic, FiMicOff, FiPhone, FiMessageCircle, FiSettings, FiMaximize2, FiMinimize2, FiUsers } from 'react-icons/fi'
 import Sidebar from '../../Components/Sidebar'
 import PatientHeader from '../../Components/PatientHeader'
+import { FaVideo, FaMicrophone, FaMicrophoneSlash, FaVideoSlash, FaPhone, FaPhoneSlash, FaUser, FaCalendar, FaClock, FaStethoscope, FaHeart, FaPaperclip, FaSmile, FaFileAlt } from 'react-icons/fa'
+import { IoChatbubbleEllipsesSharp } from "react-icons/io5";
+
+interface Consultation {
+  id: number;
+  doctorName: string;
+  specialization: string;
+  date: string;
+  time: string;
+  duration: string;
+  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
+  meetingId: string;
+  reason: string;
+}
 
 const VideoConsultation: React.FC = () => {
-    const [isVideoOn, setIsVideoOn] = useState(true)
-    const [isAudioOn, setIsAudioOn] = useState(true)
-    const [isFullscreen, setIsFullscreen] = useState(false)
-    const [showChat, setShowChat] = useState(false)
-    const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting')
-    const [callDuration, setCallDuration] = useState(0)
-    const videoRef = useRef<HTMLVideoElement>(null)
-    const remoteVideoRef = useRef<HTMLVideoElement>(null)
+  const [isVideoOn, setIsVideoOn] = useState(true);
+  const [isAudioOn, setIsAudioOn] = useState(true);
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [currentConsultation, setCurrentConsultation] = useState<Consultation | null>(null);
+  const [chatMessage, setChatMessage] = useState('');
+  const [chatMessages, setChatMessages] = useState<Array<{id: number, sender: string, message: string, timestamp: string}>>([]);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-    useEffect(() => {
-        // Simulate call connection
-        const timer = setTimeout(() => setCallStatus('connected'), 3000)
-        return () => clearTimeout(timer)
-    }, [])
-
-    useEffect(() => {
-        let interval: number
-        if (callStatus === 'connected') {
-            interval = setInterval(() => {
-                setCallDuration(prev => prev + 1)
-            }, 1000)
-        }
-        return () => clearInterval(interval)
-    }, [callStatus])
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60)
-        const secs = seconds % 60
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  const consultations: Consultation[] = [
+    {
+      id: 1,
+      doctorName: "Dr. Sarah Johnson",
+      specialization: "Cardiologist",
+      date: "2024-01-15",
+      time: "10:00 AM",
+      duration: "45 minutes",
+      status: "Scheduled",
+      meetingId: "MEET-001",
+      reason: "Regular Checkup"
+    },
+    {
+      id: 2,
+      doctorName: "Dr. Michael Chen",
+      specialization: "Dermatologist",
+      date: "2024-01-18",
+      time: "2:30 PM",
+      duration: "30 minutes",
+      status: "Scheduled",
+      meetingId: "MEET-002",
+      reason: "Skin Consultation"
     }
+  ];
 
-    const toggleVideo = () => setIsVideoOn(!isVideoOn)
-    const toggleAudio = () => setIsAudioOn(!isAudioOn)
-    const toggleFullscreen = () => setIsFullscreen(!isFullscreen)
-    const endCall = () => setCallStatus('ended')
+  const upcomingConsultation = consultations.find(c => c.status === 'Scheduled');
 
-    if (callStatus === 'ended') {
+  const startCall = (consultation: Consultation) => {
+    setCurrentConsultation(consultation);
+    setIsCallActive(true);
+    // Simulate starting video call
+    if (videoRef.current) {
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+          videoRef.current!.srcObject = stream;
+        })
+        .catch(err => console.error('Error accessing media devices:', err));
+    }
+  };
+
+  const endCall = () => {
+    setIsCallActive(false);
+    setCurrentConsultation(null);
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  const sendMessage = () => {
+    if (chatMessage.trim()) {
+      const newMessage = {
+        id: Date.now(),
+        sender: 'You',
+        message: chatMessage,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      setChatMessages(prev => [...prev, newMessage]);
+      setChatMessage('');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Scheduled':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'In Progress':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Completed':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'Cancelled':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  if (isCallActive && currentConsultation) {
     return (
-            <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-                <Sidebar />
-                <main className="flex-1 p-8 overflow-y-auto">
-                    <PatientHeader />
-                    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-                        <div className="text-center max-w-md">
-                            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <FiPhone className="w-12 h-12 text-red-500" />
-                            </div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Call Ended</h2>
-                            <p className="text-gray-600 mb-6">Your consultation with Dr. Sarah Johnson has ended.</p>
-                            <button className="bg-emerald-600 text-white px-6 py-3 rounded-2xl hover:bg-emerald-700 transition-colors">
-                                Return to Dashboard
-                            </button>
-                        </div>
-                    </div>
-                </main>
+      <div className="flex min-h-screen bg-gray-900">
+        <Sidebar />
+        <main className="flex-1 flex flex-col">
+          {/* Call Header */}
+          <div className="bg-gray-800 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                <FaStethoscope className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-white font-semibold text-lg">{currentConsultation.doctorName}</h2>
+                <p className="text-gray-300 text-sm">{currentConsultation.specialization}</p>
+              </div>
             </div>
-        )
-    }
+            <div className="flex items-center gap-4">
+              <div className="text-white text-sm">
+                {new Date().toLocaleTimeString()}
+              </div>
+              <button
+                onClick={endCall}
+                className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors duration-300"
+              >
+                <FaPhoneSlash className="w-6 h-6 text-white" />
+              </button>
+            </div>
+          </div>
 
-    return (
-        <div className="flex min-h-screen bg-gray-900">
-            {!isFullscreen && <Sidebar />}
-            
-            <main className={`flex-1 relative ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-                {!isFullscreen && (
-                    <div className="bg-white p-4 border-b">
-                        <PatientHeader />
-                    </div>
-                )}
-                
-                {/* Video Call Interface */}
-                <div className="relative h-full bg-gray-900 flex flex-col">
-                    {/* Header */}
-                    <div className="absolute top-0 left-0 right-0 z-20 p-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-3 h-3 rounded-full ${
-                                        callStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
-                                        callStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'
-                                    }`} />
-                                    <span className="text-white font-medium">
-                                        {callStatus === 'connecting' ? 'Connecting...' :
-                                         callStatus === 'connected' ? `Connected • ${formatTime(callDuration)}` : 'Disconnected'}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => setShowChat(!showChat)}
-                                    className="p-3 bg-white/20 backdrop-blur-sm rounded-xl text-white hover:bg-white/30 transition-colors"
-                                >
-                                    <FiMessageCircle className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={toggleFullscreen}
-                                    className="p-3 bg-white/20 backdrop-blur-sm rounded-xl text-white hover:bg-white/30 transition-colors"
-                                >
-                                    {isFullscreen ? <FiMinimize2 className="w-5 h-5" /> : <FiMaximize2 className="w-5 h-5" />}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Main Video Area */}
-                    <div className="flex-1 relative p-6 pt-20">
-                        {/* Remote Video (Doctor) */}
-                        <div className="w-full h-full bg-gradient-to-br from-emerald-600 to-teal-600 rounded-3xl overflow-hidden relative shadow-2xl">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-center text-white">
-                                    <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <FiUsers className="w-16 h-16" />
-                                    </div>
-                                    <h3 className="text-2xl font-bold mb-2">Dr. Sarah Johnson</h3>
-                                    <p className="text-emerald-100">Cardiologist</p>
-                                </div>
-                            </div>
-                            
-                            {/* Doctor info overlay */}
-                            <div className="absolute bottom-6 left-6">
-                                <div className="bg-black/20 backdrop-blur-sm rounded-2xl px-4 py-2">
-                                    <p className="text-white font-medium">Dr. Sarah Johnson</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Local Video (Patient) - Picture in Picture */}
-                        <div className="absolute bottom-6 right-6 w-64 h-48 bg-gray-800 rounded-2xl overflow-hidden shadow-xl border-4 border-white/20">
-                            <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center relative">
-                                {isVideoOn ? (
-                                    <div className="text-center text-white">
-                                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                                            <FiUsers className="w-8 h-8" />
-                                        </div>
-                                        <p className="text-sm">You</p>
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-white">
-                                        <FiVideoOff className="w-8 h-8 mx-auto mb-2" />
-                                        <p className="text-sm">Camera Off</p>
-                                    </div>
-                                )}
-                                
-                                {!isAudioOn && (
-                                    <div className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                                        <FiMicOff className="w-3 h-3 text-white" />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Controls */}
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                        <div className="flex items-center justify-center gap-4">
-                            <button
-                                onClick={toggleAudio}
-                                className={`p-4 rounded-2xl transition-all duration-300 ${
-                                    isAudioOn 
-                                        ? 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30' 
-                                        : 'bg-red-500 text-white hover:bg-red-600'
-                                }`}
-                            >
-                                {isAudioOn ? <FiMic className="w-6 h-6" /> : <FiMicOff className="w-6 h-6" />}
-                            </button>
-                            
-                            <button
-                                onClick={toggleVideo}
-                                className={`p-4 rounded-2xl transition-all duration-300 ${
-                                    isVideoOn 
-                                        ? 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30' 
-                                        : 'bg-red-500 text-white hover:bg-red-600'
-                                }`}
-                            >
-                                {isVideoOn ? <FiVideo className="w-6 h-6" /> : <FiVideoOff className="w-6 h-6" />}
-                            </button>
-                            
-                            <button
-                                onClick={endCall}
-                                className="p-4 bg-red-500 rounded-2xl text-white hover:bg-red-600 transition-colors transform hover:scale-105"
-                            >
-                                <FiPhone className="w-6 h-6" />
-                            </button>
-                            
-                            <button className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl text-white hover:bg-white/30 transition-colors">
-                                <FiSettings className="w-6 h-6" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Chat Sidebar */}
-                    {showChat && (
-                        <div className="absolute top-0 right-0 w-80 h-full bg-white shadow-2xl border-l border-gray-200">
-                            <div className="p-4 border-b border-gray-200">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-gray-900">Chat</h3>
-                                    <button
-                                        onClick={() => setShowChat(false)}
-                                        className="text-gray-500 hover:text-gray-700"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div className="flex-1 p-4">
-                                <div className="space-y-4">
-                                    <div className="bg-emerald-50 p-3 rounded-2xl rounded-bl-sm">
-                                        <p className="text-sm text-emerald-800">Hello! How are you feeling today?</p>
-                                        <span className="text-xs text-emerald-600">Dr. Sarah • 2 min ago</span>
-                                    </div>
-                                    
-                                    <div className="bg-blue-50 p-3 rounded-2xl rounded-br-sm ml-8">
-                                        <p className="text-sm text-blue-800">I've been having some chest pain lately.</p>
-                                        <span className="text-xs text-blue-600">You • 1 min ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="p-4 border-t border-gray-200">
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Type a message..."
-                                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                    />
-                                    <button className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors">
-                                        Send
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+          {/* Video Call Interface */}
+          <div className="flex-1 flex">
+            {/* Video Area */}
+            <div className="flex-1 relative bg-gray-800">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                className="w-full h-full object-cover"
+              />
+              
+              {/* Doctor Video Placeholder */}
+              <div className="absolute top-4 right-4 w-64 h-48 bg-gray-700 rounded-lg flex items-center justify-center">
+                <div className="text-center text-white">
+                  <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FaUser className="w-8 h-8 text-white" />
+                  </div>
+                  <p className="font-semibold">{currentConsultation.doctorName}</p>
+                  <p className="text-sm text-gray-300">Connecting...</p>
                 </div>
-            </main>
+              </div>
+
+              {/* Controls */}
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
+                <button
+                  onClick={() => setIsAudioOn(!isAudioOn)}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-300 ${
+                    isAudioOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {isAudioOn ? <FaMicrophone className="w-6 h-6 text-white" /> : <FaMicrophoneSlash className="w-6 h-6 text-white" />}
+                </button>
+                
+                <button
+                  onClick={() => setIsVideoOn(!isVideoOn)}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-300 ${
+                    isVideoOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {isVideoOn ? <FaVideo className="w-6 h-6 text-white" /> : <FaVideoSlash className="w-6 h-6 text-white" />}
+                </button>
+                
+                <button
+                  onClick={endCall}
+                  className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors duration-300"
+                >
+                  <FaPhoneSlash className="w-6 h-6 text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Chat Sidebar */}
+            <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+              <div className="p-4 border-b border-gray-700">
+                <h3 className="text-white font-semibold">Chat</h3>
+              </div>
+              
+              <div className="flex-1 p-4 overflow-y-auto">
+                <div className="space-y-3">
+                  {chatMessages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.sender === 'You' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-xs p-3 rounded-lg ${
+                        msg.sender === 'You' 
+                          ? 'bg-emerald-600 text-white' 
+                          : 'bg-gray-700 text-white'
+                      }`}>
+                        <p className="text-sm">{msg.message}</p>
+                        <p className="text-xs opacity-70 mt-1">{msg.timestamp}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="p-4 border-t border-gray-700">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-emerald-500 focus:outline-none"
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-300"
+                  >
+                    <IoChatbubbleEllipsesSharp className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+      <Sidebar />
+      <main className="flex-1 p-8 lg:p-12 overflow-y-auto">
+        <PatientHeader />
+
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
+              <FaVideo className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 font-secondary">Video Consultation</h1>
+              <p className="text-gray-600">Connect with doctors through secure video calls</p>
+            </div>
+          </div>
         </div>
-    )
+
+        {/* Upcoming Consultation */}
+        {upcomingConsultation && (
+          <div className="card p-8 rounded-2xl mb-8 animate-fade-scale">
+            <div className="flex items-center gap-3 mb-6">
+              <FaCalendar className="w-6 h-6 text-emerald-600" />
+              <h2 className="text-xl font-semibold text-gray-800">Upcoming Consultation</h2>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                  <FaStethoscope className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-xl">{upcomingConsultation.doctorName}</h3>
+                  <p className="text-emerald-600 font-medium">{upcomingConsultation.specialization}</p>
+                  <div className="flex items-center gap-4 mt-2 text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <FaCalendar className="w-4 h-4 text-emerald-500" />
+                      <span>{new Date(upcomingConsultation.date).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FaClock className="w-4 h-4 text-emerald-500" />
+                      <span>{upcomingConsultation.time}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => startCall(upcomingConsultation)}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <FaVideo className="w-4 h-4" />
+                  Start Call
+                </button>
+                <button className="btn-secondary flex items-center gap-2">
+                  <FaHeart className="w-4 h-4" />
+                  Reschedule
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Consultation History */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 font-secondary">Consultation History</h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {consultations.map((consultation, index) => (
+              <div 
+                key={consultation.id} 
+                className="card card-hover p-6 rounded-2xl animate-fade-scale"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                      <FaStethoscope className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-800 text-lg">{consultation.doctorName}</h3>
+                      <p className="text-emerald-600 font-medium">{consultation.specialization}</p>
+                    </div>
+                  </div>
+                  
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(consultation.status)}`}>
+                    {consultation.status}
+                  </span>
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <FaCalendar className="w-4 h-4 text-emerald-500" />
+                    <span>{new Date(consultation.date).toLocaleDateString()}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <FaClock className="w-4 h-4 text-emerald-500" />
+                    <span>{consultation.time} • {consultation.duration}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <FaHeart className="w-4 h-4 text-emerald-500" />
+                    <span>{consultation.reason}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  {consultation.status === 'Scheduled' && (
+                    <button
+                      onClick={() => startCall(consultation)}
+                      className="flex-1 btn-primary flex items-center justify-center gap-2"
+                    >
+                      <FaVideo className="w-4 h-4" />
+                      Join Call
+                    </button>
+                  )}
+                  
+                  {consultation.status === 'Completed' && (
+                    <button className="flex-1 btn-secondary flex items-center justify-center gap-2">
+                      <FaFileAlt className="w-4 h-4" />
+                      View Report
+                    </button>
+                  )}
+                  
+                  <button className="btn-secondary flex items-center gap-2">
+                    <FaPaperclip className="w-4 h-4" />
+                    Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="card p-6 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 animate-slide-up">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <FaSmile className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-2">Video Consultation Tips</h3>
+              <div className="text-gray-600 text-sm space-y-2">
+                <p>• Ensure you have a stable internet connection before starting the call</p>
+                <p>• Find a quiet, well-lit space for your consultation</p>
+                <p>• Test your camera and microphone before the appointment</p>
+                <p>• Have your medical records and questions ready</p>
+                <p>• Be prepared to describe your symptoms clearly</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
 }
 
 export default VideoConsultation
