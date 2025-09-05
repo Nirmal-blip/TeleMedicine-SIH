@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaComments, FaUserMd, FaPrescription, FaArrowRight } from 'react-icons/fa';
 
 const steps = [
@@ -29,6 +30,11 @@ const steps = [
 ];
 
 export const HowItWorks: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleStartConsultation = () => {
+    navigate('/signin');
+  };
   return (
     <section className="section-padding bg-gradient-to-br from-gray-50 to-white">
       <div className="container-padding landing-padding-lg">
@@ -125,7 +131,7 @@ export const HowItWorks: React.FC = () => {
               Join thousands of patients who have discovered a better way to access quality healthcare.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="btn-primary">
+              <button onClick={handleStartConsultation} className="btn-primary">
                 Start Your Consultation
               </button>
               <button className="btn-secondary">

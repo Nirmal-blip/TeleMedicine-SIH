@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaQuoteLeft, FaStar, FaHeart } from 'react-icons/fa';
 
 const testimonials = [
@@ -29,6 +30,11 @@ const testimonials = [
 ];
 
 export const Testimonials: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleStartJourney = () => {
+    navigate('/signin');
+  };
   return (
     <section className="section-padding bg-gradient-to-br from-white to-emerald-50">
       <div className="container-padding landing-padding-lg">
@@ -81,7 +87,10 @@ export const Testimonials: React.FC = () => {
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling!.style.display = 'flex';
+                      const fallbackDiv = e.currentTarget.parentElement?.querySelector('div');
+                      if (fallbackDiv && fallbackDiv instanceof HTMLElement) {
+                        fallbackDiv.style.display = 'flex';
+                      }
                     }}
                   />
                   <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-400 items-center justify-center text-white font-bold text-lg hidden">
@@ -142,7 +151,7 @@ export const Testimonials: React.FC = () => {
           <p className="text-gray-600 mb-8 text-lg max-w-2xl mx-auto">
             Experience the same level of care and satisfaction that thousands of patients trust every day.
           </p>
-          <button className="btn-primary">
+          <button onClick={handleStartJourney} className="btn-primary">
             Start Your Health Journey Today
           </button>
         </div>

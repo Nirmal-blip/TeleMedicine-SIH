@@ -10,6 +10,8 @@ import PatientDashboard from './Pages/Patient/PatientDashboard'
 import PatientSupport from './Pages/Patient/PatientSupport'
 import Prescription from './Pages/Patient/Prescription'
 import VideoConsultation from './Pages/Patient/VideoConsultation'
+import SignupPage from './Pages/SignupPage'
+import SigninPage from './Pages/SigninPage'
 
 import DoctorDashboard from './Pages/DoctorDashboard'
 
@@ -18,6 +20,8 @@ const App: React.FC = () => {
     <>
         <Routes>
             <Route path='/' element={<LandingPage />}></Route>
+            <Route path='/signup' element={<SignupPage />}></Route>
+            <Route path='/signin' element={<SigninPage />}></Route>
 
             <Route path='/appointments' element={<Appointments />}></Route>
             <Route path='/consultation-history' element={<ConsultationHistory />}></Route>
