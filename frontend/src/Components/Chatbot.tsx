@@ -160,6 +160,14 @@ const Chatbot: React.FC = () => {
         return newMessage;
     };
 
+    const updateMessage = (messageId: number, newText: string) => {
+        setMessages(prev => 
+            prev.map(msg => 
+                msg.id === messageId ? { ...msg, text: newText } : msg
+            )
+        );
+    };
+
     // Chat History Functions
     const createNewChatSession = async () => {
         try {
@@ -258,34 +266,107 @@ const Chatbot: React.FC = () => {
                 sessionId = await createNewChatSession();
             }
 
-            const response = await fetch('http://localhost:3000/api/ai/chat', {
+            // Use streaming endpoint
+            const response = await fetch('http://localhost:5000/api/chat/stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include', // Include cookies for authentication
                 body: JSON.stringify({ 
                     input: currentInput,
                     sessionId: sessionId 
                 }),
             });
 
-            const data = await response.json();
-            
-            if (response.status === 401) {
-                const botMessage = addMessage("Please log in to use the chatbot. You can sign in by clicking the login button.", 'bot');
-                setIsSignupOpen(false);
-                setIsSigninOpen(true);
-            } else if (response.ok) {
-                const botMessage = addMessage(data.response, 'bot');
-                // Auto-speak the bot response
-                speakText(data.response);
-            } else {
-                addMessage(data.message || "Sorry, I'm having trouble responding right now. Please try again.", 'bot');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Create empty bot message that we'll update
+            const botMessage = addMessage('', 'bot');
+            let fullResponse = '';
+
+            // Read the stream
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (reader) {
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value);
+                        const lines = chunk.split('\n');
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const jsonStr = line.slice(6); // Remove 'data: ' prefix
+                                    const data = JSON.parse(jsonStr);
+                                    
+                                    if (data.chunk) {
+                                        fullResponse += data.chunk;
+                                        // Update the bot message with accumulated response
+                                        updateMessage(botMessage.id, fullResponse);
+                                        // Small delay to make streaming more visible
+                                        await new Promise(resolve => setTimeout(resolve, 50));
+                                    } else if (data.done) {
+                                        // Stream finished
+                                        break;
+                                    } else if (data.error) {
+                                        throw new Error(data.error);
+                                    }
+                                } catch (parseError) {
+                                    // Skip malformed JSON lines
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+            }
+
+            // Auto-speak the complete response
+            if (fullResponse) {
+                speakText(fullResponse);
             }
         } catch (error) {
-            console.error('Error:', error);
-            addMessage("Sorry, I'm having trouble connecting. Please check your internet connection and try again.", 'bot');
+            console.error('Streaming error:', error);
+            // Fallback to non-streaming endpoint
+            try {
+                console.log('Falling back to non-streaming endpoint...');
+                // Ensure we have a session for fallback
+                let fallbackSessionId = currentSessionId;
+                if (!fallbackSessionId) {
+                    fallbackSessionId = await createNewChatSession();
+                }
+                
+                const fallbackResponse = await fetch('http://localhost:3000/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ 
+                        input: currentInput,
+                        sessionId: fallbackSessionId 
+                    }),
+                });
+
+                const data = await fallbackResponse.json();
+                
+                if (fallbackResponse.ok) {
+                    addMessage(data.response, 'bot');
+                    speakText(data.response);
+                } else {
+                    addMessage(data.message || "Sorry, I'm having trouble responding right now. Please try again.", 'bot');
+                }
+            } catch (fallbackError) {
+                console.error('Fallback error:', fallbackError);
+                addMessage("Sorry, I'm having trouble connecting. Please check your internet connection and try again.", 'bot');
+            }
         } finally {
             setIsLoading(false);
         }

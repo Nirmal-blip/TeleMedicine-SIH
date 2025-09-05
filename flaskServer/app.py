@@ -67,6 +67,18 @@ def gemini_response(prompt):
     except Exception as e:
         return f"I'm sorry, there was an error processing your request: {str(e)}"
 
+# Function to simulate streaming response (since Gemini doesn't support streaming)
+def stream_response(text, chunk_size=6):
+    """Simulate streaming by yielding chunks of text"""
+    import time
+    words = text.split()
+    for i in range(0, len(words), chunk_size):
+        chunk = " ".join(words[i:i + chunk_size])
+        if i > 0:
+            chunk = " " + chunk
+        yield chunk
+        time.sleep(0.05)  # Small delay to simulate typing
+
 # Recommendation Engine (Do's and Don'ts)
 recommendations = {
     "fever": {
@@ -155,19 +167,34 @@ def recommend_medicine(partial_name, top_n=5):
 # ----------------------------
 # Load additional CSVs
 # ----------------------------
-diet_df = pd.read_csv("diet.csv")              # disease, recommendation
-precautions_df = pd.read_csv("precautions.csv")
-workout_df = pd.read_csv("workout.csv")
+try:
+    diet_df = pd.read_csv(os.path.join(os.path.dirname(__file__), "diet.csv"))
+    precautions_df = pd.read_csv(os.path.join(os.path.dirname(__file__), "precautions.csv"))
+    workout_df = pd.read_csv(os.path.join(os.path.dirname(__file__), "workout.csv"))
+    print("Additional CSV files loaded successfully")
+except Exception as e:
+    print(f"Warning: Could not load additional CSV files: {e}")
+    diet_df = pd.DataFrame()
+    precautions_df = pd.DataFrame()
+    workout_df = pd.DataFrame()
 
 def get_additional_recommendations(disease):
-    diet = diet_df[diet_df["disease"] == disease]["recommendation"].tolist()
-    precautions = precautions_df[precautions_df["disease"] == disease]["recommendation"].tolist()
-    workout = workout_df[workout_df["disease"] == disease]["recommendation"].tolist()
-    return {
-        "diet": diet,
-        "precautions": precautions,
-        "workout": workout
-    }
+    try:
+        diet = diet_df[diet_df["disease"] == disease]["recommendation"].tolist() if not diet_df.empty else []
+        precautions = precautions_df[precautions_df["disease"] == disease]["recommendation"].tolist() if not precautions_df.empty else []
+        workout = workout_df[workout_df["disease"] == disease]["recommendation"].tolist() if not workout_df.empty else []
+        return {
+            "diet": diet,
+            "precautions": precautions,
+            "workout": workout
+        }
+    except Exception as e:
+        print(f"Error getting additional recommendations: {e}")
+        return {
+            "diet": [],
+            "precautions": [],
+            "workout": []
+        }
 
 
 # =============================================================================
@@ -250,13 +277,18 @@ def chat():
             if disease in response.lower():
                 detected_disease = disease
                 break
-        additional_recs = get_additional_recommendations(detected_disease) if detected_disease else {}
+        
         # Generate response based on disease detection
         if detected_disease:
+            additional_recs = get_additional_recommendations(detected_disease)
             response = f"To treat {detected_disease}, follow these steps:\n\n{response}\n\n{get_recommendations(detected_disease)}"
-            response += f"\nDiet: {', '.join(additional_recs.get('diet', []))}"
-            response += f"\nPrecautions: {', '.join(additional_recs.get('precautions', []))}"
-            response += f"\nWorkout: {', '.join(additional_recs.get('workout', []))}"
+            
+            if additional_recs.get('diet'):
+                response += f"\nDiet: {', '.join(additional_recs.get('diet', []))}"
+            if additional_recs.get('precautions'):
+                response += f"\nPrecautions: {', '.join(additional_recs.get('precautions', []))}"
+            if additional_recs.get('workout'):
+                response += f"\nWorkout: {', '.join(additional_recs.get('workout', []))}"
 
         # Automatically book an appointment
         appointment_info = book_appointment()
@@ -271,6 +303,70 @@ def chat():
                 pass  # Ignore TTS errors
 
         return jsonify({"response": response})
+    except Exception as e:
+        return jsonify({"error": f"Chat service error: {str(e)}"}), 500
+
+@app.route('/api/chat/stream', methods=['POST'])
+def chat_stream():
+    """Streaming chat endpoint with Gemini AI integration"""
+    try:
+        user_input = request.json.get('input')
+        if not user_input:
+            return jsonify({"error": "No input provided"}), 400
+
+        # Check if API key is configured
+        if not GEMINI_API_KEY:
+            return jsonify({"error": "Gemini API key not configured"}), 503
+
+        def generate():
+            try:
+                # Get response from Gemini API
+                response = gemini_response(user_input)
+
+                # Extract disease from response
+                detected_disease = None
+                for disease in recommendations.keys():
+                    if disease in response.lower():
+                        detected_disease = disease
+                        break
+                
+                # Generate response based on disease detection
+                if detected_disease:
+                    additional_recs = get_additional_recommendations(detected_disease)
+                    response = f"To treat {detected_disease}, follow these steps:\n\n{response}\n\n{get_recommendations(detected_disease)}"
+                    
+                    if additional_recs.get('diet'):
+                        response += f"\nDiet: {', '.join(additional_recs.get('diet', []))}"
+                    if additional_recs.get('precautions'):
+                        response += f"\nPrecautions: {', '.join(additional_recs.get('precautions', []))}"
+                    if additional_recs.get('workout'):
+                        response += f"\nWorkout: {', '.join(additional_recs.get('workout', []))}"
+
+                # Automatically book an appointment
+                appointment_info = book_appointment()
+                response += f"\n\n{appointment_info}"
+
+                # Stream the response
+                for chunk in stream_response(response):
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+                
+                # Signal end of stream
+                yield f"data: {json.dumps({'done': True})}\n\n"
+                
+            except Exception as e:
+                yield f"data: {json.dumps({'error': f'Chat service error: {str(e)}'})}\n\n"
+
+        return app.response_class(
+            generate(),
+            mimetype='text/plain',
+            headers={
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Content-Type': 'text/plain; charset=utf-8'
+            }
+        )
     except Exception as e:
         return jsonify({"error": f"Chat service error: {str(e)}"}), 500
 

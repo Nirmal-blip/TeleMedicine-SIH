@@ -29,30 +29,43 @@ export class ChatHistoryService {
     sender: 'user' | 'bot',
     userId: string,
   ): Promise<ChatHistory> {
-    const chatHistory = await this.chatHistoryModel.findOne({
-      sessionId,
-      userId: new Types.ObjectId(userId),
-    });
+    try {
+      // Convert userId to ObjectId if it's a valid ObjectId string
+      let userObjectId: Types.ObjectId;
+      try {
+        userObjectId = new Types.ObjectId(userId);
+      } catch (error) {
+        throw new Error(`Invalid userId format: ${userId}`);
+      }
 
-    if (!chatHistory) {
-      throw new NotFoundException('Chat session not found');
+      const chatHistory = await this.chatHistoryModel.findOne({
+        sessionId,
+        userId: userObjectId,
+      });
+
+      if (!chatHistory) {
+        throw new NotFoundException(`Chat session not found: sessionId=${sessionId}, userId=${userId}`);
+      }
+
+      const message: ChatMessage = {
+        messageId: uuidv4(),
+        text,
+        sender,
+        timestamp: new Date(),
+      };
+
+      chatHistory.messages.push(message);
+
+      // Auto-generate title from first user message
+      if (chatHistory.messages.length === 1 && sender === 'user') {
+        chatHistory.title = text.substring(0, 50) + (text.length > 50 ? '...' : '');
+      }
+
+      return chatHistory.save();
+    } catch (error) {
+      console.error('Error in addMessage:', error.message);
+      throw error;
     }
-
-    const message: ChatMessage = {
-      messageId: uuidv4(),
-      text,
-      sender,
-      timestamp: new Date(),
-    };
-
-    chatHistory.messages.push(message);
-
-    // Auto-generate title from first user message
-    if (chatHistory.messages.length === 1 && sender === 'user') {
-      chatHistory.title = text.substring(0, 50) + (text.length > 50 ? '...' : '');
-    }
-
-    return chatHistory.save();
   }
 
   async getChatHistory(userId: string, sessionId?: string): Promise<ChatHistory[]> {

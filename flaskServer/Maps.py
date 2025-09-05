@@ -88,7 +88,13 @@ def get_nearby_hospitals(lat, lon, radius=20000):  # 20km radius
     for element in data.get("elements", []):
         name = element.get("tags", {}).get("name", "Unknown Hospital")
         lat, lon = element["lat"], element["lon"]
-        hospitals.append({"name": name, "lat": lat, "lon": lon})
+
+        hospitals.append({
+            "name": name,
+            "lat": lat,
+            "lon": lon,
+            "maps_url": f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+        })
     
     return hospitals
 

@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { FaBell, FaUserCircle, FaChevronDown, FaSignOutAlt, FaCog } from 'react-icons/fa';
 import axios from 'axios';
 
-const PatientHeader: React.FC<{ patientName: string, setPatientName: (name: string) => void }> = ({ patientName, setPatientName }) => {
+const PatientHeader: React.FC = () => {
     const [isDropdownOpen, setIsDropdownOpen] = React.useState<boolean>(false);
+    const [patientName, setPatientName] = React.useState<string>('Patient');
     const navigate = useNavigate();
 
     React.useEffect(() => {
         // Mocking patient name, replace with actual API call
         setPatientName("John Doe"); 
-    }, [setPatientName]);
+    }, []);
 
     const handleLogout = async () => {
         try {
