@@ -218,14 +218,14 @@ def get_nearby_hospitals(lat, lon, radius=20000):  # 20km radius
             name = element.get("tags", {}).get("name", "Unknown Hospital")
             hospital_lat, hospital_lon = element["lat"], element["lon"]
             
-            # Calculate Google Maps direction URL
-            google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin={lat},{lon}&destination={hospital_lat},{hospital_lon}&travelmode=driving"
+            # Generate Google Maps URL as per Maps.py format
+            maps_url = f"https://www.google.com/maps/search/?api=1&query={hospital_lat},{hospital_lon}"
             
             hospitals.append({
                 "name": name, 
                 "lat": hospital_lat, 
                 "lon": hospital_lon,
-                "directions_url": google_maps_url
+                "maps_url": maps_url
             })
         
         return hospitals

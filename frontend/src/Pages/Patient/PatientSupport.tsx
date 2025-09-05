@@ -2,7 +2,35 @@ import React, { useEffect, useState } from "react";
 import Sidebar from "../../Components/Sidebar";
 import PatientHeader from "../../Components/PatientHeader";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+// Fix for default markers in react-leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Create custom icons
+const userIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [35, 51],
+  iconAnchor: [17, 51],
+  popupAnchor: [1, -34],
+  shadowSize: [51, 51]
+});
+
+const hospitalIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 interface Hospital {
     name: string;
@@ -28,7 +56,7 @@ const PatientSupport: React.FC = () => {
                 const { latitude, longitude } = position.coords;
                 setUserLocation({ lat: latitude, lon: longitude });
 
-                fetch(`http://localhost:3000/api/ai/hospitals?lat=${latitude}&lon=${longitude}`)
+                fetch(`http://localhost:5000/api/hospitals?lat=${latitude}&lon=${longitude}`)
                     .then((response) => {
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
@@ -99,67 +127,197 @@ const PatientSupport: React.FC = () => {
                                     </p>
                                 </div>
                                 
-                                <MapContainer 
-                                    center={[userLocation.lat, userLocation.lon]} 
-                                    zoom={14} 
-                                    className="h-[500px] w-full rounded-xl overflow-hidden shadow-lg"
-                                >
+                                <div className="relative">
+                                    <MapContainer 
+                                        center={[userLocation.lat, userLocation.lon]} 
+                                        zoom={13} 
+                                        className="h-[500px] w-full rounded-xl overflow-hidden shadow-lg"
+                                    >
                                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                                     
-                                    {/* User Location Marker */}
-                                    <Marker position={[userLocation.lat, userLocation.lon]}>
+                                    {/* User Location Marker - Prominent */}
+                                    <Marker 
+                                        position={[userLocation.lat, userLocation.lon]} 
+                                        icon={userIcon}
+                                    >
                                         <Popup>
-                                            <div style={{ textAlign: 'center' }}>
-                                                <b>📍 Your Location</b><br />
-                                                <span style={{ color: '#059669', fontSize: '12px' }}>You are here</span>
+                                            <div style={{ textAlign: 'center', minWidth: '180px' }}>
+                                                <div style={{ 
+                                                    fontSize: '18px', 
+                                                    fontWeight: 'bold', 
+                                                    color: '#1E40AF',
+                                                    marginBottom: '8px' 
+                                                }}>
+                                                    📍 Your Location
+                                                </div>
+                                                <div style={{ 
+                                                    color: '#059669', 
+                                                    fontSize: '14px',
+                                                    fontWeight: '500'
+                                                }}>
+                                                    🎯 You are here
+                                                </div>
+                                                <div style={{ 
+                                                    fontSize: '12px',
+                                                    color: '#6B7280',
+                                                    marginTop: '4px'
+                                                }}>
+                                                    Lat: {userLocation.lat.toFixed(4)}, Lon: {userLocation.lon.toFixed(4)}
+                                                </div>
                                             </div>
                                         </Popup>
                                     </Marker>
 
                                     {/* Hospital Markers */}
                                     {hospitals.map((hospital, index) => (
-                                        <Marker key={index} position={[hospital.lat, hospital.lon]}>
+                                        <Marker 
+                                            key={index} 
+                                            position={[hospital.lat, hospital.lon]}
+                                            icon={hospitalIcon}
+                                        >
                                             <Popup>
-                                                <div style={{ minWidth: '200px', textAlign: 'center' }}>
+                                                <div style={{ minWidth: '220px', textAlign: 'center' }}>
                                                     <div style={{ 
                                                         fontSize: '16px', 
                                                         fontWeight: 'bold', 
-                                                        color: '#1F2937',
-                                                        marginBottom: '8px' 
+                                                        color: '#DC2626',
+                                                        marginBottom: '10px',
+                                                        borderBottom: '1px solid #E5E7EB',
+                                                        paddingBottom: '8px'
                                                     }}>
                                                         🏥 {hospital.name}
                                                     </div>
-                                                    <a 
-                                                        href={hospital.maps_url} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer"
-                                                        style={{
-                                                            display: 'inline-block',
-                                                            backgroundColor: '#10B981',
-                                                            color: 'white',
-                                                            padding: '8px 16px',
-                                                            borderRadius: '8px',
-                                                            textDecoration: 'none',
-                                                            fontWeight: '500',
-                                                            fontSize: '14px',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                        onMouseOver={(e) => {
-                                                            e.currentTarget.style.backgroundColor = '#059669';
-                                                            e.currentTarget.style.transform = 'scale(1.05)';
-                                                        }}
-                                                        onMouseOut={(e) => {
-                                                            e.currentTarget.style.backgroundColor = '#10B981';
-                                                            e.currentTarget.style.transform = 'scale(1)';
-                                                        }}
-                                                    >
-                                                        📍 View on Google Maps
-                                                    </a>
+                                                    
+                                                    <div style={{ 
+                                                        fontSize: '12px',
+                                                        color: '#6B7280',
+                                                        marginBottom: '12px'
+                                                    }}>
+                                                        📍 {hospital.lat.toFixed(4)}, {hospital.lon.toFixed(4)}
+                                                    </div>
+                                                    
+                                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                                        <a 
+                                                            href={hospital.maps_url} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            onClick={(e) => {
+                                                                // Ensure the link works by logging and testing
+                                                                console.log('Opening Google Maps:', hospital.maps_url);
+                                                                // Add a small delay to ensure popup doesn't interfere
+                                                                setTimeout(() => {
+                                                                    window.open(hospital.maps_url, '_blank', 'noopener,noreferrer');
+                                                                }, 100);
+                                                                e.preventDefault();
+                                                            }}
+                                                            style={{
+                                                                display: 'inline-block',
+                                                                backgroundColor: '#10B981',
+                                                                color: 'white',
+                                                                padding: '10px 16px',
+                                                                borderRadius: '8px',
+                                                                textDecoration: 'none',
+                                                                fontWeight: '600',
+                                                                fontSize: '13px',
+                                                                transition: 'all 0.2s',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                            }}
+                                                            onMouseOver={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#059669';
+                                                                e.currentTarget.style.transform = 'scale(1.05)';
+                                                                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                                                            }}
+                                                            onMouseOut={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#10B981';
+                                                                e.currentTarget.style.transform = 'scale(1)';
+                                                                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                                                            }}
+                                                        >
+                                                            🗺️ View on Google Maps
+                                                        </a>
+                                                        
+                                                        <a 
+                                                            href={`https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lon}&destination=${hospital.lat},${hospital.lon}&travelmode=driving`}
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            style={{
+                                                                display: 'inline-block',
+                                                                backgroundColor: '#3B82F6',
+                                                                color: 'white',
+                                                                padding: '10px 16px',
+                                                                borderRadius: '8px',
+                                                                textDecoration: 'none',
+                                                                fontWeight: '600',
+                                                                fontSize: '13px',
+                                                                transition: 'all 0.2s',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                            }}
+                                                            onMouseOver={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#2563EB';
+                                                                e.currentTarget.style.transform = 'scale(1.05)';
+                                                                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                                                            }}
+                                                            onMouseOut={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#3B82F6';
+                                                                e.currentTarget.style.transform = 'scale(1)';
+                                                                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                                                            }}
+                                                        >
+                                                            🚗 Get Directions
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </Popup>
                                         </Marker>
                                     ))}
-                                </MapContainer>
+                                    </MapContainer>
+                                    
+                                    {/* Map Legend */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '10px',
+                                        right: '10px',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                        padding: '12px',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                        fontSize: '13px',
+                                        fontWeight: '500',
+                                        zIndex: 1000
+                                    }}>
+                                        <div style={{ marginBottom: '8px', fontWeight: '600', color: '#1F2937' }}>
+                                            📍 Map Legend
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+                                            <div style={{
+                                                width: '16px',
+                                                height: '16px',
+                                                backgroundColor: '#3B82F6',
+                                                borderRadius: '50%',
+                                                marginRight: '8px',
+                                                border: '2px solid white',
+                                                boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                                            }}></div>
+                                            <span style={{ color: '#374151' }}>Your Location</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <div style={{
+                                                width: '16px',
+                                                height: '16px',
+                                                backgroundColor: '#DC2626',
+                                                borderRadius: '50%',
+                                                marginRight: '8px',
+                                                border: '2px solid white',
+                                                boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                                            }}></div>
+                                            <span style={{ color: '#374151' }}>Hospitals</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
