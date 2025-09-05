@@ -136,19 +136,32 @@ const ConsultationHistory: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-yellow-50 to-cyan-50 relative poppins">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Sidebar />
-      <main className="relative z-10 flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 p-8 overflow-y-auto">
         <PatientHeader />
         
         <div className="mt-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-800">Consultation History</h1>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Consultation History</h1>
+              <p className="text-gray-600">Review your past medical consultations and treatment records</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-50 transition-colors">
+                <FiFilter className="w-4 h-4" />
+                Filter
+              </button>
+              <button className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200">
+                <FiFileText className="w-4 h-4" />
+                Export Reports
+              </button>
+            </div>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-gradient-to-r from-yellow-100 to-amber-100 p-6 rounded-xl border border-yellow-200">
+            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-amber-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">Total</h3>

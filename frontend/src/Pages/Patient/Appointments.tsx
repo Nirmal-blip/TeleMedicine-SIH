@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import Sidebar from '../../Components/Sidebar'
 import PatientHeader from '../../Components/PatientHeader'
-import { FiCalendar, FiClock, FiUser, FiVideo, FiMapPin, FiFilter, FiPlus } from 'react-icons/fi'
+import { FiCalendar, FiClock, FiUser, FiVideo, FiMapPin, FiFilter, FiPlus, FiCheckCircle, FiX, FiPhone } from 'react-icons/fi'
 
 interface Appointment {
   id: number;
@@ -87,89 +87,101 @@ const Appointments: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-yellow-50 to-cyan-50 relative poppins">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Sidebar />
-      <main className="relative z-10 flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 p-8 overflow-y-auto">
         <PatientHeader />
         
         <div className="mt-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-800">My Appointments</h1>
-            <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:from-emerald-600 hover:to-teal-600 hover:shadow-lg flex items-center gap-2">
-              <FiPlus />
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">My Appointments</h1>
+              <p className="text-gray-600">Manage your upcoming and past medical appointments</p>
+            </div>
+            <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3.5 rounded-2xl font-medium transition-all duration-300 hover:from-emerald-600 hover:to-teal-600 hover:shadow-lg hover:scale-105 flex items-center gap-2 shadow-emerald-200">
+              <FiPlus className="w-5 h-5" />
               Book New Appointment
             </button>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gradient-to-r from-yellow-100 to-amber-100 p-6 rounded-xl border border-yellow-200">
+            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-amber-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Upcoming</h3>
-                  <p className="text-3xl font-bold text-amber-600">
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Upcoming</h3>
+                  <p className="text-3xl font-bold text-amber-600 group-hover:scale-110 transition-transform duration-300">
                     {appointments.filter(a => a.status === 'Upcoming').length}
                   </p>
                 </div>
-                <FiCalendar className="w-8 h-8 text-amber-600" />
+                <div className="w-14 h-14 bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl flex items-center justify-center">
+                  <FiCalendar className="w-7 h-7 text-white" />
+                </div>
               </div>
             </div>
             
-            <div className="bg-gradient-to-r from-emerald-100 to-green-100 p-6 rounded-xl border border-emerald-200">
+            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-emerald-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Completed</h3>
-                  <p className="text-3xl font-bold text-emerald-600">
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Completed</h3>
+                  <p className="text-3xl font-bold text-emerald-600 group-hover:scale-110 transition-transform duration-300">
                     {appointments.filter(a => a.status === 'Completed').length}
                   </p>
                 </div>
-                <FiClock className="w-8 h-8 text-emerald-600" />
+                <div className="w-14 h-14 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center">
+                  <FiCheckCircle className="w-7 h-7 text-white" />
+                </div>
               </div>
             </div>
             
-            <div className="bg-gradient-to-r from-cyan-100 to-blue-100 p-6 rounded-xl border border-cyan-200">
+            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Total</h3>
-                  <p className="text-3xl font-bold text-cyan-600">{appointments.length}</p>
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Total</h3>
+                  <p className="text-3xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300">{appointments.length}</p>
                 </div>
-                <FiUser className="w-8 h-8 text-cyan-600" />
+                <div className="w-14 h-14 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl flex items-center justify-center">
+                  <FiUser className="w-7 h-7 text-white" />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg mb-6 border border-gray-100">
-            <div className="flex gap-4 mb-4">
+          <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl shadow-lg mb-8 border border-gray-200/50">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setActiveTab('upcoming')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 ${
                   activeTab === 'upcoming'
-                    ? 'bg-emerald-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
                 }`}
               >
-                Upcoming
+                <FiClock className="w-4 h-4" />
+                Upcoming ({appointments.filter(a => a.status === 'Upcoming').length})
               </button>
               <button
                 onClick={() => setActiveTab('completed')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 ${
                   activeTab === 'completed'
-                    ? 'bg-emerald-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
                 }`}
               >
-                Completed
+                <FiCheckCircle className="w-4 h-4" />
+                Completed ({appointments.filter(a => a.status === 'Completed').length})
               </button>
               <button
                 onClick={() => setActiveTab('all')}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 ${
                   activeTab === 'all'
-                    ? 'bg-emerald-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
                 }`}
               >
-                All
+                <FiCalendar className="w-4 h-4" />
+                All ({appointments.length})
               </button>
             </div>
           </div>

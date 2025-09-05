@@ -130,39 +130,46 @@ const DoctorsList: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-yellow-50 to-cyan-50 relative poppins">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Sidebar />
-      <main className="relative z-10 flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 p-8 overflow-y-auto">
         <PatientHeader />
         
-        <div className="mt-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Find Your Doctor</h1>
-          
+        <div className="mt-6">          
           {/* Search and Filter Section */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg mb-8 border border-gray-100">
-            <div className="flex flex-col md:flex-row gap-4">
+          <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl shadow-lg mb-8 border border-gray-200/50">
+            <div className="flex flex-col lg:flex-row gap-4">
               {/* Search Bar */}
               <div className="flex-1 relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search doctors by name or specialization..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900 placeholder-gray-500"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               
               {/* Specialization Filter */}
-              <select
-                className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-                value={selectedSpecialization}
-                onChange={(e) => setSelectedSpecialization(e.target.value)}
-              >
-                {specializations.map(spec => (
-                  <option key={spec} value={spec}>{spec}</option>
-                ))}
-              </select>
+              <div className="lg:w-64">
+                <select
+                  className="w-full px-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900"
+                  value={selectedSpecialization}
+                  onChange={(e) => setSelectedSpecialization(e.target.value)}
+                >
+                  {specializations.map(spec => (
+                    <option key={spec} value={spec}>{spec}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Results count */}
+              <div className="flex items-center px-4 py-2 bg-emerald-50 rounded-2xl">
+                <span className="text-sm text-emerald-700 font-medium">
+                  {filteredDoctors.length} doctor{filteredDoctors.length !== 1 ? 's' : ''} found
+                </span>
+              </div>
             </div>
           </div>
 
