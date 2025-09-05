@@ -1,0 +1,333 @@
+/* Import modern fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
+
+/* Import Tailwind's layers */
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Enhanced Color Palette */
+    --color-primary-green: #059669;
+    --color-primary-dark: #047857;
+    --color-light-green: #d1fae5;
+    --color-secondary-green: #ecfdf5;
+    --color-accent-teal: #0d9488;
+    --color-accent-emerald: #10b981;
+    --color-dark-text: #111827;
+    --color-gray-text: #6b7280;
+    --color-light-gray: #f9fafb;
+    
+    /* Modern gradients */
+    --gradient-primary: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+    --gradient-secondary: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --gradient-accent: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    
+    /* Typography */
+    --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-secondary: 'Poppins', sans-serif;
+    
+    /* Spacing & Sizing */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 32px;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    @apply bg-white text-gray-900 font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  /* Enhanced animations */
+  @keyframes float {
+    0%, 100% { 
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% { 
+      transform: translateY(-10px) rotate(1deg);
+    }
+  }
+  
+  @keyframes float-delayed {
+    0%, 100% { 
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% { 
+      transform: translateY(-15px) rotate(-1deg);
+    }
+  }
+  
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+  
+  @keyframes slideInUp {
+    from {
+      transform: translateY(100px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideInDown {
+    from {
+      transform: translateY(-100px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes fadeInScale {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200px 0;
+    }
+    100% {
+      background-position: calc(200px + 100%) 0;
+    }
+  }
+  
+  /* Animation classes */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-float-delayed {
+    animation: float-delayed 6s ease-in-out infinite 2s;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
+  }
+  
+  .animate-slide-up {
+    animation: slideInUp 0.8s ease-out;
+  }
+  
+  .animate-slide-down {
+    animation: slideInDown 0.8s ease-out;
+  }
+  
+  .animate-fade-scale {
+    animation: fadeInScale 0.6s ease-out;
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%
+    );
+    background-size: 200px 100%;
+  }
+
+  /* Custom gradient utilities */
+  .gradient-text-primary {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600;
+  }
+  
+  .gradient-text-secondary {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600;
+  }
+  
+  .gradient-bg-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-bg-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-bg-accent {
+    background: var(--gradient-accent);
+  }
+
+  /* Glassmorphism effect */
+  .glass {
+    @apply backdrop-blur-lg bg-white/10 border border-white/20;
+  }
+  
+  .glass-dark {
+    @apply backdrop-blur-lg bg-black/10 border border-white/10;
+  }
+
+  /* Modern button styles */
+  .btn-primary {
+    @apply px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-emerald-500/50;
+  }
+  
+  .btn-secondary {
+    @apply px-8 py-4 bg-white text-emerald-600 font-semibold rounded-xl border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-emerald-500/30;
+  }
+  
+  .btn-ghost {
+    @apply px-6 py-3 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100;
+  }
+  
+  .card-hover {
+    @apply transform hover:-translate-y-2 hover:shadow-2xl;
+  }
+
+  /* Section spacing */
+  .section-padding {
+    @apply py-20 lg:py-32;
+  }
+  
+  .container-padding {
+    @apply container mx-auto px-8 lg:px-12 xl:px-16;
+  }
+  
+  /* Enhanced horizontal padding for different screen sizes */
+  .section-padding-x {
+    @apply px-8 sm:px-12 md:px-16 lg:px-20 xl:px-24;
+  }
+  
+  /* Enhanced responsive spacing utilities */
+  .gap-responsive {
+    @apply gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16;
+  }
+  
+  .gap-responsive-lg {
+    @apply gap-8 sm:gap-10 md:gap-12 lg:gap-16 xl:gap-20;
+  }
+  
+  .margin-responsive {
+    @apply mx-6 sm:mx-8 md:mx-12 lg:mx-16 xl:mx-20;
+  }
+
+  /* Enhanced container max-widths for better content layout */
+  .content-container {
+    @apply max-w-7xl mx-auto px-8 sm:px-12 md:px-16 lg:px-20 xl:px-24;
+  }
+  
+  .text-container {
+    @apply max-w-4xl mx-auto px-6 sm:px-8 md:px-12;
+  }
+
+  /* Improved focus states */
+  .focus-enhanced {
+    @apply focus:outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500;
+  }
+  
+  /* Enhanced hover states */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+  
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-500/20;
+  }
+  
+  /* Enhanced scrollbar styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #047857 #e5e7eb;
+  }
+  
+  /* Webkit scrollbar styling for Chromium browsers */
+  ::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #e5e7eb;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #047857 0%, #059669 100%);
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  
+  ::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+  }
+  
+  ::-webkit-scrollbar-corner {
+    background: #e5e7eb;
+  }
+  
+  /* Landing page specific padding utilities */
+  .landing-padding {
+    @apply px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 2xl:px-24;
+  }
+  
+  .landing-padding-lg {
+    @apply px-8 sm:px-12 md:px-16 lg:px-20 xl:px-24 2xl:px-32;
+  }
+  
+  /* Enhanced section spacing for landing page */
+  .landing-section {
+    @apply py-16 sm:py-20 md:py-24 lg:py-32;
+  }
+  
+  /* Improved content max-widths for better readability */
+  .landing-content {
+    @apply max-w-7xl mx-auto;
+  }
+  
+  .landing-text-content {
+    @apply max-w-4xl mx-auto;
+  }
+}

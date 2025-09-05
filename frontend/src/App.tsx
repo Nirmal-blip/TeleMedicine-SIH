@@ -1,6 +1,6 @@
 import React from 'react'
 import { Route, Routes } from 'react-router-dom'
-import Hero from './Pages/Hero'
+import LandingPage from './Pages/LandingPage'
 
 import Appointments from "./Pages/Patient/Appointments"
 import ConsultationHistory from "./Pages/Patient/ConsultationHistory"
@@ -19,7 +19,7 @@ const App: React.FC = () => {
   return (
     <>
         <Routes>
-            <Route path='/' element={<Hero />}></Route>
+            <Route path='/' element={<LandingPage />}></Route>
 
             <Route path='/appointments' element={<Appointments />}></Route>
             <Route path='/consultation-history' element={<ConsultationHistory />}></Route>
