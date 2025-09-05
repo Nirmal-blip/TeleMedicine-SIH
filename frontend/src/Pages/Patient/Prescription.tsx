@@ -156,9 +156,9 @@ const Prescription: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <Sidebar />
-      <main className="flex-1 p-8 lg:p-12 overflow-y-auto">
+      <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
         <PatientHeader />
 
         {/* Header Section */}
