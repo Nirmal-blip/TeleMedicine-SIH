@@ -5,6 +5,9 @@ export type PatientDocument = Patient & Document;
 
 @Schema({ timestamps: true })
 export class Patient {
+  @Prop({ required: true, unique: true })
+  patientId: string;
+
   @Prop({ required: true })
   fullname: string;
 
@@ -64,7 +67,8 @@ export class Patient {
 export const PatientSchema = SchemaFactory.createForClass(Patient);
 
 // Create indexes for better performance
-// Email unique index is already created by @Prop({ unique: true })
+// Email and patientId unique indexes are already created by @Prop({ unique: true })
+// PatientSchema.index({ patientId: 1 }); // Removed duplicate index - already defined in @Prop
 PatientSchema.index({ phone: 1 });
 PatientSchema.index({ isActive: 1 });
 PatientSchema.index({ location: 1 });

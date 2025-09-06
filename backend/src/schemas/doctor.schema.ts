@@ -5,6 +5,9 @@ export type DoctorDocument = Doctor & Document;
 
 @Schema({ timestamps: true })
 export class Doctor {
+  @Prop({ required: true, unique: true })
+  doctorId: string;
+
   @Prop({ required: true })
   fullname: string;
 
@@ -80,7 +83,7 @@ export class Doctor {
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);
 
 // Create indexes for better performance
-// Email and medicalRegNo unique indexes are already created by @Prop({ unique: true })
+// Email, doctorId and medicalRegNo unique indexes are already created by @Prop({ unique: true })
 DoctorSchema.index({ specialization: 1 });
 DoctorSchema.index({ location: 1 });
 DoctorSchema.index({ isActive: 1 });

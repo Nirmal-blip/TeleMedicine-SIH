@@ -23,6 +23,11 @@ export class DoctorsController {
     return this.doctorsService.getAvailableDoctors();
   }
 
+  @Get('doctor-id/:doctorId')
+  findByDoctorId(@Param('doctorId') doctorId: string) {
+    return this.doctorsService.findByDoctorId(doctorId);
+  }
+
   @Get('me')
   getCurrentDoctor(@Request() req) {
     return this.doctorsService.findOne(req.user.userId);

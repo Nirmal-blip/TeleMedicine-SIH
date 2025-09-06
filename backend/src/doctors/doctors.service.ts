@@ -9,6 +9,27 @@ export class DoctorsService {
     @InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>,
   ) {}
 
+  async generateDoctorId(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+    const prefix = `DOC${currentYear}`;
+    
+    // Find the latest doctor with current year prefix
+    const latestDoctor = await this.doctorModel
+      .findOne({ doctorId: { $regex: `^${prefix}` } })
+      .sort({ doctorId: -1 })
+      .exec();
+    
+    let nextNumber = 1;
+    if (latestDoctor && latestDoctor.doctorId) {
+      const lastNumber = parseInt(latestDoctor.doctorId.substring(prefix.length));
+      nextNumber = lastNumber + 1;
+    }
+    
+    // Pad with zeros to make it 6 digits
+    const paddedNumber = nextNumber.toString().padStart(6, '0');
+    return `${prefix}${paddedNumber}`;
+  }
+
   async findAll(): Promise<Doctor[]> {
     return this.doctorModel.find().select('-password').exec();
   }
@@ -23,6 +44,14 @@ export class DoctorsService {
 
   async findByEmail(email: string): Promise<Doctor> {
     const doctor = await this.doctorModel.findOne({ email }).select('-password').exec();
+    if (!doctor) {
+      throw new NotFoundException('Doctor not found');
+    }
+    return doctor;
+  }
+
+  async findByDoctorId(doctorId: string): Promise<Doctor> {
+    const doctor = await this.doctorModel.findOne({ doctorId }).select('-password').exec();
     if (!doctor) {
       throw new NotFoundException('Doctor not found');
     }

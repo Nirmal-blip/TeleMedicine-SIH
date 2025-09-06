@@ -3,16 +3,35 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Appointment, AppointmentDocument } from '../schemas/appointment.schema';
 import { CreateAppointmentDto, UpdateAppointmentDto } from '../dto/appointment.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     @InjectModel(Appointment.name) private appointmentModel: Model<AppointmentDocument>,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
     const appointment = new this.appointmentModel(createAppointmentDto);
-    return appointment.save();
+    const savedAppointment = await appointment.save();
+    
+    // Create notifications for both doctor and patient
+    try {
+      await this.notificationsService.createAppointmentNotification({
+        appointmentId: savedAppointment._id.toString(),
+        doctorId: savedAppointment.doctor.toString(),
+        patientId: savedAppointment.patient.toString(),
+        doctorName: 'Dr. Smith', // You might want to populate this from the doctor data
+        patientName: 'Patient', // You might want to populate this from the patient data
+        appointmentDate: savedAppointment.appointmentDate,
+        type: 'appointment_booked'
+      });
+    } catch (error) {
+      console.error('Failed to create appointment notifications:', error);
+    }
+    
+    return savedAppointment;
   }
 
   async findAll(): Promise<Appointment[]> {
