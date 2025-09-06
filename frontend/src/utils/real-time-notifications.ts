@@ -15,13 +15,14 @@ export class RealTimeNotificationService {
 
   private connect() {
     try {
-      // Connect to the notification namespace
-      this.socket = io('http://localhost:3000/video-consultation', {
+      // Connect to the video-call namespace
+      this.socket = io('http://localhost:3000/video-call', {
         query: {
           userId: this.userId,
           userType: this.userType,
         },
         withCredentials: true,
+        transports: ['websocket', 'polling'],
       });
 
       this.socket.on('connect', () => {
@@ -34,14 +35,15 @@ export class RealTimeNotificationService {
         this.isConnected = false;
       });
 
-      // Listen for incoming call notifications
-      this.socket.on('incoming-call', (data: {
+      // Listen for incoming video call notifications
+      this.socket.on('incoming-video-call', (data: {
         callId: string;
-        appointmentId: string;
         doctorId: string;
         doctorName: string;
         patientId: string;
         patientName: string;
+        specialization: string;
+        requestedAt?: string;
       }) => {
         console.log('Incoming call notification:', data);
         
@@ -52,7 +54,6 @@ export class RealTimeNotificationService {
             ? `Dr. ${data.doctorName} is calling you for video consultation`
             : `Patient ${data.patientName} is requesting video consultation`,
           callId: data.callId,
-          appointmentId: data.appointmentId,
           doctorId: data.doctorId,
           patientId: data.patientId,
           doctorName: data.doctorName,
@@ -66,10 +67,62 @@ export class RealTimeNotificationService {
         );
       });
 
-      // Listen for call started notifications
+      // Listen for call accepted notifications
+      this.socket.on('call-accepted', (data: {
+        callId: string;
+        doctorId: string;
+        doctorName: string;
+        message: string;
+        videoCallUrl: string;
+      }) => {
+        console.log('Call accepted notification:', data);
+        
+        const notificationData: NotificationData = {
+          type: 'video-call-accepted',
+          title: 'Call Accepted',
+          message: data.message,
+          callId: data.callId,
+          doctorId: data.doctorId,
+          doctorName: data.doctorName,
+        };
+
+        NotificationManager.showNotification(notificationData);
+        NotificationManager.showBrowserNotification(
+          notificationData.title,
+          notificationData.message
+        );
+      });
+
+      // Listen for call rejected notifications
+      this.socket.on('call-rejected', (data: {
+        callId: string;
+        doctorId: string;
+        doctorName: string;
+        reason: string;
+        message: string;
+      }) => {
+        console.log('Call rejected notification:', data);
+        
+        const notificationData: NotificationData = {
+          type: 'video-call-rejected',
+          title: 'Call Rejected',
+          message: data.reason,
+          callId: data.callId,
+          doctorId: data.doctorId,
+          doctorName: data.doctorName,
+        };
+
+        NotificationManager.showNotification(notificationData);
+        NotificationManager.showBrowserNotification(
+          notificationData.title,
+          notificationData.message
+        );
+      });
+
+      // Listen for call started notifications (kept for backward compatibility)
       this.socket.on('call-started', (data: {
         callId: string;
-        appointmentId: string;
+        appointmentId?: string;
         doctorName?: string;
         patientName?: string;
       }) => {
@@ -153,33 +206,51 @@ export class RealTimeNotificationService {
     }
   }
 
-  // Method to notify about video call requests
-  public requestVideoCall(doctorId: string, patientId: string, appointmentId: string) {
+  // Method to request a video call
+  public requestVideoCall(data: {
+    doctorId: string;
+    doctorName: string;
+    patientId: string;
+    patientName: string;
+    specialization: string;
+  }) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('start-call', {
-        appointmentId,
-        patientId,
-        doctorId,
-      });
+      this.socket.emit('request-video-call', data);
     }
   }
 
-  // Method to join a video call
-  public joinVideoCall(callId: string, appointmentId?: string) {
+  // Method to accept a video call (for doctors)
+  public acceptVideoCall(callId: string) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('join-call', {
-        callId,
-        appointmentId,
-      });
+      this.socket.emit('accept-video-call', { callId });
+    }
+  }
+
+  // Method to reject a video call (for doctors)
+  public rejectVideoCall(callId: string, reason?: string) {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('reject-video-call', { callId, reason });
+    }
+  }
+
+  // Method to join a video call room
+  public joinVideoCall(callId: string) {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('join-video-room', { callId });
+    }
+  }
+
+  // Method to leave a video call room
+  public leaveVideoCall(callId: string) {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('leave-video-room', { callId });
     }
   }
 
   // Method to end a video call
   public endVideoCall(callId: string) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('leave-call', {
-        callId,
-      });
+      this.socket.emit('end-video-call', { callId });
     }
   }
 

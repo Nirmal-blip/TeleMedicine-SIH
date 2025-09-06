@@ -94,9 +94,9 @@ const Notifications: React.FC = () => {
   };
 
   const setupNotificationListeners = (service: any) => {
-    // Listen for incoming calls
-    service.on('incoming-call', (data: any) => {
-      console.log('Incoming call notification:', data);
+    // Listen for incoming video calls
+    service.on('incoming-video-call', (data: any) => {
+      console.log('Incoming video call notification:', data);
       setIncomingCall(data);
       // Refresh notifications to include the new video call request
       fetchNotifications();
@@ -127,12 +127,8 @@ const Notifications: React.FC = () => {
   const acceptCall = () => {
     if (!incomingCall || !notificationService) return;
     
-    // Emit accept call event
-    notificationService.emit('doctor-accept-call', {
-      callId: incomingCall.callId,
-      doctorId: incomingCall.doctorId,
-      patientId: incomingCall.patientId
-    });
+    // Accept the video call using the service
+    notificationService.acceptVideoCall(incomingCall.callId);
     
     // Navigate to video consultation
     navigate('/doctor/video-consultation', {
@@ -150,13 +146,8 @@ const Notifications: React.FC = () => {
   const rejectCall = () => {
     if (!incomingCall || !notificationService) return;
     
-    // Emit reject call event
-    notificationService.emit('doctor-reject-call', {
-      callId: incomingCall.callId,
-      doctorId: incomingCall.doctorId,
-      patientId: incomingCall.patientId,
-      reason: 'Doctor is not available'
-    });
+    // Reject the video call using the service
+    notificationService.rejectVideoCall(incomingCall.callId, 'Doctor is not available');
     
     setIncomingCall(null);
   };
@@ -366,14 +357,23 @@ const Notifications: React.FC = () => {
 
   const handleVideoCallAction = (notification: Notification) => {
     if (notification.type === 'video_call_request' && notification.metadata?.callId) {
-      // Set incoming call data from notification
-      setIncomingCall({
-        callId: notification.metadata.callId,
-        patientName: notification.metadata.patientName,
-        specialization: notification.metadata.specialization,
-        patientId: notification.sender?._id,
-        doctorId: '', // This would be current user
-      });
+      // Accept the video call directly
+      if (notificationService) {
+        notificationService.acceptVideoCall(notification.metadata.callId);
+        
+        // Navigate to video consultation
+        navigate('/doctor/video-consultation', {
+          state: {
+            callId: notification.metadata.callId,
+            patientId: notification.sender?._id,
+            patientName: notification.metadata.patientName,
+            isIncomingCall: true
+          }
+        });
+        
+        // Mark notification as read
+        markAsRead(notification._id);
+      }
     } else if (notification.actionUrl) {
       navigate(notification.actionUrl);
     }
@@ -382,13 +382,8 @@ const Notifications: React.FC = () => {
   const rejectCallFromNotification = (notification: Notification) => {
     if (!notification.metadata?.callId || !notificationService) return;
     
-    // Emit reject call event
-    notificationService.emit('doctor-reject-call', {
-      callId: notification.metadata.callId,
-      doctorId: '', // Current doctor ID
-      patientId: notification.sender?._id,
-      reason: 'Doctor is not available'
-    });
+    // Reject the video call using the service
+    notificationService.rejectVideoCall(notification.metadata.callId, 'Doctor is not available');
     
     // Mark notification as read
     markAsRead(notification._id);

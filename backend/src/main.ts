@@ -8,8 +8,9 @@ import * as cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Configure Socket.IO adapter with CORS
-  app.useWebSocketAdapter(new IoAdapter(app));
+  // Configure Socket.IO adapter with proper CORS settings
+  const ioAdapter = new IoAdapter(app);
+  app.useWebSocketAdapter(ioAdapter);
 
   // Enable CORS
   app.enableCors({

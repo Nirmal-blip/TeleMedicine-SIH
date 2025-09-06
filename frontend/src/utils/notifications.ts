@@ -1,7 +1,7 @@
 import { toast } from 'react-toastify';
 
 export interface NotificationData {
-  type: 'video-call-request' | 'video-call-started' | 'video-call-ended' | 'appointment-booked';
+  type: 'video-call-request' | 'video-call-started' | 'video-call-ended' | 'video-call-accepted' | 'video-call-rejected' | 'appointment-booked';
   title: string;
   message: string;
   doctorId?: string;
@@ -61,6 +61,31 @@ export class NotificationManager {
           position: "top-right",
           autoClose: 5000,
         });
+        break;
+
+      case 'video-call-accepted':
+        toast.success(`✅ ${title}: ${message}`, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          onClick: () => this.handleJoinCall(data),
+        });
+        this.showBrowserNotification(`✅ ${title}`, `${message}. Click to join!`);
+        break;
+
+      case 'video-call-rejected':
+        toast.error(`❌ ${title}: ${message}`, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        this.showBrowserNotification(`❌ ${title}`, message);
         break;
         
       default:
