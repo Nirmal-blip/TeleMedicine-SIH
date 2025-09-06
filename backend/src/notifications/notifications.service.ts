@@ -86,7 +86,7 @@ export class NotificationsService {
     });
   }
 
-  async deleteAllNotifications(userId: string, userType: 'Patient' | 'Doctor') {
+  async deleteAllNotifications(userId: string, userType: 'Patient' | 'Doctor'): Promise<any> {
     return await this.notificationModel.deleteMany({
       recipient: userId,
       recipientType: userType

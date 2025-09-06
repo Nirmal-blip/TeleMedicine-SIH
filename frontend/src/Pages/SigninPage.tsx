@@ -4,32 +4,78 @@ import { useNavigate, Link } from "react-router-dom";
 import { toast } from 'react-toastify';
 import GrpImg from '../assets/AuthImg.png';
 import { useAuth } from '../contexts/AuthContext';
+import OtpVerification from '../Components/OtpVerification';
 
 const SigninPage: React.FC = () => {
     const [userType, setUserType] = useState<string>("patient");
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
+    const [showOtpVerification, setShowOtpVerification] = useState(false);
+    const [isSendingOtp, setIsSendingOtp] = useState(false);
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, loginWithOTP, sendOTP } = useAuth();
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
+        if (!email || !password) {
+            toast.error('Please fill in all fields');
+            return;
+        }
+
+        setIsSendingOtp(true);
         try {
-            await login(email, password, userType as 'patient' | 'doctor');
+            await sendOTP(email, 'signin');
+            toast.success('OTP sent to your email address');
+            setShowOtpVerification(true);
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to send OTP');
+        } finally {
+            setIsSendingOtp(false);
+        }
+    };
+
+    // Handle OTP verification success
+    const handleOtpSuccess = async (verifiedOtp: string) => {
+        try {
+            await loginWithOTP(email, password, userType as 'patient' | 'doctor', verifiedOtp);
             toast.success(`Login successful as ${userType}!`, {
                 position: "top-right",
                 autoClose: 3000,
             });
             navigate(userType === "patient" ? "/patient-dashboard" : "/doctor-dashboard");
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.error || "Invalid email or password. Please try again.";
-            toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 5000,
-            });
+        } catch (error: any) {
+            toast.error(error.message || 'Login failed');
         }
     };
+
+    // Handle OTP resend
+    const handleOtpResend = async () => {
+        try {
+            await sendOTP(email, 'signin');
+            toast.success('OTP resent successfully');
+        } catch (error: any) {
+            throw new Error(error.message || 'Failed to resend OTP');
+        }
+    };
+
+    // Handle back from OTP verification
+    const handleBackFromOtp = () => {
+        setShowOtpVerification(false);
+    };
+
+    // Show OTP verification component
+    if (showOtpVerification) {
+        return (
+            <OtpVerification
+                email={email}
+                purpose="signin"
+                onSuccess={handleOtpSuccess}
+                onBack={handleBackFromOtp}
+                onResend={handleOtpResend}
+            />
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -148,10 +194,20 @@ const SigninPage: React.FC = () => {
                             {/* Submit Button */}
                             <button
                                 type="submit"
-                                className="w-full group inline-flex items-center justify-center px-6 py-3 bg-emerald-600 text-white font-semibold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors duration-300"
+                                disabled={isSendingOtp}
+                                className="w-full group inline-flex items-center justify-center px-6 py-3 bg-emerald-600 disabled:bg-gray-300 text-white font-semibold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors duration-300"
                             >
-                                <span>{userType === "patient" ? "Sign in as Patient" : "Sign in as Doctor"}</span>
-                                <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                                {isSendingOtp ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                                        Sending OTP...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>{userType === "patient" ? "Sign in as Patient" : "Sign in as Doctor"}</span>
+                                        <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                                    </>
+                                )}
                             </button>
 
                             {/* Register Link */}

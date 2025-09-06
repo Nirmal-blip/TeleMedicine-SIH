@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { Patient, PatientSchema } from '../schemas/patient.schema';
 import { Doctor, DoctorSchema } from '../schemas/doctor.schema';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { Doctor, DoctorSchema } from '../schemas/doctor.schema';
       { name: Patient.name, schema: PatientSchema },
       { name: Doctor.name, schema: DoctorSchema },
     ]),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

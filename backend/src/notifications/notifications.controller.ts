@@ -62,7 +62,7 @@ export class NotificationsController {
   }
 
   @Delete()
-  async deleteAllNotifications(@Request() req) {
+  async deleteAllNotifications(@Request() req): Promise<any> {
     const userId = req.user.userId;
     const userType = req.user.userType;
     return await this.notificationsService.deleteAllNotifications(userId, userType);

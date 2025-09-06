@@ -4,6 +4,8 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from 'react-toastify';
 import GrpImg from '../assets/AuthImg.png';
+import OtpVerification from '../Components/OtpVerification';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FormData {
     fullname: string;
@@ -30,8 +32,11 @@ const SignupPage: React.FC = () => {
         medicalRegNo: "",
         specialization: ""
     });
+    const [showOtpVerification, setShowOtpVerification] = useState(false);
+    const [isSendingOtp, setIsSendingOtp] = useState(false);
 
     const navigate = useNavigate();
+    const { registerWithOTP, sendOTP } = useAuth();
 
     // Handle Input Change
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -42,50 +47,72 @@ const SignupPage: React.FC = () => {
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        // Remove unnecessary fields based on user type
-        // Only include medicalRegNo and specialization for doctors
-        const payload = {
-            ...formData,
-            userType,
-            ...(userType === "doctor"
-                ? {}
-                : { medicalRegNo: undefined, specialization: undefined })
-        };
+        // Validate required fields
+        if (!formData.fullname || !formData.email || !formData.phone || !formData.password || 
+            !formData.dateOfBirth || !formData.gender || !formData.location) {
+            toast.error('Please fill in all required fields');
+            return;
+        }
 
+        // Validate doctor-specific fields
+        if (userType === 'doctor' && (!formData.medicalRegNo || !formData.specialization)) {
+            toast.error('Medical Registration Number and Specialization are required for doctors');
+            return;
+        }
+
+        setIsSendingOtp(true);
         try {
-            console.log('Sending registration payload:', payload);
-            const response = await axios.post("http://localhost:3000/api/auth/register", payload, {
-                headers: { "Content-Type": "application/json" },
-                withCredentials: true,
-            });
+            await sendOTP(formData.email, 'signup');
+            toast.success('OTP sent to your email address');
+            setShowOtpVerification(true);
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to send OTP');
+        } finally {
+            setIsSendingOtp(false);
+        }
+    };
 
-            toast.success(response.data.message || `Registration successful as ${userType}!`, {
+    // Handle OTP verification success
+    const handleOtpSuccess = async (verifiedOtp: string) => {
+        try {
+            await registerWithOTP({ ...formData, userType }, verifiedOtp);
+            toast.success('Registration successful! Welcome to TeleMedicine!', {
                 position: "top-right",
                 autoClose: 3000,
             });
-            
-            setFormData({
-                fullname: "",
-                email: "",
-                phone: "",
-                password: "",
-                dateOfBirth: "",
-                gender: "",
-                location: "",
-                medicalRegNo: "",
-                specialization: ""
-            });
-
             navigate(userType === "patient" ? "/patient-dashboard" : "/doctor-dashboard");
-        } catch (err: any) {
-            console.error('Registration error:', err.response?.data);
-            const errorMessage = err.response?.data?.message || err.response?.data?.error || "Registration failed!";
-            toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 5000,
-            });
+        } catch (error: any) {
+            toast.error(error.message || 'Registration failed');
         }
     };
+
+    // Handle OTP resend
+    const handleOtpResend = async () => {
+        try {
+            await sendOTP(formData.email, 'signup');
+            toast.success('OTP resent successfully');
+        } catch (error: any) {
+            throw new Error(error.message || 'Failed to resend OTP');
+        }
+    };
+
+    // Handle back from OTP verification
+    const handleBackFromOtp = () => {
+        setShowOtpVerification(false);
+    };
+
+    // Show OTP verification component
+    if (showOtpVerification) {
+        return (
+            <OtpVerification
+                email={formData.email}
+                purpose="signup"
+                onSuccess={handleOtpSuccess}
+                onBack={handleBackFromOtp}
+                onResend={handleOtpResend}
+            />
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -306,10 +333,20 @@ const SignupPage: React.FC = () => {
                             {/* Submit Button */}
                             <button
                                 type="submit"
-                                className="w-full group inline-flex items-center justify-center px-6 py-3 bg-emerald-600 text-white font-semibold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors duration-300"
+                                disabled={isSendingOtp}
+                                className="w-full group inline-flex items-center justify-center px-6 py-3 bg-emerald-600 disabled:bg-gray-300 text-white font-semibold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors duration-300"
                             >
-                                <span>{userType === "patient" ? "Register as Patient" : "Register as Doctor"}</span>
-                                <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                                {isSendingOtp ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                                        Sending OTP...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>{userType === "patient" ? "Register as Patient" : "Register as Doctor"}</span>
+                                        <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                                    </>
+                                )}
                             </button>
 
                             {/* Login Link */}
