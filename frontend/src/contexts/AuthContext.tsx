@@ -14,6 +14,9 @@ interface AuthContextType {
   isLoading: boolean;
   hasToken: boolean;
   login: (email: string, password: string, userType: 'patient' | 'doctor') => Promise<void>;
+  loginWithOTP: (email: string, password: string, userType: 'patient' | 'doctor', otp: string) => Promise<void>;
+  registerWithOTP: (formData: any, otp: string) => Promise<void>;
+  sendOTP: (email: string, purpose: 'signup' | 'signin') => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   refreshTokenState: () => void;
@@ -50,11 +53,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(null);
       }
     } catch (error) {
-      console.log('Not authenticated');
+      // This is normal for unauthenticated users - don't log as error
       setUser(null);
     } finally {
       setIsLoading(false);
       refreshTokenState(); // Refresh token state after auth check
+    }
+  };
+
+  const sendOTP = async (email: string, purpose: 'signup' | 'signin') => {
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/send-otp', {
+        email,
+        purpose,
+      });
+      
+      if (response.data.success) {
+        return response.data;
+      } else {
+        throw new Error(response.data.message);
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to send OTP';
+      throw new Error(errorMessage);
+    }
+  };
+
+  const registerWithOTP = async (formData: any, otp: string) => {
+    try {
+      console.log('Registering with OTP:', { email: formData.email, otp: otp.substring(0, 2) + '****' });
+      const response = await axios.post('http://localhost:3000/api/auth/register-with-otp', {
+        ...formData,
+        otp,
+      }, { withCredentials: true });
+
+      if (response.data.message) {
+        setUser({
+          userId: '', // Will be set after login
+          email: formData.email,
+          userType: formData.userType,
+        });
+        refreshTokenState();
+        return response.data;
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 'Registration failed';
+      throw new Error(errorMessage);
     }
   };
 
@@ -76,6 +121,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       throw error;
+    }
+  };
+
+  const loginWithOTP = async (email: string, password: string, userType: 'patient' | 'doctor', otp: string) => {
+    try {
+      console.log('Logging in with OTP:', { email, otp: otp.substring(0, 2) + '****' });
+      const response = await axios.post('http://localhost:3000/api/auth/login-with-otp', {
+        email,
+        password,
+        userType,
+        otp,
+      }, { withCredentials: true });
+
+      if (response.data.userType) {
+        setUser({
+          userId: response.data.userId || '',
+          email: email,
+          userType: response.data.userType,
+        });
+        refreshTokenState();
+      }
+    } catch (error: any) {
+      console.error('Login error:', error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 'Login failed';
+      throw new Error(errorMessage);
     }
   };
 
@@ -113,6 +183,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     hasToken,
     login,
+    loginWithOTP,
+    registerWithOTP,
+    sendOTP,
     logout,
     checkAuth,
     refreshTokenState,

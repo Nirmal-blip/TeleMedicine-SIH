@@ -262,7 +262,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
           {/* Date Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
               <FaCalendar className="text-emerald-600" />
               Select Date
             </label>
@@ -282,7 +282,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
           {/* Time Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
               <FaClock className="text-emerald-600" />
               Select Time
             </label>
@@ -302,7 +302,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
           {/* Reason for Visit */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
               <FaStethoscope className="text-emerald-600" />
               Reason for Consultation
             </label>
