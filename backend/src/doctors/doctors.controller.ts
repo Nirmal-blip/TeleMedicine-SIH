@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Request } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -15,9 +15,19 @@ export class DoctorsController {
     return this.doctorsService.findAll();
   }
 
+  @Get('me')
+  getCurrentDoctor(@Request() req) {
+    return this.doctorsService.findOne(req.user.userId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.doctorsService.findOne(id);
+  }
+
+  @Patch('me')
+  updateCurrentDoctor(@Request() req, @Body() updateData: any) {
+    return this.doctorsService.update(req.user.userId, updateData);
   }
 
   @Patch(':id')
