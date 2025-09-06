@@ -19,7 +19,7 @@ import {
   FaPhone,
   FaTimes
 } from "react-icons/fa";
-import PatientSidebar from "../../Components/PatientSidebar";
+import PatientSidebar from "../../Components/Sidebar";
 import { useNavigate } from "react-router-dom";
 
 interface Notification {
