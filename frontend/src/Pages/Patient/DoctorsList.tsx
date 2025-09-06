@@ -86,9 +86,9 @@ const DoctorsList: React.FC = () => {
         withCredentials: true
       });
       
-      const userId = response.data.user.userId;
-      console.log('🔥 PATIENT: Initializing video call service with ID:', userId);
-      const service = initializeVideoCallService(userId, 'patient');
+      const patientId = response.data.user.patientId;
+      console.log('🔥 PATIENT: Initializing video call service with ID:', patientId);
+      const service = initializeVideoCallService(patientId, 'patient');
       setVideoCallService(service);
       
       // Set up event listeners
