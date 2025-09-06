@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import { useLocation } from 'react-router-dom'
 import Sidebar from '../../Components/Sidebar'
-import { FaVideo, FaMicrophone, FaMicrophoneSlash, FaVideoSlash, FaPhone, FaPhoneSlash, FaUser, FaCalendar, FaClock, FaStethoscope, FaHeart, FaPaperclip, FaSmile, FaFileAlt } from 'react-icons/fa'
+import PrescriptionForm from '../../Components/PrescriptionForm'
+import { FaVideo, FaMicrophone, FaMicrophoneSlash, FaVideoSlash, FaPhone, FaPhoneSlash, FaUser, FaCalendar, FaClock, FaStethoscope, FaHeart, FaPaperclip, FaSmile, FaFileAlt, FaPills } from 'react-icons/fa'
 import { IoChatbubbleEllipsesSharp } from "react-icons/io5";
 import { EnhancedWebRTCService, generateCallId, isWebRTCSupported, ChatMessage } from "../../utils/enhanced-webrtc";
 import { initializeNotificationService, getNotificationService } from "../../utils/real-time-notifications";
@@ -151,6 +152,7 @@ const VideoConsultation: React.FC = () => {
       });
       const userId = response.data._id;
       setCurrentUserId(userId);
+      setPatientData(response.data);
       
       // Initialize real-time notification service
       const service = getNotificationService();
@@ -184,6 +186,54 @@ const VideoConsultation: React.FC = () => {
     } catch (error) {
       console.error('Failed to get current user:', error);
       setError('Failed to authenticate user');
+    }
+  };
+
+  const openPrescriptionForm = () => {
+    if (currentConsultation) {
+      // Fetch doctor data for the current consultation
+      fetchDoctorData(currentConsultation.doctorId);
+      setIsPrescriptionFormOpen(true);
+    } else {
+      alert('No active consultation found. Please start a video call first.');
+    }
+  };
+
+  const fetchDoctorData = async (doctorId: string) => {
+    try {
+      const response = await axios.get(`http://localhost:3000/api/doctors/${doctorId}`, {
+        withCredentials: true,
+      });
+      setDoctorData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch doctor data:', error);
+      // Use consultation data as fallback
+      setDoctorData({
+        _id: currentConsultation?.doctorId,
+        fullname: currentConsultation?.doctorName,
+        specialization: currentConsultation?.specialization
+      });
+    }
+  };
+
+  const handlePrescriptionSubmit = async (prescriptionData: any) => {
+    try {
+      const response = await axios.post('http://localhost:3000/api/prescriptions', prescriptionData, {
+        withCredentials: true,
+      });
+      
+      if (response.status === 201) {
+        alert('Prescription created successfully!');
+        setIsPrescriptionFormOpen(false);
+        
+        // Send notification to patient about new prescription
+        if (webrtcService.current) {
+          webrtcService.current.sendChatMessage(`📋 Prescription has been written and saved. Prescription Number: ${response.data.prescriptionNumber}`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to create prescription:', error);
+      alert('Failed to create prescription. Please try again.');
     }
   };
 
@@ -514,7 +564,17 @@ const VideoConsultation: React.FC = () => {
             {/* Chat Sidebar */}
             <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
               <div className="p-4 border-b border-gray-700">
-                <h3 className="text-white font-semibold">Chat</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-white font-semibold">Chat</h3>
+                  <button
+                    onClick={openPrescriptionForm}
+                    className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-300 text-sm"
+                    title="Write Prescription"
+                  >
+                    <FaPills className="w-4 h-4" />
+                    Write Prescription
+                  </button>
+                </div>
               </div>
               
               <div className="flex-1 p-4 overflow-y-auto">
@@ -870,6 +930,7 @@ const VideoConsultation: React.FC = () => {
             </div>
           </div>
         </div>
+        
       </main>
     </div>
   )

@@ -14,9 +14,11 @@ import {
   FaDesktop,
   FaVolumeUp,
   FaCog,
-  FaPhoneSlash
+  FaPhoneSlash,
+  FaPills
 } from "react-icons/fa";
 import DoctorSidebar from "../../Components/DoctorSidebar";
+import PrescriptionForm from "../../Components/PrescriptionForm";
 import { WebRTCService, generateCallId, isWebRTCSupported } from "../../utils/webrtc";
 
 interface Patient {
@@ -48,6 +50,9 @@ const VideoConsultation: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
   const [callId, setCallId] = useState<string>('');
   const [isWebRTCReady, setIsWebRTCReady] = useState<boolean>(false);
+  const [isPrescriptionFormOpen, setIsPrescriptionFormOpen] = useState<boolean>(false);
+  const [doctorData, setDoctorData] = useState<any>(null);
+  const [currentAppointmentId, setCurrentAppointmentId] = useState<string>('');
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -76,6 +81,7 @@ const VideoConsultation: React.FC = () => {
           appointmentTime: nextAppointment.time || '00:00'
         };
         setCurrentPatient(patient);
+        setCurrentAppointmentId(nextAppointment._id || '');
       } else {
         // Default patient if no appointments
         setCurrentPatient({
@@ -99,8 +105,54 @@ const VideoConsultation: React.FC = () => {
     }
   };
 
+  // Fetch current doctor data
+  const fetchDoctorData = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/doctors/me', {
+        withCredentials: true,
+      });
+      setDoctorData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch doctor data:', error);
+    }
+  };
+
+  const openPrescriptionForm = () => {
+    if (currentPatient) {
+      setIsPrescriptionFormOpen(true);
+    } else {
+      alert('Please start a consultation with a patient first.');
+    }
+  };
+
+  const handlePrescriptionSubmit = async (prescriptionData: any) => {
+    try {
+      const response = await axios.post('http://localhost:3000/api/prescriptions', prescriptionData, {
+        withCredentials: true,
+      });
+      
+      if (response.status === 201) {
+        alert('Prescription created successfully!');
+        setIsPrescriptionFormOpen(false);
+        
+        // Add prescription notification to chat
+        const prescriptionMessage: ChatMessage = {
+          id: Date.now().toString(),
+          sender: 'doctor',
+          message: `📋 Prescription has been written and saved. Prescription Number: ${response.data.prescriptionNumber}`,
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, prescriptionMessage]);
+      }
+    } catch (error) {
+      console.error('Failed to create prescription:', error);
+      alert('Failed to create prescription. Please try again.');
+    }
+  };
+
   useEffect(() => {
     fetchTodaysPatients();
+    fetchDoctorData();
     
     // Check WebRTC support
     if (!isWebRTCSupported()) {
@@ -475,8 +527,11 @@ const VideoConsultation: React.FC = () => {
             <div className="bg-white rounded-3xl shadow-lg p-6">
               <h3 className="font-bold text-gray-800 mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <button className="w-full bg-emerald-500 text-white py-3 px-4 rounded-xl hover:bg-emerald-600 transition-colors duration-300 flex items-center gap-2">
-                  <FaFileAlt className="w-4 h-4" />
+                <button 
+                  onClick={openPrescriptionForm}
+                  className="w-full bg-emerald-500 text-white py-3 px-4 rounded-xl hover:bg-emerald-600 transition-colors duration-300 flex items-center gap-2"
+                >
+                  <FaPills className="w-4 h-4" />
                   Write Prescription
                 </button>
                 <button className="w-full bg-green-500 text-white py-3 px-4 rounded-xl hover:bg-green-600 transition-colors duration-300 flex items-center gap-2">
@@ -542,6 +597,16 @@ const VideoConsultation: React.FC = () => {
           </div>
         </div>
       </main>
+      
+      {/* Prescription Form Modal */}
+      <PrescriptionForm
+        isOpen={isPrescriptionFormOpen}
+        onClose={() => setIsPrescriptionFormOpen(false)}
+        patientData={currentPatient}
+        doctorData={doctorData}
+        appointmentId={currentAppointmentId}
+        onSubmit={handlePrescriptionSubmit}
+      />
     </div>
   );
 };
