@@ -73,43 +73,55 @@ const Notifications: React.FC = () => {
       });
       
       const doctorId = response.data.user.userId;
-      const service = getNotificationService();
       
-      if (service) {
-        // Listen for incoming calls
-        service.on('incoming-call', (data: any) => {
-          console.log('Incoming call notification:', data);
-          setIncomingCall(data);
-          // Refresh notifications to include the new video call request
-          fetchNotifications();
-        });
-
-        // Listen for new notifications in general
-        service.on('new-notification', (data: any) => {
-          console.log('New notification received:', data);
-          // Refresh notifications list
-          fetchNotifications();
-        });
-
-        // Listen for call accepted
-        service.on('call-accepted-confirmation', (data: any) => {
-          console.log('Call accepted:', data);
-          // Refresh notifications
-          fetchNotifications();
-        });
-
-        // Listen for call rejected
-        service.on('call-rejected-confirmation', (data: any) => {
-          console.log('Call rejected:', data);
-          // Refresh notifications
-          fetchNotifications();
-        });
+      // Initialize notification service if not already done
+      const service = getNotificationService();
+      if (!service) {
+        // Initialize the notification service
+        const { initializeNotificationService } = await import('../../utils/real-time-notifications');
+        const newService = initializeNotificationService(doctorId, 'doctor');
+        setNotificationService(newService);
         
+        // Set up event listeners
+        setupNotificationListeners(newService);
+      } else {
         setNotificationService(service);
+        setupNotificationListeners(service);
       }
     } catch (error) {
       console.error('Error initializing notification service:', error);
     }
+  };
+
+  const setupNotificationListeners = (service: any) => {
+    // Listen for incoming calls
+    service.on('incoming-call', (data: any) => {
+      console.log('Incoming call notification:', data);
+      setIncomingCall(data);
+      // Refresh notifications to include the new video call request
+      fetchNotifications();
+    });
+
+    // Listen for new notifications in general
+    service.on('new-notification', (data: any) => {
+      console.log('New notification received:', data);
+      // Refresh notifications list
+      fetchNotifications();
+    });
+
+    // Listen for call accepted
+    service.on('call-accepted-confirmation', (data: any) => {
+      console.log('Call accepted:', data);
+      // Refresh notifications
+      fetchNotifications();
+    });
+
+    // Listen for call rejected
+    service.on('call-rejected-confirmation', (data: any) => {
+      console.log('Call rejected:', data);
+      // Refresh notifications
+      fetchNotifications();
+    });
   };
 
   const acceptCall = () => {
@@ -365,6 +377,21 @@ const Notifications: React.FC = () => {
     }
   };
 
+  const rejectCallFromNotification = (notification: Notification) => {
+    if (!notification.metadata?.callId || !notificationService) return;
+    
+    // Emit reject call event
+    notificationService.emit('doctor-reject-call', {
+      callId: notification.metadata.callId,
+      doctorId: '', // Current doctor ID
+      patientId: notification.sender?._id,
+      reason: 'Doctor is not available'
+    });
+    
+    // Mark notification as read
+    markAsRead(notification._id);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <DoctorSidebar />
@@ -531,16 +558,36 @@ const Notifications: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {(notification.actionUrl || notification.type === 'video_call_request') && (
-                          <button 
-                            onClick={() => handleVideoCallAction(notification)}
-                            className="bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors duration-300 text-sm font-medium flex items-center gap-2"
-                          >
-                            {notification.type.includes('appointment') && <FaVideo className="w-4 h-4" />}
-                            {notification.type === 'prescription_ready' && <FaPills className="w-4 h-4" />}
-                            {notification.type === 'emergency_alert' && <FaStethoscope className="w-4 h-4" />}
-                            {notification.type === 'video_call_request' && <FaPhone className="w-4 h-4" />}
-                            {notification.type === 'video_call_request' ? 'Answer Call' : (notification.actionText || 'Take Action')}
-                          </button>
+                          <div className="flex gap-2">
+                            {notification.type === 'video_call_request' ? (
+                              <>
+                                <button 
+                                  onClick={() => rejectCallFromNotification(notification)}
+                                  className="bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 transition-colors duration-300 text-sm font-medium flex items-center gap-2"
+                                >
+                                  <FaTimes className="w-4 h-4" />
+                                  Reject
+                                </button>
+                                <button 
+                                  onClick={() => handleVideoCallAction(notification)}
+                                  className="bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors duration-300 text-sm font-medium flex items-center gap-2"
+                                >
+                                  <FaPhone className="w-4 h-4" />
+                                  Accept
+                                </button>
+                              </>
+                            ) : (
+                              <button 
+                                onClick={() => handleVideoCallAction(notification)}
+                                className="bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors duration-300 text-sm font-medium flex items-center gap-2"
+                              >
+                                {notification.type.includes('appointment') && <FaVideo className="w-4 h-4" />}
+                                {notification.type === 'prescription_ready' && <FaPills className="w-4 h-4" />}
+                                {notification.type === 'emergency_alert' && <FaStethoscope className="w-4 h-4" />}
+                                {notification.actionText || 'Take Action'}
+                              </button>
+                            )}
+                          </div>
                         )}
                         {!notification.isRead && (
                           <button
