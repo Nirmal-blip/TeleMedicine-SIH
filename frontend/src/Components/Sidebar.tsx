@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { 
@@ -13,6 +13,7 @@ import {
     FaStethoscope
 } from "react-icons/fa";
 import { useAuth } from '../contexts/AuthContext';
+import ConfirmationModal from './ConfirmationModal';
 
 interface MenuItem {
     name: string;
@@ -37,14 +38,15 @@ const Sidebar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout } = useAuth();
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const isActive = (path: string) => location.pathname === path;
 
-    const handleLogout = async () => {
-        // Show confirmation dialog
-        const confirmLogout = window.confirm("Are you sure you want to logout?");
-        if (!confirmLogout) return;
+    const handleLogoutClick = () => {
+        setShowLogoutModal(true);
+    };
 
+    const handleLogoutConfirm = async () => {
         try {
             await logout();
             toast.success("Logged out successfully!", {
@@ -58,7 +60,13 @@ const Sidebar: React.FC = () => {
                 position: "top-right",
                 autoClose: 5000,
             });
+        } finally {
+            setShowLogoutModal(false);
         }
+    };
+
+    const handleLogoutCancel = () => {
+        setShowLogoutModal(false);
     };
 
     return (
@@ -125,7 +133,7 @@ const Sidebar: React.FC = () => {
                     ))}
                     <li>
                         <button 
-                            onClick={handleLogout}
+                            onClick={handleLogoutClick}
                             className="w-full flex items-center p-3 rounded-xl text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-300 group border border-red-200 hover:border-red-300 cursor-pointer"
                         >
                             <span className="mr-4 text-xl text-red-600 group-hover:text-red-700">
@@ -136,6 +144,17 @@ const Sidebar: React.FC = () => {
                     </li>
                 </ul>
             </div>
+
+            {/* Logout Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showLogoutModal}
+                onClose={handleLogoutCancel}   
+                onConfirm={handleLogoutConfirm}
+                title="Confirm Logout"
+                message="Are you sure you want to logout? You will need to sign in again to access your account."
+                confirmText="Logout"
+                cancelText="Cancel"
+            />
         </aside>
     );
 }
