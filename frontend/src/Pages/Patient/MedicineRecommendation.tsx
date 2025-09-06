@@ -59,7 +59,7 @@ const MedicineRecommendation: React.FC = () => {
                 const formData = new FormData();
                 formData.append('file', selectedFile!);
                 
-                response = await fetch("http://localhost:5000/api/medicine/recommend-image", {
+                response = await fetch("http://localhost:8000/api/medicine/recommend-image", {
                     method: "POST",
                     body: formData,
                 });
