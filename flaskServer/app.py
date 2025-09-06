@@ -149,30 +149,42 @@ def format_medical_response(response):
     """Format and clean the medical response for better readability"""
     import re
     
-    # Remove any mixed language content and clean up formatting
+    # Clean up the response while preserving non-ASCII characters (for Hindi, etc.)
     cleaned_response = response
     
-    # Remove non-English characters and common mixed language patterns
-    cleaned_response = re.sub(r'[^\x00-\x7F]+', '', cleaned_response)  # Remove non-ASCII
-    
-    # Clean up excessive whitespace
+    # Clean up excessive whitespace and newlines only
     cleaned_response = re.sub(r'\n\s*\n\s*\n+', '\n\n', cleaned_response)
-    cleaned_response = re.sub(r'\s+', ' ', cleaned_response)
+    cleaned_response = re.sub(r'[ \t]+', ' ', cleaned_response)  # Clean spaces/tabs but preserve newlines
     cleaned_response = cleaned_response.strip()
     
     return cleaned_response
 
 # Function to simulate streaming response (since Gemini doesn't support streaming)
-def stream_response(text, chunk_size=6):
+def stream_response(text, chunk_size=10):
     """Simulate streaming by yielding chunks of text"""
     import time
-    words = text.split()
-    for i in range(0, len(words), chunk_size):
-        chunk = " ".join(words[i:i + chunk_size])
-        if i > 0:
-            chunk = " " + chunk
-        yield chunk
-        time.sleep(0.05)  # Small delay to simulate typing
+    
+    # For Hindi and other non-Latin scripts, preserve words better
+    # Split by sentences first, then by words if needed
+    sentences = text.split('.')
+    
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+            
+        words = sentence.split()
+        for i in range(0, len(words), chunk_size):
+            chunk = " ".join(words[i:i + chunk_size])
+            if i > 0:
+                chunk = " " + chunk
+            
+            # Add sentence ending if this is the last chunk of a sentence
+            if i + chunk_size >= len(words) and sentence != sentences[-1]:
+                chunk += "."
+                
+            yield chunk
+            time.sleep(0.05)  # Small delay to simulate typing
 
 # Recommendation Engine (Do's and Don'ts)
 recommendations = {

@@ -401,23 +401,27 @@ const Chatbot: React.FC = () => {
             .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-800">$1</strong>')
             // Italic text
             .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+            // Convert check marks and X marks to proper symbols
+            .replace(/✔/g, '✅')
+            .replace(/❌/g, '❌')
             // Convert bullet points to proper list items
-            .replace(/^• (.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-            // Convert line breaks
-            .replace(/\n\n/g, '</p><p class="mb-3">')
+            .replace(/^[•✔✅❌]\s*(.+)$/gm, '<li class="ml-4 mb-1 flex items-start gap-2"><span class="mt-1">•</span><span>$1</span></li>')
+            // Convert line breaks (preserve double breaks for paragraphs)
+            .replace(/\n\n/g, '||DOUBLE_BREAK||')
             .replace(/\n/g, '<br>')
-            // Wrap content in paragraphs
-            .replace(/^(.)/s, '<p class="mb-3">$1')
-            .replace(/(.)$/s, '$1</p>')
+            .replace(/\|\|DOUBLE_BREAK\|\|/g, '</p><p class="mb-3">')
+            // Wrap content in paragraphs if not already wrapped
+            .replace(/^(?!<[hp])/gm, '<p class="mb-3">')
+            .replace(/(?<!>)$/gm, '</p>')
             // Handle lists - wrap consecutive <li> elements in <ul>
-            .replace(/(<li.*?<\/li>(?:\s*<br>\s*<li.*?<\/li>)*)/gs, '<ul class="list-disc list-inside my-2 space-y-1 ml-2">$1</ul>')
+            .replace(/(<li.*?<\/li>(?:\s*<br>\s*<li.*?<\/li>)*)/gs, '<ul class="list-none my-2 space-y-1 ml-2">$1</ul>')
             // Clean up any <br> tags inside lists
             .replace(/(<ul[^>]*>.*?)<br>\s*(<li)/gs, '$1$2')
             .replace(/(<\/li>)\s*<br>\s*/gs, '$1')
-            // Add spacing around headers
-            .replace(/<h4/g, '<h4')
-            // Clean up empty paragraphs
-            .replace(/<p[^>]*>\s*<\/p>/g, '');
+            // Clean up malformed paragraphs
+            .replace(/<p[^>]*>\s*<\/p>/g, '')
+            .replace(/<p[^>]*>(\s*<h4)/g, '$1')
+            .replace(/(<\/h4>)\s*<\/p>/g, '$1');
         
         return formatted;
     };
