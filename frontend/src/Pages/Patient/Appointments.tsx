@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../../Components/Sidebar'
 import { FaCalendar, FaClock, FaUser, FaVideo, FaMapPin, FaFilter, FaPlus, FaCheckCircle, FaPhone, FaHeart, FaStethoscope, FaFileAlt, FaSearch } from 'react-icons/fa'
-import { FaX } from "react-icons/fa6";
+import { FaX } from "react-icons/fa6"
+import axios from 'axios';
 
 interface Appointment {
   id: number;
@@ -23,66 +24,61 @@ const Appointments: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'Online' | 'In-Person'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'doctor' | 'specialization'>('date');
+  
+  // Dynamic data states
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
-  const appointments: Appointment[] = [
-    {
-      id: 1,
-      doctorName: "Dr. Sarah Johnson",
-      specialization: "Cardiologist",
-      date: "2024-01-15",
-      time: "10:00 AM",
-      type: "Online",
-      status: "Upcoming",
-      reason: "Regular Checkup",
-      consultationFee: 150
-    },
-    {
-      id: 2,
-      doctorName: "Dr. Michael Chen",
-      specialization: "Dermatologist",
-      date: "2024-01-18",
-      time: "2:30 PM",
-      type: "In-Person",
-      status: "Upcoming",
-      location: "Medical Center, Downtown",
-      reason: "Skin Consultation",
-      consultationFee: 120
-    },
-    {
-      id: 3,
-      doctorName: "Dr. Emily Rodriguez",
-      specialization: "Pediatrician",
-      date: "2024-01-10",
-      time: "9:00 AM",
-      type: "Online",
-      status: "Completed",
-      reason: "Child Vaccination",
-      consultationFee: 100
-    },
-    {
-      id: 4,
-      doctorName: "Dr. David Wilson",
-      specialization: "Orthopedist",
-      date: "2024-01-05",
-      time: "3:00 PM",
-      type: "In-Person",
-      status: "Completed",
-      location: "Orthopedic Clinic",
-      reason: "Knee Pain Consultation",
-      consultationFee: 180
-    },
-    {
-      id: 5,
-      doctorName: "Dr. Lisa Thompson",
-      specialization: "Psychiatrist",
-      date: "2024-01-12",
-      time: "11:30 AM",
-      type: "Online",
-      status: "Cancelled",
-      reason: "Mental Health Check",
-      consultationFee: 200
+  useEffect(() => {
+    fetchAppointments();
+  }, [activeTab]);
+
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      let endpoint = 'http://localhost:3000/api/appointments';
+      
+      // Determine which endpoint to call based on active tab
+      if (activeTab === 'upcoming') {
+        endpoint = 'http://localhost:3000/api/appointments/my/upcoming';
+      } else if (activeTab === 'completed') {
+        endpoint = 'http://localhost:3000/api/appointments/my/completed';
+      } else {
+        // For 'all' tab, get all appointments for the user
+        endpoint = 'http://localhost:3000/api/appointments';
+      }
+      
+      const response = await axios.get(endpoint, {
+        withCredentials: true
+      });
+      
+      // Transform database appointments to match frontend interface
+      const transformedAppointments: Appointment[] = response.data.map((apt: any) => ({
+        id: apt._id,
+        doctorName: apt.doctor?.fullname || 'Unknown Doctor',
+        specialization: apt.doctor?.specialization || 'General Medicine',
+        date: new Date(apt.date).toISOString().split('T')[0],
+        time: apt.time || '00:00',
+        type: apt.type || 'Online',
+        status: apt.status || 'Pending',
+        reason: apt.reason || 'Consultation',
+        consultationFee: apt.consultationFee || apt.doctor?.consultationFee || 0,
+        location: apt.type === 'In-Person' ? apt.doctor?.location || 'Medical Center' : undefined,
+        meetingLink: apt.meetingLink || undefined
+      }));
+      
+      setAppointments(transformedAppointments);
+    } catch (err: any) {
+      console.error('Error fetching appointments:', err);
+      setError('Failed to load appointments. Please try again.');
+      // Set empty array as fallback
+      setAppointments([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
 
   const filteredAppointments = appointments.filter(appointment => {
     // Filter by tab
@@ -133,6 +129,46 @@ const Appointments: React.FC = () => {
   const getTypeIcon = (type: string) => {
     return type === 'Online' ? <FaVideo className="w-4 h-4" /> : <FaMapPin className="w-4 h-4" />;
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        <Sidebar />
+        <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading appointments...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        <Sidebar />
+        <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="text-red-600 text-xl mb-4">⚠️ Error Loading Appointments</div>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button 
+                onClick={fetchAppointments}
+                className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">

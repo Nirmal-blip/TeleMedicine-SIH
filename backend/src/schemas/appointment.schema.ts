@@ -18,7 +18,7 @@ export class Appointment {
   time: string;
 
   @Prop({ 
-    enum: ['Pending', 'Confirmed', 'Completed', 'Canceled', 'Rescheduled'], 
+    enum: ['Pending', 'Confirmed', 'In Progress', 'Completed', 'Canceled', 'Rescheduled'], 
     default: 'Pending' 
   })
   status: string;
@@ -64,6 +64,25 @@ export class Appointment {
 
   @Prop()
   review?: string;
+
+  // Video consultation specific fields
+  @Prop()
+  callId?: string;
+
+  @Prop()
+  callStartTime?: Date;
+
+  @Prop()
+  callEndTime?: Date;
+
+  @Prop()
+  duration?: number; // Duration in minutes
+
+  @Prop()
+  recordingUrl?: string;
+
+  @Prop({ default: false })
+  isVideoConsultation?: boolean;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

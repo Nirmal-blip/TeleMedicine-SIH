@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Request } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto, UpdateAppointmentDto } from '../dto/appointment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -17,7 +17,15 @@ export class AppointmentsController {
   findAll(
     @Query('doctorId') doctorId?: string,
     @Query('patientId') patientId?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Request() req?: any
   ) {
+    if (search && req.user) {
+      // Determine user type - this would need to be part of JWT payload
+      const userType = req.user.userType || 'patient'; 
+      return this.appointmentsService.searchAppointments(req.user.userId, userType, search);
+    }
     if (doctorId) {
       return this.appointmentsService.findByDoctor(doctorId);
     }
@@ -25,6 +33,32 @@ export class AppointmentsController {
       return this.appointmentsService.findByPatient(patientId);
     }
     return this.appointmentsService.findAll();
+  }
+
+  @Get('my/upcoming')
+  getMyUpcomingAppointments(@Request() req) {
+    const userType = req.user.userType || 'patient';
+    if (userType === 'patient') {
+      return this.appointmentsService.findUpcomingByPatient(req.user.userId);
+    } else {
+      return this.appointmentsService.findUpcomingByDoctor(req.user.userId);
+    }
+  }
+
+  @Get('my/completed')
+  getMyCompletedAppointments(@Request() req) {
+    const userType = req.user.userType || 'patient';
+    if (userType === 'patient') {
+      return this.appointmentsService.findCompletedByPatient(req.user.userId);
+    } else {
+      return this.appointmentsService.findByDoctor(req.user.userId);
+    }
+  }
+
+  @Get('my/stats')
+  getMyAppointmentStats(@Request() req) {
+    const userType = req.user.userType || 'patient';
+    return this.appointmentsService.getAppointmentStats(req.user.userId, userType);
   }
 
   @Get(':id')

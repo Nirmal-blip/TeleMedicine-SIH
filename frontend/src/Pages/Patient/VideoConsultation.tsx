@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
+import axios from 'axios'
 import Sidebar from '../../Components/Sidebar'
 import { FaVideo, FaMicrophone, FaMicrophoneSlash, FaVideoSlash, FaPhone, FaPhoneSlash, FaUser, FaCalendar, FaClock, FaStethoscope, FaHeart, FaPaperclip, FaSmile, FaFileAlt } from 'react-icons/fa'
 import { IoChatbubbleEllipsesSharp } from "react-icons/io5";
-import { WebRTCService, generateCallId, isWebRTCSupported } from "../../utils/webrtc";
+import { EnhancedWebRTCService, generateCallId, isWebRTCSupported, ChatMessage } from "../../utils/enhanced-webrtc";
 
 interface Consultation {
-  id: number;
+  id: string;
   doctorName: string;
   specialization: string;
   date: string;
@@ -14,6 +15,8 @@ interface Consultation {
   status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
   meetingId: string;
   reason: string;
+  appointmentId: string;
+  doctorId: string;
 }
 
 const VideoConsultation: React.FC = () => {
@@ -22,44 +25,100 @@ const VideoConsultation: React.FC = () => {
   const [isCallActive, setIsCallActive] = useState(false);
   const [currentConsultation, setCurrentConsultation] = useState<Consultation | null>(null);
   const [chatMessage, setChatMessage] = useState('');
-  const [chatMessages, setChatMessages] = useState<Array<{id: number, sender: string, message: string, timestamp: string}>>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
   const [callId, setCallId] = useState<string>('');
   const [isWebRTCReady, setIsWebRTCReady] = useState<boolean>(false);
   const [waitingForDoctor, setWaitingForDoctor] = useState<boolean>(false);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const webrtcService = useRef<WebRTCService | null>(null);
-
-  const consultations: Consultation[] = [
-    {
-      id: 1,
-      doctorName: "Dr. Sarah Johnson",
-      specialization: "Cardiologist",
-      date: "2024-01-15",
-      time: "10:00 AM",
-      duration: "45 minutes",
-      status: "Scheduled",
-      meetingId: "MEET-001",
-      reason: "Regular Checkup"
-    },
-    {
-      id: 2,
-      doctorName: "Dr. Michael Chen",
-      specialization: "Dermatologist",
-      date: "2024-01-18",
-      time: "2:30 PM",
-      duration: "30 minutes",
-      status: "Scheduled",
-      meetingId: "MEET-002",
-      reason: "Skin Consultation"
-    }
-  ];
+  const webrtcService = useRef<EnhancedWebRTCService | null>(null);
 
   const upcomingConsultation = consultations.find(c => c.status === 'Scheduled');
 
   useEffect(() => {
+    fetchConsultations();
+    getCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (currentUserId) {
+      initializeWebRTC();
+    }
+  }, [currentUserId]);
+
+  const getCurrentUser = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/patients/me', {
+        withCredentials: true,
+      });
+      setCurrentUserId(response.data._id);
+    } catch (error) {
+      console.error('Failed to get current user:', error);
+      setError('Failed to authenticate user');
+    }
+  };
+
+  const fetchConsultations = async () => {
+    try {
+      setLoading(true);
+      // Fetch upcoming appointments for video consultation
+      const upcomingResponse = await axios.get('http://localhost:3000/api/video-consultation/upcoming-appointments', {
+        withCredentials: true,
+      });
+      
+      // Fetch consultation history
+      const historyResponse = await axios.get('http://localhost:3000/api/video-consultation/call-history', {
+        withCredentials: true,
+      });
+
+      // Transform appointments to consultation format
+      const upcomingConsultations: Consultation[] = upcomingResponse.data.map((apt: any) => ({
+        id: apt._id,
+        doctorName: apt.doctor?.fullname || 'Unknown Doctor',
+        specialization: apt.doctor?.specialization || 'General Medicine',
+        date: new Date(apt.date).toISOString().split('T')[0],
+        time: apt.time || '00:00',
+        duration: apt.duration ? `${apt.duration} minutes` : '30 minutes',
+        status: apt.status === 'Confirmed' ? 'Scheduled' : apt.status,
+        meetingId: apt.callId || `MEET-${apt._id}`,
+        reason: apt.reason || 'General consultation',
+        appointmentId: apt._id,
+        doctorId: apt.doctor?._id || ''
+      }));
+
+      // Transform history to consultation format
+      const historyConsultations: Consultation[] = historyResponse.data.map((apt: any) => ({
+        id: apt._id,
+        doctorName: apt.doctor?.fullname || 'Unknown Doctor',
+        specialization: apt.doctor?.specialization || 'General Medicine',
+        date: new Date(apt.date).toISOString().split('T')[0],
+        time: apt.time || '00:00',
+        duration: apt.duration ? `${apt.duration} minutes` : '30 minutes',
+        status: 'Completed',
+        meetingId: apt.callId || `MEET-${apt._id}`,
+        reason: apt.reason || 'General consultation',
+        appointmentId: apt._id,
+        doctorId: apt.doctor?._id || ''
+      }));
+
+      // Combine and sort consultations
+      const allConsultations = [...upcomingConsultations, ...historyConsultations];
+      setConsultations(allConsultations);
+    } catch (error) {
+      console.error('Failed to fetch consultations:', error);
+      setError('Failed to load consultations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initializeWebRTC = () => {
     // Check WebRTC support
     if (!isWebRTCSupported()) {
       alert('WebRTC is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
@@ -68,58 +127,56 @@ const VideoConsultation: React.FC = () => {
     
     setIsWebRTCReady(true);
     
-    // Initialize WebRTC service
-    webrtcService.current = new WebRTCService();
+    // Initialize Enhanced WebRTC service
+    webrtcService.current = new EnhancedWebRTCService(currentUserId, 'patient');
     
     // Setup WebRTC event handlers
-    webrtcService.current.onLocalStream = (stream) => {
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-    };
-    
-    webrtcService.current.onRemoteStream = (stream) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = stream;
-      }
-    };
-    
-    webrtcService.current.onConnectionStateChange = (state) => {
-      setConnectionStatus(state);
-      if (state === 'connected') {
-        console.log('WebRTC connection established');
-        setWaitingForDoctor(false);
-      }
-    };
-    
-    webrtcService.current.onCallEnd = () => {
-      handleCallEnd();
-    };
-    
-    webrtcService.current.onError = (error) => {
-      console.error('WebRTC Error:', error);
-      alert('An error occurred during the call. Please try again.');
-    };
+    if (webrtcService.current) {
+      webrtcService.current.onLocalStream = (stream) => {
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+      };
+      
+      webrtcService.current.onRemoteStream = (stream) => {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = stream;
+        }
+      };
+      
+      webrtcService.current.onConnectionStateChange = (state) => {
+        setConnectionStatus(state);
+        if (state === 'connected') {
+          console.log('WebRTC connection established');
+          setWaitingForDoctor(false);
+        }
+      };
+      
+      webrtcService.current.onCallEnd = () => {
+        handleCallEnd();
+      };
+      
+      webrtcService.current.onError = (error) => {
+        console.error('WebRTC Error:', error);
+        alert('An error occurred during the call. Please try again.');
+      };
 
-    // Check for active call from doctor
-    const checkForActiveCall = () => {
-      const activeCallId = localStorage.getItem('activeCallId');
-      if (activeCallId && !isCallActive) {
-        setCallId(activeCallId);
+      webrtcService.current.onChatMessage = (message) => {
+        setChatMessages(prev => [...prev, message]);
+      };
+
+      webrtcService.current.onIncomingCall = (callData) => {
+        setCallId(callData.callId);
         setWaitingForDoctor(true);
-      }
-    };
+      };
+    }
 
-    // Check periodically for doctor calls
-    const callCheckInterval = setInterval(checkForActiveCall, 2000);
-    
     return () => {
-      clearInterval(callCheckInterval);
       if (webrtcService.current) {
-        webrtcService.current.endCall();
+        webrtcService.current.disconnect();
       }
     };
-  }, [isCallActive]);
+  };
 
   const startCall = async (consultation: Consultation) => {
     if (!webrtcService.current || !isWebRTCReady) {
@@ -132,13 +189,10 @@ const VideoConsultation: React.FC = () => {
       setIsCallActive(true);
       setConnectionStatus('connecting');
 
-      // Patient joins the call (not initiator)
-      const activeCallId = localStorage.getItem('activeCallId') || generateCallId();
-      setCallId(activeCallId);
+      // Patient joins the call using appointment ID
+      webrtcService.current.joinCall(consultation.meetingId, consultation.appointmentId);
       
-      await webrtcService.current.initializeCall(activeCallId, false);
-      
-      console.log('Joined call with ID:', activeCallId);
+      console.log('Joined call for appointment:', consultation.appointmentId);
     } catch (error) {
       console.error('Failed to join call:', error);
       alert('Failed to join the call. Please check your camera and microphone permissions.');
@@ -153,7 +207,7 @@ const VideoConsultation: React.FC = () => {
       setIsCallActive(true);
       setConnectionStatus('connecting');
       
-      await webrtcService.current.initializeCall(callId, false);
+      webrtcService.current.joinCall(callId);
       setWaitingForDoctor(false);
       
       console.log('Joined waiting call with ID:', callId);
@@ -190,14 +244,8 @@ const VideoConsultation: React.FC = () => {
   };
 
   const sendMessage = () => {
-    if (chatMessage.trim()) {
-      const newMessage = {
-        id: Date.now(),
-        sender: 'You',
-        message: chatMessage,
-        timestamp: new Date().toLocaleTimeString()
-      };
-      setChatMessages(prev => [...prev, newMessage]);
+    if (chatMessage.trim() && webrtcService.current) {
+      webrtcService.current.sendChatMessage(chatMessage);
       setChatMessage('');
     }
   };
@@ -348,15 +396,15 @@ const VideoConsultation: React.FC = () => {
               
               <div className="flex-1 p-4 overflow-y-auto">
                 <div className="space-y-3">
-                  {chatMessages.map((msg) => (
-                    <div key={msg.id} className={`flex ${msg.sender === 'You' ? 'justify-end' : 'justify-start'}`}>
+                  {chatMessages.map((msg, index) => (
+                    <div key={`${msg.userId}-${msg.timestamp}-${index}`} className={`flex ${msg.userId === currentUserId ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-xs p-3 rounded-lg ${
-                        msg.sender === 'You' 
+                        msg.userId === currentUserId 
                           ? 'bg-emerald-600 text-white' 
                           : 'bg-gray-700 text-white'
                       }`}>
                         <p className="text-sm">{msg.message}</p>
-                        <p className="text-xs opacity-70 mt-1">{msg.timestamp}</p>
+                        <p className="text-xs opacity-70 mt-1">{new Date(msg.timestamp).toLocaleTimeString()}</p>
                       </div>
                     </div>
                   ))}
@@ -381,6 +429,49 @@ const VideoConsultation: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        <Sidebar />
+        <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading video consultations...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        <Sidebar />
+        <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="text-red-600 text-xl mb-4">⚠️ Error Loading Video Consultations</div>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button 
+                onClick={() => {
+                  setError('');
+                  fetchConsultations();
+                }}
+                className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700"
+              >
+                Try Again
+              </button>
             </div>
           </div>
         </main>
