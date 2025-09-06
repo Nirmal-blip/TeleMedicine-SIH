@@ -281,6 +281,41 @@ const DoctorsList: React.FC = () => {
       const patientName = response.data.user.fullname || 'Patient';
       console.log('🔥 PATIENT: Starting video call with doctor:', doctor.name);
       console.log('🔥 PATIENT: Patient name:', patientName);
+
+      // First, create an immediate consultation appointment
+      try {
+        const patientResponse = await axios.get('http://localhost:3000/api/patients/me', {
+          withCredentials: true
+        });
+        
+        const now = new Date();
+        const currentDate = now.toISOString().split('T')[0];
+        const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
+
+        const appointmentResponse = await axios.post('http://localhost:3000/api/appointments', {
+          doctor: doctor.id,
+          patient: patientResponse.data._id,
+          date: currentDate,
+          time: currentTime,
+          reason: 'Immediate Video Consultation',
+          status: 'Confirmed'
+        }, {
+          withCredentials: true
+        });
+
+        console.log('🔥 PATIENT: Immediate consultation booked:', appointmentResponse.data);
+        
+        // Store appointment data for reference
+        localStorage.setItem('activeAppointment', JSON.stringify({
+          appointmentId: appointmentResponse.data._id,
+          doctorId: doctor.id,
+          doctorName: doctor.name,
+        }));
+        
+      } catch (appointmentError) {
+        console.error('Failed to create appointment:', appointmentError);
+        // Continue with video call even if appointment creation fails
+      }
       
       // Request video call
       videoCallService.requestVideoCall({
