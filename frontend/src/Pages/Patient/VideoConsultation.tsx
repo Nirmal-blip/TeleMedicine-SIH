@@ -41,6 +41,9 @@ const VideoConsultation: React.FC = () => {
   const [callingDoctor, setCallingDoctor] = useState<any>(null);
   const [isPatientInitiated, setIsPatientInitiated] = useState<boolean>(false);
   const [notificationService, setNotificationService] = useState<any>(null);
+  const [patientData, setPatientData] = useState<any>(null);
+  const [doctorData, setDoctorData] = useState<any>(null);
+  const [isPrescriptionFormOpen, setIsPrescriptionFormOpen] = useState<boolean>(false);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
