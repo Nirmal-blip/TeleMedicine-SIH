@@ -57,92 +57,30 @@ const ConsultationHistory: React.FC = () => {
   const fetchConsultationHistory = async () => {
     try {
       setIsLoading(true);
-      // const response = await axios.get('http://localhost:3000/api/doctors/consultation-history', {
-      //   withCredentials: true,
-      // });
+      // Fetch completed appointments which represent consultation history for doctors
+      const response = await axios.get('http://localhost:3000/api/appointments/my/completed', {
+        withCredentials: true,
+      });
       
-      // Mock data for demonstration
-      const mockData: Consultation[] = [
-        {
-          id: '1',
-          patientName: 'John Doe',
-          patientId: 'p1',
-          patientAge: 35,
-          consultationType: 'video',
-          date: '2024-01-15T10:30:00Z',
-          duration: 30,
-          diagnosis: 'Common Cold',
-          prescription: 'Amoxicillin 500mg, Ibuprofen 400mg',
-          notes: 'Patient presented with cold symptoms. Prescribed antibiotics and pain relief.',
-          rating: 5,
-          status: 'completed',
-          followUpRequired: true,
-          nextAppointment: '2024-01-22T10:30:00Z'
-        },
-        {
-          id: '2',
-          patientName: 'Jane Smith',
-          patientId: 'p2',
-          patientAge: 28,
-          consultationType: 'in-person',
-          date: '2024-01-14T14:00:00Z',
-          duration: 45,
-          diagnosis: 'Hypertension Follow-up',
-          prescription: 'Metformin 500mg',
-          notes: 'Blood pressure stable. Continue current medication.',
-          rating: 4,
-          status: 'completed',
-          followUpRequired: true,
-          nextAppointment: '2024-02-14T14:00:00Z'
-        },
-        {
-          id: '3',
-          patientName: 'Bob Johnson',
-          patientId: 'p3',
-          patientAge: 42,
-          consultationType: 'video',
-          date: '2024-01-13T09:15:00Z',
-          duration: 25,
-          diagnosis: 'Annual Check-up',
-          notes: 'Routine annual health check. All parameters normal.',
-          status: 'completed',
-          followUpRequired: false,
-          rating: 5
-        },
-        {
-          id: '4',
-          patientName: 'Alice Brown',
-          patientId: 'p4',
-          patientAge: 31,
-          consultationType: 'phone',
-          date: '2024-01-12T16:30:00Z',
-          duration: 15,
-          diagnosis: 'Prescription Refill',
-          prescription: 'Birth Control Pills',
-          notes: 'Routine prescription refill. No issues reported.',
-          status: 'completed',
-          followUpRequired: false,
-          rating: 4
-        },
-        {
-          id: '5',
-          patientName: 'Mike Wilson',
-          patientId: 'p5',
-          patientAge: 55,
-          consultationType: 'video',
-          date: '2024-01-11T11:00:00Z',
-          duration: 40,
-          diagnosis: 'Diabetes Management',
-          prescription: 'Insulin adjustment',
-          notes: 'Adjusted insulin dosage based on recent blood sugar readings.',
-          status: 'completed',
-          followUpRequired: true,
-          nextAppointment: '2024-01-25T11:00:00Z',
-          rating: 5
-        }
-      ];
+      // Transform database appointments to consultation format
+      const transformedConsultations: Consultation[] = response.data.map((apt: any) => ({
+        id: apt._id,
+        patientName: apt.patient?.fullname || 'Unknown Patient',
+        patientId: apt.patient?._id || apt.patient || 'unknown',
+        patientAge: apt.patient?.age || 30,
+        consultationType: apt.type === 'Online' ? 'video' : 'in-person',
+        date: apt.date,
+        duration: parseInt(apt.duration) || 30,
+        diagnosis: apt.diagnosis || 'General consultation completed',
+        prescription: apt.prescription || undefined,
+        notes: apt.notes || 'Consultation completed successfully.',
+        rating: apt.rating || undefined,
+        status: 'completed',
+        followUpRequired: apt.followUpRequired || false,
+        nextAppointment: apt.followUpDate || undefined
+      }));
       
-      setConsultations(mockData);
+      setConsultations(transformedConsultations);
     } catch (error) {
       console.error('Failed to fetch consultation history:', error);
       setConsultations([]);

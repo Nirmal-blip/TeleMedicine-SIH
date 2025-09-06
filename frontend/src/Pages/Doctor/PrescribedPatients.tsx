@@ -60,101 +60,50 @@ const PrescribedPatients: React.FC = () => {
   const fetchPrescribedPatients = async () => {
     try {
       setIsLoading(true);
-      // const response = await axios.get('http://localhost:3000/api/doctors/prescribed-patients', {
-      //   withCredentials: true,
-      // });
+      // First get all patients for this doctor
+      const patientsResponse = await axios.get('http://localhost:3000/api/patients', {
+        withCredentials: true,
+      });
       
-      // Mock data for demonstration
-      const mockData: PrescribedPatient[] = [
-        {
-          id: '1',
-          name: 'John Doe',
-          email: 'john.doe@email.com',
-          age: 35,
-          lastPrescriptionDate: '2024-01-15',
-          activePrescriptions: 2,
-          prescriptions: [
-            {
-              id: 'p1',
-              patientName: 'John Doe',
-              patientId: '1',
-              medicine: 'Amoxicillin 500mg',
-              dosage: '500mg',
-              frequency: 'Twice daily',
-              duration: '7 days',
-              instructions: 'Take with food',
-              prescribedDate: '2024-01-15',
-              status: 'active',
-              refillsRemaining: 2,
-              totalRefills: 3
-            },
-            {
-              id: 'p2',
-              patientName: 'John Doe',
-              patientId: '1',
-              medicine: 'Ibuprofen 400mg',
-              dosage: '400mg',
-              frequency: 'As needed',
-              duration: '14 days',
-              instructions: 'For pain relief',
-              prescribedDate: '2024-01-15',
-              status: 'active',
-              refillsRemaining: 1,
-              totalRefills: 2
-            }
-          ]
-        },
-        {
-          id: '2',
-          name: 'Jane Smith',
-          email: 'jane.smith@email.com',
-          age: 28,
-          lastPrescriptionDate: '2024-01-10',
-          activePrescriptions: 1,
-          prescriptions: [
-            {
-              id: 'p3',
-              patientName: 'Jane Smith',
-              patientId: '2',
-              medicine: 'Metformin 500mg',
-              dosage: '500mg',
-              frequency: 'Once daily',
-              duration: '30 days',
-              instructions: 'Take with breakfast',
-              prescribedDate: '2024-01-10',
-              status: 'active',
-              refillsRemaining: 5,
-              totalRefills: 6
-            }
-          ]
-        },
-        {
-          id: '3',
-          name: 'Bob Johnson',
-          email: 'bob.johnson@email.com',
-          age: 42,
-          lastPrescriptionDate: '2023-12-20',
-          activePrescriptions: 0,
-          prescriptions: [
-            {
-              id: 'p4',
-              patientName: 'Bob Johnson',
-              patientId: '3',
-              medicine: 'Lisinopril 10mg',
-              dosage: '10mg',
-              frequency: 'Once daily',
-              duration: '30 days',
-              instructions: 'Take in morning',
-              prescribedDate: '2023-12-20',
-              status: 'completed',
-              refillsRemaining: 0,
-              totalRefills: 3
-            }
-          ]
-        }
-      ];
+      // Get completed appointments with prescriptions
+      const appointmentsResponse = await axios.get('http://localhost:3000/api/appointments/my/completed', {
+        withCredentials: true,
+      });
       
-      setPatients(mockData);
+      // Transform to prescribed patients format
+      const patientsWithPrescriptions = patientsResponse.data.map((patient: any) => {
+        // Find appointments for this patient that have prescriptions
+        const patientAppointments = appointmentsResponse.data.filter((apt: any) => 
+          apt.patient?._id === patient._id && apt.prescription
+        );
+        
+        const prescriptions: Prescription[] = patientAppointments.map((apt: any) => ({
+          id: apt._id,
+          patientName: patient.fullname || 'Unknown Patient',
+          patientId: patient._id,
+          medicine: apt.prescription || 'General medication',
+          dosage: apt.dosage || 'As prescribed',
+          frequency: apt.frequency || 'As directed',
+          duration: apt.duration || '7 days',
+          instructions: apt.instructions || 'Take as directed',
+          prescribedDate: apt.date,
+          status: apt.prescriptionStatus || 'active',
+          refillsRemaining: apt.refillsRemaining || 2,
+          totalRefills: apt.totalRefills || 3
+        }));
+        
+        return {
+          id: patient._id,
+          name: patient.fullname || 'Unknown Patient',
+          email: patient.email || 'No email',
+          age: patient.age || 30,
+          prescriptions,
+          lastPrescriptionDate: prescriptions.length > 0 ? prescriptions[0].prescribedDate : new Date().toISOString().split('T')[0],
+          activePrescriptions: prescriptions.filter(p => p.status === 'active').length
+        };
+      }).filter((patient: PrescribedPatient) => patient.prescriptions.length > 0);
+      
+      setPatients(patientsWithPrescriptions);
     } catch (error) {
       console.error('Failed to fetch prescribed patients:', error);
       setPatients([]);

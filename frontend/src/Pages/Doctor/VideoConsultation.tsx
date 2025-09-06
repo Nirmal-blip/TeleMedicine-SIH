@@ -53,17 +53,53 @@ const VideoConsultation: React.FC = () => {
   const callStartTime = useRef<Date | null>(null);
   const webrtcService = useRef<WebRTCService | null>(null);
 
-  // Mock patient data
-  const mockPatient: Patient = {
-    id: '1',
-    name: 'John Doe',
-    age: 35,
-    condition: 'Routine Checkup',
-    appointmentTime: '10:30 AM'
+  const fetchTodaysPatients = async () => {
+    try {
+      // Fetch today's appointments
+      const response = await axios.get('http://localhost:3000/api/appointments/my/upcoming', {
+        withCredentials: true,
+      });
+      
+      const today = new Date().toISOString().split('T')[0];
+      const todaysAppointments = response.data.filter((apt: any) => 
+        new Date(apt.date).toISOString().split('T')[0] === today
+      );
+      
+      if (todaysAppointments.length > 0) {
+        const nextAppointment = todaysAppointments[0];
+        const patient: Patient = {
+          id: nextAppointment.patient?._id || 'unknown',
+          name: nextAppointment.patient?.fullname || 'Patient',
+          age: nextAppointment.patient?.age || 30,
+          condition: nextAppointment.reason || 'General Consultation',
+          appointmentTime: nextAppointment.time || '00:00'
+        };
+        setCurrentPatient(patient);
+      } else {
+        // Default patient if no appointments
+        setCurrentPatient({
+          id: 'demo',
+          name: 'Demo Patient',
+          age: 30,
+          condition: 'Video Call Demo',
+          appointmentTime: 'Now'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch today\'s appointments:', error);
+      // Fallback patient
+      setCurrentPatient({
+        id: 'demo',
+        name: 'Demo Patient',
+        age: 30,
+        condition: 'Video Call Demo',
+        appointmentTime: 'Now'
+      });
+    }
   };
 
   useEffect(() => {
-    setCurrentPatient(mockPatient);
+    fetchTodaysPatients();
     
     // Check WebRTC support
     if (!isWebRTCSupported()) {

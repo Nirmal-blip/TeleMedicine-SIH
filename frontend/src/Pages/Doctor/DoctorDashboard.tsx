@@ -31,10 +31,18 @@ const DoctorDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [doctorName, setDoctorName] = useState<string>("Dr. Smith");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [dashboardStats, setDashboardStats] = useState({
+    todayAppointments: 0,
+    totalPatients: 0,
+    activePrescriptions: 0,
+    rating: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDoctorData = async () => {
       try {
+        setLoading(true);
         const response = await axios.get('http://localhost:3000/api/doctors/me', {
           withCredentials: true,
         });
@@ -46,6 +54,9 @@ const DoctorDashboard: React.FC = () => {
           setDoctorName(response.data.name);
           setIsAuthenticated(true);
         }
+        
+        // Fetch dashboard statistics
+        await fetchDashboardStats();
       } catch (error: any) {
         console.error('Failed to fetch doctor data:', error);
         if (error.response?.status === 401) {
@@ -56,11 +67,48 @@ const DoctorDashboard: React.FC = () => {
           setIsAuthenticated(false);
           setDoctorName("Doctor");
         }
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchDoctorData();
   }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      // Fetch today's appointments
+      const appointmentsResponse = await axios.get('http://localhost:3000/api/appointments/my/upcoming', {
+        withCredentials: true,
+      });
+      
+      // Filter for today's appointments
+      const today = new Date().toISOString().split('T')[0];
+      const todayAppointments = appointmentsResponse.data.filter((apt: any) => 
+        new Date(apt.date).toISOString().split('T')[0] === today
+      ).length;
+
+      // Fetch total patients
+      const patientsResponse = await axios.get('http://localhost:3000/api/patients', {
+        withCredentials: true,
+      });
+      
+      // Get doctor's own stats
+      const doctorStatsResponse = await axios.get('http://localhost:3000/api/doctors/me/stats', {
+        withCredentials: true,
+      });
+      
+      setDashboardStats({
+        todayAppointments,
+        totalPatients: patientsResponse.data.length,
+        activePrescriptions: 24, // This would need a prescriptions endpoint
+        rating: doctorStatsResponse.data?.rating || 4.8
+      });
+    } catch (error) {
+      console.error('Failed to fetch dashboard stats:', error);
+      // Keep default values on error
+    }
+  };
 
   const handleNameClick = async () => {
     const newName = prompt("Enter your name:", doctorName);
@@ -233,7 +281,9 @@ const DoctorDashboard: React.FC = () => {
                 <div className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
                   <FaCalendar className="w-7 h-7 text-white" />
                 </div>
-                <span className="text-3xl font-bold text-emerald-600">8</span>
+                <span className="text-3xl font-bold text-emerald-600">
+                  {loading ? '...' : dashboardStats.todayAppointments}
+                </span>
               </div>
               <h4 className="font-semibold text-gray-800 mb-1">Today</h4>
               <p className="text-sm text-gray-600">Scheduled appointments</p>
@@ -244,7 +294,9 @@ const DoctorDashboard: React.FC = () => {
                 <div className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
                   <FaUsers className="w-7 h-7 text-white" />
                 </div>
-                <span className="text-3xl font-bold text-emerald-600">156</span>
+                <span className="text-3xl font-bold text-emerald-600">
+                  {loading ? '...' : dashboardStats.totalPatients}
+                </span>
               </div>
               <h4 className="font-semibold text-gray-800 mb-1">Total</h4>
               <p className="text-sm text-gray-600">Patients</p>
@@ -255,7 +307,9 @@ const DoctorDashboard: React.FC = () => {
                 <div className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
                   <FaPills className="w-7 h-7 text-white" />
                 </div>
-                <span className="text-3xl font-bold text-emerald-600">24</span>
+                <span className="text-3xl font-bold text-emerald-600">
+                  {loading ? '...' : dashboardStats.activePrescriptions}
+                </span>
               </div>
               <h4 className="font-semibold text-gray-800 mb-1">Active</h4>
               <p className="text-sm text-gray-600">Prescriptions</p>
@@ -267,7 +321,9 @@ const DoctorDashboard: React.FC = () => {
                   <FaStar className="w-7 h-7 text-white" />
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-3xl font-bold text-emerald-600">4.8</span>
+                  <span className="text-3xl font-bold text-emerald-600">
+                    {loading ? '...' : dashboardStats.rating.toFixed(1)}
+                  </span>
                   <FaStar className="w-5 h-5 text-yellow-500 fill-current" />
                 </div>
               </div>

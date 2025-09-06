@@ -50,83 +50,23 @@ const PatientList: React.FC = () => {
         withCredentials: true,
       });
       
-      // Mock data for demonstration
-      const mockPatients: Patient[] = [
-        {
-          id: '1',
-          fullname: 'John Doe',
-          email: 'john.doe@email.com',
-          phone: '+1234567890',
-          age: 35,
-          gender: 'Male',
-          address: '123 Main St, City',
-          lastVisit: '2024-01-15',
-          status: 'active'
-        },
-        {
-          id: '2',
-          fullname: 'Jane Smith',
-          email: 'jane.smith@email.com',
-          phone: '+1234567891',
-          age: 28,
-          gender: 'Female',
-          address: '456 Oak Ave, City',
-          lastVisit: '2024-01-10',
-          status: 'active'
-        },
-        {
-          id: '3',
-          fullname: 'Bob Johnson',
-          email: 'bob.johnson@email.com',
-          phone: '+1234567892',
-          age: 42,
-          gender: 'Male',
-          address: '789 Pine St, City',
-          lastVisit: '2023-12-20',
-          status: 'inactive'
-        },
-        {
-          id: '4',
-          fullname: 'Alice Brown',
-          email: 'alice.brown@email.com',
-          phone: '+1234567893',
-          age: 31,
-          gender: 'Female',
-          address: '321 Elm St, City',
-          lastVisit: '2024-01-12',
-          status: 'pending'
-        }
-      ];
+      // Transform database patients to match frontend interface
+      const transformedPatients: Patient[] = response.data.map((patient: any) => ({
+        id: patient._id,
+        fullname: patient.fullname || patient.name || 'Unknown Patient',
+        email: patient.email || 'No email provided',
+        phone: patient.phone || patient.phoneNumber || undefined,
+        age: patient.age || undefined,
+        gender: patient.gender || undefined,
+        address: patient.address || undefined,
+        lastVisit: patient.lastVisit || patient.updatedAt || patient.createdAt || new Date().toISOString().split('T')[0],
+        status: patient.isActive !== false ? 'active' : 'inactive'
+      }));
       
-      setPatients(response.data?.patients || mockPatients);
+      setPatients(transformedPatients);
     } catch (error) {
       console.error('Failed to fetch patients:', error);
-      // Use mock data on error
-      const mockPatients: Patient[] = [
-        {
-          id: '1',
-          fullname: 'John Doe',
-          email: 'john.doe@email.com',
-          phone: '+1234567890',
-          age: 35,
-          gender: 'Male',
-          address: '123 Main St, City',
-          lastVisit: '2024-01-15',
-          status: 'active'
-        },
-        {
-          id: '2',
-          fullname: 'Jane Smith',
-          email: 'jane.smith@email.com',
-          phone: '+1234567891',
-          age: 28,
-          gender: 'Female',
-          address: '456 Oak Ave, City',
-          lastVisit: '2024-01-10',
-          status: 'active'
-        }
-      ];
-      setPatients(mockPatients);
+      setPatients([]);
     } finally {
       setIsLoading(false);
     }

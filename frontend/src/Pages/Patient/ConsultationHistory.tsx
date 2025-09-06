@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../../Components/Sidebar'
 import { FaCalendar, FaClock, FaUser, FaVideo, FaFileExport, FaDownload, FaEye, FaFilter, FaSearch, FaStethoscope, FaHeart, FaPills, FaFileAlt, FaPlus, FaHistory } from 'react-icons/fa'
+import axios from 'axios'
 
 interface Consultation {
   id: number;
@@ -26,7 +27,52 @@ const ConsultationHistory: React.FC = () => {
   const [filterType, setFilterType] = useState<'all' | 'Video' | 'In-Person'>('all');
   const [sortBy, setSortBy] = useState('date');
 
-  const consultations: Consultation[] = [
+  // Dynamic data states
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    fetchConsultationHistory();
+  }, []);
+
+  const fetchConsultationHistory = async () => {
+    try {
+      setLoading(true);
+      // Fetch completed appointments which represent consultation history
+      const response = await axios.get('http://localhost:3000/api/appointments/my/completed', {
+        withCredentials: true
+      });
+      
+      // Transform database appointments to consultation format
+      const transformedConsultations: Consultation[] = response.data.map((apt: any) => ({
+        id: apt._id,
+        doctorName: apt.doctor?.fullname || 'Unknown Doctor',
+        specialization: apt.doctor?.specialization || 'General Medicine',
+        date: new Date(apt.date).toISOString().split('T')[0],
+        time: apt.time || '00:00',
+        duration: '30 minutes', // Default duration
+        type: apt.type === 'Online' ? 'Video' : 'In-Person',
+        status: 'Completed',
+        diagnosis: apt.diagnosis || 'General consultation completed',
+        prescription: apt.prescription || undefined,
+        notes: apt.notes || 'Consultation completed successfully.',
+        rating: apt.rating || 0,
+        followUp: apt.followUpDate ? new Date(apt.followUpDate).toISOString().split('T')[0] : undefined
+      }));
+      
+      setConsultations(transformedConsultations);
+    } catch (err: any) {
+      console.error('Error fetching consultation history:', err);
+      setError('Failed to load consultation history. Please try again.');
+      setConsultations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Remove static data - it will be replaced with dynamic data above
+  const staticConsultations: Consultation[] = [
     {
       id: 1,
       doctorName: "Dr. Sarah Johnson",

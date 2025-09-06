@@ -31,9 +31,68 @@ export class DoctorsService {
 
   async findBySpecialization(specialization: string): Promise<Doctor[]> {
     return this.doctorModel
-      .find({ specialization: new RegExp(specialization, 'i') })
+      .find({ 
+        specialization: new RegExp(specialization, 'i'),
+        isActive: true,
+        isVerified: true 
+      })
       .select('-password')
+      .sort({ rating: -1, totalRatings: -1 })
       .exec();
+  }
+
+  async getAvailableDoctors(): Promise<Doctor[]> {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const currentTime = new Date().toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
+    return this.doctorModel
+      .find({ 
+        isActive: true,
+        isVerified: true,
+        'availability.day': today
+      })
+      .select('-password')
+      .sort({ rating: -1 })
+      .exec();
+  }
+
+  async searchDoctors(query: string): Promise<Doctor[]> {
+    const searchRegex = new RegExp(query, 'i');
+    
+    return this.doctorModel
+      .find({
+        $and: [
+          { isActive: true },
+          { isVerified: true },
+          {
+            $or: [
+              { fullname: searchRegex },
+              { specialization: searchRegex },
+              { location: searchRegex },
+              { qualification: searchRegex }
+            ]
+          }
+        ]
+      })
+      .select('-password')
+      .sort({ rating: -1, totalRatings: -1 })
+      .exec();
+  }
+
+  async getDoctorStats(doctorId: string) {
+    // This would typically involve aggregating appointment data
+    // For now, return basic stats from the doctor document
+    const doctor = await this.findOne(doctorId);
+    return {
+      totalPatients: doctor.totalRatings || 0,
+      rating: doctor.rating || 0,
+      consultationFee: doctor.consultationFee || 0,
+      experience: doctor.experience || 0
+    };
   }
 
   async update(id: string, updateData: Partial<Doctor>): Promise<Doctor> {

@@ -8,11 +8,24 @@ export class DoctorsController {
   constructor(private readonly doctorsService: DoctorsService) {}
 
   @Get()
-  findAll(@Query('specialization') specialization?: string) {
+  findAll(@Query('specialization') specialization?: string, @Query('search') search?: string) {
+    if (search) {
+      return this.doctorsService.searchDoctors(search);
+    }
     if (specialization) {
       return this.doctorsService.findBySpecialization(specialization);
     }
     return this.doctorsService.findAll();
+  }
+
+  @Get('available')
+  getAvailableDoctors() {
+    return this.doctorsService.getAvailableDoctors();
+  }
+
+  @Get(':id/stats')
+  getDoctorStats(@Param('id') id: string) {
+    return this.doctorsService.getDoctorStats(id);
   }
 
   @Get('me')
