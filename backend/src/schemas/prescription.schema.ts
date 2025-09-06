@@ -8,6 +8,9 @@ export class Prescription {
   @Prop({ type: Types.ObjectId, ref: 'Patient', required: true })
   patient: Types.ObjectId;
 
+  @Prop({ required: true })
+  patientId: string; // Custom patient ID like PAT2024000001 for easy querying
+
   @Prop({ type: Types.ObjectId, ref: 'Doctor', required: true })
   doctor: Types.ObjectId;
 
@@ -106,6 +109,7 @@ export const PrescriptionSchema = SchemaFactory.createForClass(Prescription);
 
 // Create indexes for better performance
 PrescriptionSchema.index({ patient: 1 });
+// Note: patientId index may be automatically created by @Prop({ required: true })
 PrescriptionSchema.index({ doctor: 1 });
 PrescriptionSchema.index({ appointment: 1 });
 // prescriptionNumber unique index is already created by @Prop({ unique: true })
@@ -114,5 +118,6 @@ PrescriptionSchema.index({ isDispensed: 1 });
 PrescriptionSchema.index({ issueDate: -1 });
 PrescriptionSchema.index({ expiryDate: 1 });
 PrescriptionSchema.index({ patient: 1, issueDate: -1 });
+PrescriptionSchema.index({ patientId: 1, issueDate: -1 }); // Compound index for patient prescriptions by date
 PrescriptionSchema.index({ doctor: 1, issueDate: -1 });
 PrescriptionSchema.index({ createdAt: -1 });

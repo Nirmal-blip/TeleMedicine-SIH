@@ -13,8 +13,13 @@ export class PatientsController {
   }
 
   @Get('me')
-  getCurrentPatient(@Request() req) {
+  getCurrentPatient(@Request() req: any) {
     return this.patientsService.findOne(req.user.userId);
+  }
+
+  @Get('patient-id/:patientId')
+  findByPatientId(@Param('patientId') patientId: string) {
+    return this.patientsService.findByPatientId(patientId);
   }
 
   @Get(':id')
@@ -23,7 +28,7 @@ export class PatientsController {
   }
 
   @Patch('me')
-  updateCurrentPatient(@Request() req, @Body() updateData: any) {
+  updateCurrentPatient(@Request() req: any, @Body() updateData: any) {
     return this.patientsService.update(req.user.userId, updateData);
   }
 

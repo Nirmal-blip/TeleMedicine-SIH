@@ -15,6 +15,27 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  private async generatePatientId(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+    const prefix = `PAT${currentYear}`;
+    
+    // Find the latest patient with current year prefix
+    const latestPatient = await this.patientModel
+      .findOne({ patientId: { $regex: `^${prefix}` } })
+      .sort({ patientId: -1 })
+      .exec();
+    
+    let nextNumber = 1;
+    if (latestPatient && latestPatient.patientId) {
+      const lastNumber = parseInt(latestPatient.patientId.substring(prefix.length));
+      nextNumber = lastNumber + 1;
+    }
+    
+    // Pad with zeros to make it 6 digits
+    const paddedNumber = nextNumber.toString().padStart(6, '0');
+    return `${prefix}${paddedNumber}`;
+  }
+
   async register(registerDto: RegisterDto) {
     const { fullname, email, phone, password, dateOfBirth, gender, location, userType, medicalRegNo, specialization } = registerDto;
 
@@ -38,7 +59,9 @@ export class AuthService {
 
     let user;
     if (userType === 'patient') {
+      const patientId = await this.generatePatientId();
       user = await this.patientModel.create({
+        patientId,
         fullname,
         email,
         phone,
