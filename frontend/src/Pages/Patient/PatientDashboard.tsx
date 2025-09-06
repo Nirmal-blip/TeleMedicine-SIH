@@ -146,6 +146,10 @@ const PatientDashboard: React.FC = () => {
                 <p className="text-lg text-white/90 mb-8 max-w-2xl leading-relaxed">
                   Welcome to your personal health companion. We're here to make healthcare accessible, friendly, and stress-free.
                 </p>
+
+                <p className="text-sm text-white/90 mb-8 max-w-2xl leading-relaxed">
+                  <span className="font-bold">Today's Health Tip:</span> Remember to stay hydrated! Drinking 8 glasses of water daily helps maintain optimal health and supports your immune system.
+                </p>
                 
                 <div className="flex flex-wrap gap-4">
               <button 
@@ -273,21 +277,6 @@ const PatientDashboard: React.FC = () => {
               </div>
               <h4 className="font-semibold text-gray-800 mb-1">Health Score</h4>
               <p className="text-sm text-gray-600">Looking great!</p>
-            </div>
-          </div>
-          
-          {/* Health Tips */}
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-3xl p-6 border border-emerald-100 animate-slide-up">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <FaClock className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Today's Health Tip</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  Remember to stay hydrated! Drinking 8 glasses of water daily helps maintain optimal health and supports your immune system.
-                </p>
-              </div>
             </div>
           </div>
         </section>

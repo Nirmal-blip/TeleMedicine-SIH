@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaRegCalendarCheck, FaShieldAlt, FaUserMd, FaHeadset, FaArrowRight, FaPlay } from 'react-icons/fa';
-import doctorHero from '../assets/image3.png';
+import doctorHero from '../assets/image.png';
 import { useNavigate } from 'react-router-dom';
 
 // Data for the feature items with enhanced styling
@@ -106,33 +106,47 @@ export const Home: React.FC = () => {
           </div>
 
           {/* Right Side: Image */}
-          <div className="flex justify-center lg:justify-end">
-            <div className="relative">
-              {/* Floating elements around doctor */}
-              <div className="absolute -top-4 -left-4 w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-2xl opacity-20 animate-pulse"></div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-teal-400 to-emerald-400 rounded-full opacity-15 animate-bounce"></div>
+          <div className="flex justify-center lg:justify-end items-center">
+            <div className="relative w-[480px] h-[580px] lg:w-[500px] lg:h-[600px] transform -translate-y-16">
+              {/* Irregular Emerald Shape Background */}
+              <div className="absolute inset-0 w-full h-full flex items-center justify-center">
+                <div
+                  className="absolute w-full h-full bg-gradient-to-br from-emerald-400 via-teal-400 to-emerald-500 opacity-80 shadow-2xl shadow-emerald-500/20 transform -rotate-12 transition-all duration-500"
+                  style={{
+                    borderRadius: '45% 55% 60% 40% / 70% 50% 50% 30%',
+                    filter: 'blur(2px)'
+                  }}
+                ></div>
+                 <div
+                  className="absolute w-5/6 h-5/6 bg-gradient-to-tl from-emerald-300 to-teal-300 opacity-60 shadow-xl transform rotate-6"
+                  style={{
+                    borderRadius: '70% 30% 40% 60% / 60% 70% 30% 40%',
+                    filter: 'blur(3px)'
+                  }}
+                ></div>
+              </div>
               
-              {/* Doctor Image */}
-              <div className="relative bg-gradient-to-br from-emerald-100 to-teal-100 p-8 rounded-3xl shadow-2xl">
+              {/* Doctor Image Container */}
+              <div className="relative z-20 flex items-center justify-center h-full">
                 <img 
                   src={doctorHero} 
                   alt="Friendly female doctor smiling" 
-                  className="w-full max-w-md h-auto rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-500" 
+                  className="w-full max-w-lg h-auto rounded-2xl transform hover:scale-105 transition-transform duration-500 relative z-30" 
                 />
-                
-                {/* Floating Cards */}
-                <div className="absolute -left-6 top-1/4 bg-white p-4 rounded-xl shadow-lg animate-float">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-gray-700">Online Now</span>
-                  </div>
+              </div>
+
+              {/* Floating Cards */}
+              <div className="absolute left-0 top-1/4 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg animate-float z-40 transition-all hover:scale-110">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-gray-700">Online Now</span>
                 </div>
-                
-                <div className="absolute -right-8 bottom-1/4 bg-white p-4 rounded-xl shadow-lg animate-float-delayed">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-emerald-600">4.9★</div>
-                    <div className="text-xs text-gray-600">Patient Rating</div>
-                  </div>
+              </div>
+              
+              <div className="absolute -right-8 bottom-1/4 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg animate-float-delayed z-40 transition-all hover:scale-110">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-emerald-600">4.9★</div>
+                  <div className="text-xs text-gray-600">Patient Rating</div>
                 </div>
               </div>
             </div>
