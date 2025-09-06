@@ -60,15 +60,29 @@ async function startFlaskServer() {
         console.log(`✅ Found Python: ${pythonCmd}`);
         console.log(`📂 Flask server directory: ${flaskPath}`);
 
+        // Check if virtual environment exists
+        const venvPath = path.join(flaskPath, 'venv');
+        const venvPython = process.platform === 'win32' 
+            ? path.join(venvPath, 'Scripts', 'python.exe')
+            : path.join(venvPath, 'bin', 'python');
+
+        let pythonToUse = pythonCmd;
+        if (fs.existsSync(venvPython)) {
+            pythonToUse = venvPython;
+            console.log('✅ Using virtual environment Python');
+        } else {
+            console.log('⚠️  Virtual environment not found, using system Python');
+        }
+
         // Start Flask server
-        const flaskProcess = spawn(pythonCmd, ['app.py'], {
+        const flaskProcess = spawn(pythonToUse, ['app.py'], {
             cwd: flaskPath,
             stdio: 'inherit',
-            shell: true
+            shell: false
         });
 
         console.log('🚀 Flask server starting...');
-        console.log('🔗 Expected URL: http://localhost:5000');
+        console.log('🔗 Expected URL: http://localhost:8000');
 
         flaskProcess.on('close', (code) => {
             if (code !== 0) {
