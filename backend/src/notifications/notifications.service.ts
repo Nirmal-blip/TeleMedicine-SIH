@@ -72,6 +72,16 @@ export class NotificationsService {
     return await this.notificationModel.countDocuments(query);
   }
 
+  async getUnreadNotificationsCountExcludingTypes(userId: string, userType: 'Patient' | 'Doctor', excludeTypes: string[]) {
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType, isRead: false, type: { $nin: excludeTypes } }
+      : { patientId: userId, recipientType: userType, isRead: false, type: { $nin: excludeTypes } };
+    
+    console.log('🚫 Excluding video call unread count query:', query);
+    
+    return await this.notificationModel.countDocuments(query);
+  }
+
   async markAsRead(notificationId: string, userId: string) {
     return await this.notificationModel.findOneAndUpdate(
       { 
@@ -132,6 +142,21 @@ export class NotificationsService {
       : { patientId: userId, recipientType: userType, type: { $in: types } };
     
     console.log('🎯 Video call notifications query:', query);
+    
+    return await this.notificationModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .exec();
+  }
+
+  async getNotificationsExcludingTypes(userId: string, userType: 'Patient' | 'Doctor', excludeTypes: string[], limit: number = 50, skip: number = 0) {
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType, type: { $nin: excludeTypes } }
+      : { patientId: userId, recipientType: userType, type: { $nin: excludeTypes } };
+    
+    console.log('🚫 Excluding video call notifications query:', query);
     
     return await this.notificationModel
       .find(query)
