@@ -15,8 +15,6 @@ interface Doctor {
   rating: number;
   totalPatients: number;
   consultationFee: number;
-  availability: string;
-  nextAvailable: string;
   languages: string[];
   education: string;
   hospital: string;
@@ -129,8 +127,6 @@ const DoctorsList: React.FC = () => {
         rating: doctor.rating || 4.5,
         totalPatients: doctor.totalRatings || 0,
         consultationFee: doctor.consultationFee || 100,
-        availability: getAvailabilityText(doctor.availability),
-        nextAvailable: getNextAvailableTime(doctor.availability),
         languages: ["English"], // Default for now
         education: doctor.qualification || "Medical Degree",
         hospital: doctor.location || "Medical Center",
@@ -148,19 +144,6 @@ const DoctorsList: React.FC = () => {
     }
   };
 
-  const getAvailabilityText = (availability: any[]) => {
-    if (!availability || availability.length === 0) return "Contact for availability";
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    const todaySchedule = availability.find(schedule => schedule.day === today);
-    return todaySchedule ? "Available Today" : "Available Tomorrow";
-  };
-
-  const getNextAvailableTime = (availability: any[]) => {
-    if (!availability || availability.length === 0) return "Contact clinic";
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    const todaySchedule = availability.find(schedule => schedule.day === today);
-    return todaySchedule ? todaySchedule.startTime : "Next day";
-  };
 
   const getDoctorImageId = (index: number) => {
     const imageIds = [
@@ -451,10 +434,6 @@ const DoctorsList: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <FaMapPin className="text-gray-400" />
                       <span className="text-sm text-gray-600">{doctor.hospital}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FaClock className="text-gray-400" />
-                      <span className="text-sm text-gray-600">{doctor.availability}</span>
                     </div>
                   </div>
                   

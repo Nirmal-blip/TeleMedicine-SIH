@@ -11,8 +11,6 @@ interface Doctor {
   rating: number;
   totalPatients: number;
   consultationFee: number;
-  availability: string;
-  nextAvailable: string;
   languages: string[];
   education: string;
   hospital: string;

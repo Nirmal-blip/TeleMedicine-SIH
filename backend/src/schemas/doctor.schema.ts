@@ -47,19 +47,6 @@ export class Doctor {
   @Prop()
   consultationFee?: number;
 
-  @Prop({
-    type: [{
-      day: { type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] },
-      startTime: { type: String },
-      endTime: { type: String }
-    }],
-    default: []
-  })
-  availability?: Array<{
-    day: string;
-    startTime: string;
-    endTime: string;
-  }>;
 
   @Prop()
   about?: string;
@@ -70,8 +57,6 @@ export class Doctor {
   @Prop({ default: 0 })
   totalRatings?: number;
 
-  @Prop({ default: true })
-  isActive: boolean;
 
   @Prop({ default: false })
   isVerified: boolean;
@@ -86,7 +71,6 @@ export const DoctorSchema = SchemaFactory.createForClass(Doctor);
 // Email, doctorId and medicalRegNo unique indexes are already created by @Prop({ unique: true })
 DoctorSchema.index({ specialization: 1 });
 DoctorSchema.index({ location: 1 });
-DoctorSchema.index({ isActive: 1 });
 DoctorSchema.index({ isVerified: 1 });
 DoctorSchema.index({ rating: -1 });
 DoctorSchema.index({ consultationFee: 1 });

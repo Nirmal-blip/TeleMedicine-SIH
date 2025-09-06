@@ -261,14 +261,7 @@ export class SeederService {
         about: 'Experienced cardiologist with expertise in heart disease prevention and treatment.',
         rating: 4.8,
         totalRatings: 120,
-        isVerified: true,
-        availability: [
-          { day: 'Monday', startTime: '09:00', endTime: '17:00' },
-          { day: 'Tuesday', startTime: '09:00', endTime: '17:00' },
-          { day: 'Wednesday', startTime: '09:00', endTime: '17:00' },
-          { day: 'Thursday', startTime: '09:00', endTime: '17:00' },
-          { day: 'Friday', startTime: '09:00', endTime: '15:00' }
-        ]
+        isVerified: true
       },
       {
         fullname: 'Dr. Lisa Anderson',

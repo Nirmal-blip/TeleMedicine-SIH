@@ -62,7 +62,6 @@ export class DoctorsService {
     return this.doctorModel
       .find({ 
         specialization: new RegExp(specialization, 'i'),
-        isActive: true,
         isVerified: true 
       })
       .select('-password')
@@ -71,18 +70,9 @@ export class DoctorsService {
   }
 
   async getAvailableDoctors(): Promise<Doctor[]> {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    const currentTime = new Date().toLocaleTimeString('en-US', { 
-      hour12: false, 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-
     return this.doctorModel
       .find({ 
-        isActive: true,
-        isVerified: true,
-        'availability.day': today
+        isVerified: true
       })
       .select('-password')
       .sort({ rating: -1 })
@@ -95,7 +85,6 @@ export class DoctorsService {
     return this.doctorModel
       .find({
         $and: [
-          { isActive: true },
           { isVerified: true },
           {
             $or: [
