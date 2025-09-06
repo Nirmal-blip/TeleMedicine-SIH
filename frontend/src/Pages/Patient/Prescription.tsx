@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Sidebar from "../../Components/Sidebar"
-import { FaFileExport, FaCalendar, FaUser, FaDownload, FaEye, FaFilter, FaSearch, FaClock, FaCheckCircle, FaExclamationTriangle, FaPills, FaStethoscope, FaHeart, FaFileAlt } from 'react-icons/fa'
+import { FaFileExport, FaCalendar, FaUser, FaDownload, FaEye, FaFilter, FaSearch, FaClock, FaCheckCircle, FaExclamationTriangle, FaPills, FaStethoscope, FaHeart, FaFileAlt, FaPlus } from 'react-icons/fa'
 import { FaShield } from "react-icons/fa6";
 
 interface Medication {
@@ -26,8 +27,11 @@ interface PrescriptionData {
 }
 
 const Prescription: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'all'>('active');
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'Active' | 'Completed' | 'Cancelled'>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'doctor' | 'diagnosis'>('date');
 
   const prescriptions: PrescriptionData[] = [
     {
@@ -134,12 +138,38 @@ const Prescription: React.FC = () => {
   ];
 
   const filteredPrescriptions = prescriptions.filter(prescription => {
-    const matchesTab = activeTab === 'all' || prescription.status.toLowerCase() === activeTab;
-    const matchesSearch = prescription.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         prescription.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         prescription.medications.some(med => med.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesTab && matchesSearch;
+    // Filter by tab
+    let matchesTab = true;
+    if (activeTab !== 'all') {
+      matchesTab = prescription.status.toLowerCase() === activeTab;
+    }
+    
+    // Filter by search term
+    const matchesSearch = searchTerm === '' || 
+      prescription.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      prescription.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      prescription.medications.some(med => med.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      prescription.prescriptionNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filter by status
+    const matchesStatus = filterStatus === 'all' || prescription.status === filterStatus;
+    
+    return matchesTab && matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'doctor':
+        return a.doctorName.localeCompare(b.doctorName);
+      case 'diagnosis':
+        return a.diagnosis.localeCompare(b.diagnosis);
+      case 'date':
+      default:
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+    }
   });
+
+  const handleBookConsultation = () => {
+    navigate('/patient/doctors');
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -158,36 +188,98 @@ const Prescription: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <Sidebar />
       <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
-              <FaFileAlt className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 font-secondary">My Prescriptions</h1>
-              <p className="text-gray-600">Manage your medications and prescriptions</p>
-            </div>
-          </div>
+        {/* Prescriptions Header Card */}
+        <section className="mb-8">
+          <div className="relative overflow-hidden gradient-bg-primary rounded-3xl p-6 shadow-xl">
+            <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <FaPills className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white mb-1 font-secondary">My Prescriptions</h1>
+                  <p className="text-emerald-100">Manage your medications and prescription history</p>
+                </div>
+              </div>
 
-          {/* Search */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search prescriptions by doctor, diagnosis, or medication..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-300 bg-gray-50 focus:bg-white"
-              />
+              <div className="flex flex-col lg:flex-row gap-4 mb-6">
+                {/* Search Bar */}
+                <div className="flex-1 relative">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                    <FaSearch className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search by doctor, diagnosis, medication, or prescription number..."
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 bg-white/90 backdrop-blur-sm text-gray-800 placeholder-gray-500 focus:ring-4 focus:ring-white/30 focus:bg-white transition-all duration-300 text-lg shadow-lg"
+                  />
+                </div>
+                
+                {/* Filter Controls */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value as any)}
+                    className="px-4 py-4 rounded-2xl border-0 bg-white/90 backdrop-blur-sm text-gray-800 focus:ring-4 focus:ring-white/30 focus:bg-white transition-all duration-300 shadow-lg"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                  
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="px-4 py-4 rounded-2xl border-0 bg-white/90 backdrop-blur-sm text-gray-800 focus:ring-4 focus:ring-white/30 focus:bg-white transition-all duration-300 shadow-lg"
+                  >
+                    <option value="date">Sort by Date</option>
+                    <option value="doctor">Sort by Doctor</option>
+                    <option value="diagnosis">Sort by Diagnosis</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Action Buttons and Stats */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                {/* Quick Actions */}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleBookConsultation}
+                    className="bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 hover:bg-white/30 hover:scale-105 border border-white/30 flex items-center gap-3 shadow-lg"
+                  >
+                    <FaPlus className="w-5 h-5" />
+                    New Consultation
+                  </button>
+                  
+                  <button className="bg-white/20 backdrop-blur-sm text-white px-4 py-3 rounded-2xl font-semibold transition-all duration-300 hover:bg-white/30 hover:scale-105 border border-white/30 flex items-center gap-2 shadow-lg">
+                    <FaDownload className="w-4 h-4" />
+                    Export All
+                  </button>
+                </div>
+
+                {/* Stats */}
+                <div className="flex gap-4 text-white/90 text-sm">
+                  <span>Total: {prescriptions.length}</span>
+                  <span>•</span>
+                  <span>Active: {prescriptions.filter(p => p.status === 'Active').length}</span>
+                  <span>•</span>
+                  <span>Filtered: {filteredPrescriptions.length}</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Tab Navigation */}
         <div className="mb-8">
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl w-fit">
+          <div className="flex space-x-1 bg-white/80 backdrop-blur-sm p-1 rounded-2xl w-fit shadow-lg border border-emerald-100">
             {[
               { key: 'active', label: 'Active', count: prescriptions.filter(p => p.status === 'Active').length },
               { key: 'completed', label: 'Completed', count: prescriptions.filter(p => p.status === 'Completed').length },
@@ -196,10 +288,10 @@ const Prescription: React.FC = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as any)}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
                   activeTab === tab.key
-                    ? 'bg-white text-emerald-600 shadow-sm'
-                    : 'text-gray-600 hover:text-emerald-600'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                    : 'text-gray-600 hover:text-emerald-600 hover:bg-emerald-50'
                 }`}
               >
                 {tab.label} ({tab.count})
@@ -341,12 +433,21 @@ const Prescription: React.FC = () => {
         {/* Empty State */}
         {filteredPrescriptions.length === 0 && (
           <div className="text-center py-16">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FaFileAlt className="w-12 h-12 text-gray-400" />
+            <div className="w-24 h-24 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FaPills className="w-12 h-12 text-emerald-500" />
             </div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No prescriptions found</h3>
-            <p className="text-gray-600 mb-6">You don't have any {activeTab} prescriptions at the moment.</p>
-            <button className="btn-primary">
+            <p className="text-gray-600 mb-6">
+              {searchTerm || filterStatus !== 'all' 
+                ? "No prescriptions match your current filters. Try adjusting your search or filters."
+                : `You don't have any ${activeTab} prescriptions at the moment.`
+              }
+            </p>
+            <button 
+              onClick={handleBookConsultation}
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center gap-2 mx-auto"
+            >
+              <FaPlus className="w-4 h-4" />
               Book Consultation
             </button>
           </div>
