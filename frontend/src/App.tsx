@@ -12,7 +12,7 @@ import MedicineRecommendation from './Pages/Patient/MedicineRecommendation'
 import PatientDashboard from './Pages/Patient/PatientDashboard'
 import PatientSupport from './Pages/Patient/PatientSupport'
 import Prescription from './Pages/Patient/Prescription'
-import VideoConsultation from './Pages/Patient/VideoConsultation'
+import VideoCall from './Pages/Patient/VideoCall'
 import Settings from './Pages/Patient/Settings'
 import Notifications from './Pages/Patient/Notifications'
 
@@ -26,11 +26,11 @@ import OrderSuccess from './Pages/Patient/OrderSuccess'
 // Doctor Pages
 import DoctorDashboard from './Pages/Doctor/DoctorDashboard'
 import PatientList from './Pages/Doctor/PatientList'
-import DoctorVideoConsultation from './Pages/Doctor/VideoConsultation'
+// import DoctorVideoConsultation from './Pages/Doctor/VideoConsultation' // Removed
 import PrescribedPatients from './Pages/Doctor/PrescribedPatients'
 import DoctorConsultationHistory from './Pages/Doctor/ConsultationHistory'
 import DoctorNotifications from './Pages/Doctor/Notifications'
-import DoctorVideoCallNotifications from './Pages/Doctor/VideoCallNotifications'
+// import DoctorVideoCallNotifications from './Pages/Doctor/VideoCallNotifications' // Removed
 
 // Auth Pages
 import SignupPage from './Pages/SignupPage'
@@ -56,7 +56,7 @@ const App: React.FC = () => {
             <Route path='/patient-dashboard' element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>}></Route>
             <Route path='/patient-support' element={<ProtectedRoute><PatientSupport /></ProtectedRoute>}></Route>
             <Route path='/prescription' element={<ProtectedRoute><Prescription /></ProtectedRoute>}></Route>
-            <Route path='/video-consultation' element={<ProtectedRoute><VideoConsultation /></ProtectedRoute>}></Route>
+            <Route path='/video-consultation' element={<ProtectedRoute><VideoCall /></ProtectedRoute>}></Route>
             <Route path='/settings' element={<ProtectedRoute><Settings /></ProtectedRoute>}></Route>
             <Route path='/notifications' element={<ProtectedRoute><Notifications /></ProtectedRoute>}></Route>
 
@@ -65,7 +65,7 @@ const App: React.FC = () => {
             <Route path='/patient/appointments' element={<ProtectedRoute><Appointments /></ProtectedRoute>}></Route>
             <Route path='/patient/consultation-history' element={<ProtectedRoute><ConsultationHistory /></ProtectedRoute>}></Route>
             <Route path='/patient/medicine-recommendation' element={<ProtectedRoute><MedicineRecommendation /></ProtectedRoute>}></Route>
-            <Route path='/patient/video-consultation' element={<ProtectedRoute><VideoConsultation /></ProtectedRoute>}></Route>
+            <Route path='/patient/video-consultation' element={<ProtectedRoute><VideoCall /></ProtectedRoute>}></Route>
             <Route path='/patient/settings' element={<ProtectedRoute><Settings /></ProtectedRoute>}></Route>
             <Route path='/patient/notifications' element={<ProtectedRoute><Notifications /></ProtectedRoute>}></Route>
             <Route path='/patient/support' element={<ProtectedRoute><PatientSupport /></ProtectedRoute>}></Route>
@@ -82,11 +82,11 @@ const App: React.FC = () => {
             <Route path='/doctor-dashboard' element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>}></Route>
             <Route path='/doctor/dashboard' element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>}></Route>
             <Route path='/doctor/patient-list' element={<ProtectedRoute><PatientList /></ProtectedRoute>}></Route>
-            <Route path='/doctor/video-consultation' element={<ProtectedRoute><DoctorVideoConsultation /></ProtectedRoute>}></Route>
+            {/* <Route path='/doctor/video-consultation' element={<ProtectedRoute><DoctorVideoConsultation /></ProtectedRoute>}></Route> */}
             <Route path='/doctor/prescribed-patients' element={<ProtectedRoute><PrescribedPatients /></ProtectedRoute>}></Route>
             <Route path='/doctor/consultation-history' element={<ProtectedRoute><DoctorConsultationHistory /></ProtectedRoute>}></Route>
             <Route path='/doctor/notifications' element={<ProtectedRoute><DoctorNotifications /></ProtectedRoute>}></Route>
-            <Route path='/doctor/video-call-notifications' element={<ProtectedRoute><DoctorVideoCallNotifications /></ProtectedRoute>}></Route>
+            {/* <Route path='/doctor/video-call-notifications' element={<ProtectedRoute><DoctorVideoCallNotifications /></ProtectedRoute>}></Route> */}
         </Routes>
         <ToastContainer
             position="top-right"

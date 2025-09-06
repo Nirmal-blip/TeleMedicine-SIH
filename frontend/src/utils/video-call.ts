@@ -1,0 +1,211 @@
+import { io, Socket } from 'socket.io-client';
+
+export interface VideoCallRequest {
+  doctorId: string;
+  doctorName: string;
+  patientId: string;
+  patientName: string;
+  specialization: string;
+  callId: string;
+}
+
+export interface VideoCallNotification {
+  callId: string;
+  doctorId: string;
+  doctorName: string;
+  patientId: string;
+  patientName: string;
+  specialization: string;
+  requestedAt: string;
+}
+
+export class VideoCallService {
+  private socket: Socket | null = null;
+  private userId: string = '';
+  private userType: 'doctor' | 'patient' = 'patient';
+  private isConnected: boolean = false;
+
+  constructor(userId: string, userType: 'doctor' | 'patient') {
+    this.userId = userId;
+    this.userType = userType;
+    this.connect();
+  }
+
+  private connect() {
+    try {
+      this.socket = io('http://localhost:3000/video-call', {
+        query: {
+          userId: this.userId,
+          userType: this.userType,
+        },
+        withCredentials: true,
+      });
+
+      this.socket.on('connect', () => {
+        console.log('Video call service connected');
+        this.isConnected = true;
+      });
+
+      this.socket.on('disconnect', () => {
+        console.log('Video call service disconnected');
+        this.isConnected = false;
+      });
+
+      this.socket.on('error', (error: any) => {
+        console.error('Video call service error:', error);
+      });
+
+    } catch (error) {
+      console.error('Failed to connect video call service:', error);
+    }
+  }
+
+  // Patient methods
+  public requestVideoCall(data: {
+    doctorId: string;
+    doctorName: string;
+    patientName: string;
+    specialization: string;
+  }): string | null {
+    if (this.socket && this.isConnected && this.userType === 'patient') {
+      this.socket.emit('request-video-call', {
+        doctorId: data.doctorId,
+        doctorName: data.doctorName,
+        patientId: this.userId,
+        patientName: data.patientName,
+        specialization: data.specialization,
+      });
+      return `call-${Date.now()}`;
+    }
+    return null;
+  }
+
+  // Doctor methods
+  public acceptVideoCall(callId: string) {
+    if (this.socket && this.isConnected && this.userType === 'doctor') {
+      this.socket.emit('accept-video-call', { callId });
+    }
+  }
+
+  public rejectVideoCall(callId: string, reason?: string) {
+    if (this.socket && this.isConnected && this.userType === 'doctor') {
+      this.socket.emit('reject-video-call', { callId, reason });
+    }
+  }
+
+  // Video room methods
+  public joinVideoRoom(callId: string) {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('join-video-room', { callId });
+    }
+  }
+
+  public leaveVideoRoom(callId: string) {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('leave-video-room', { callId });
+    }
+  }
+
+  public endVideoCall(callId: string) {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('end-video-call', { callId });
+    }
+  }
+
+  // Event listeners for patients
+  public onCallRequestSent(callback: (data: { callId: string; doctorName: string; message: string }) => void) {
+    if (this.socket) {
+      this.socket.on('call-request-sent', callback);
+    }
+  }
+
+  public onCallAccepted(callback: (data: { callId: string; doctorId: string; doctorName: string; message: string; videoCallUrl: string }) => void) {
+    if (this.socket) {
+      this.socket.on('call-accepted', callback);
+    }
+  }
+
+  public onCallRejected(callback: (data: { callId: string; doctorId: string; doctorName: string; reason: string; message: string }) => void) {
+    if (this.socket) {
+      this.socket.on('call-rejected', callback);
+    }
+  }
+
+  // Event listeners for doctors
+  public onIncomingVideoCall(callback: (data: VideoCallNotification) => void) {
+    if (this.socket) {
+      this.socket.on('incoming-video-call', callback);
+    }
+  }
+
+  public onCallAcceptedConfirmation(callback: (data: { callId: string; message: string; videoCallUrl: string }) => void) {
+    if (this.socket) {
+      this.socket.on('call-accepted-confirmation', callback);
+    }
+  }
+
+  public onCallRejectedConfirmation(callback: (data: { callId: string; message: string }) => void) {
+    if (this.socket) {
+      this.socket.on('call-rejected-confirmation', callback);
+    }
+  }
+
+  // Event listeners for video room
+  public onJoinedVideoRoom(callback: (data: { callId: string; message: string }) => void) {
+    if (this.socket) {
+      this.socket.on('joined-video-room', callback);
+    }
+  }
+
+  public onUserJoinedRoom(callback: (data: { userId: string; userType: string; joinedAt: string }) => void) {
+    if (this.socket) {
+      this.socket.on('user-joined-room', callback);
+    }
+  }
+
+  public onUserLeftRoom(callback: (data: { userId: string; userType: string; leftAt: string }) => void) {
+    if (this.socket) {
+      this.socket.on('user-left-room', callback);
+    }
+  }
+
+  public onCallEnded(callback: (data: { callId: string; endedBy: string; userType: string; endedAt: string }) => void) {
+    if (this.socket) {
+      this.socket.on('call-ended', callback);
+    }
+  }
+
+  // General error handling
+  public onCallError(callback: (data: { message: string }) => void) {
+    if (this.socket) {
+      this.socket.on('call-error', callback);
+    }
+  }
+
+  public disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+      this.isConnected = false;
+    }
+  }
+
+  public isServiceConnected(): boolean {
+    return this.isConnected;
+  }
+}
+
+// Global instance management
+let videoCallService: VideoCallService | null = null;
+
+export const initializeVideoCallService = (userId: string, userType: 'doctor' | 'patient') => {
+  if (videoCallService) {
+    videoCallService.disconnect();
+  }
+  videoCallService = new VideoCallService(userId, userType);
+  return videoCallService;
+};
+
+export const getVideoCallService = (): VideoCallService | null => {
+  return videoCallService;
+};

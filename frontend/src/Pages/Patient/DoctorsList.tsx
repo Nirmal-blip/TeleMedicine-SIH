@@ -5,6 +5,7 @@ import AppointmentBooking from '../../Components/AppointmentBooking'
 import { FaSearch, FaFilter, FaStar, FaClock, FaVideo, FaMapPin, FaCalendar, FaUser, FaStethoscope, FaHeart, FaPhone, FaEnvelope, FaUserMd } from 'react-icons/fa'
 import axios from 'axios'
 import { getNotificationService } from '../../utils/real-time-notifications'
+import { VideoCallService, initializeVideoCallService } from '../../utils/video-call'
 
 interface Doctor {
   id: string;
@@ -45,12 +46,71 @@ const DoctorsList: React.FC = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [callingDoctor, setCallingDoctor] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
+  const [videoCallService, setVideoCallService] = useState<VideoCallService | null>(null);
+  const [isCallingDoctor, setIsCallingDoctor] = useState<string | null>(null);
+  const [showVideoCallModal, setShowVideoCallModal] = useState(false);
+  const [callStatus, setCallStatus] = useState<'idle' | 'requesting' | 'waiting' | 'accepted' | 'rejected'>('idle');
 
   useEffect(() => {
     fetchDoctors();
+    initializeVideoCall();
+    
+    // Cleanup
+    return () => {
+      if (videoCallService) {
+        videoCallService.disconnect();
+      }
+    };
   }, []);
+
+  const initializeVideoCall = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/auth/me', {
+        withCredentials: true
+      });
+      
+      const userId = response.data.id;
+      const service = initializeVideoCallService(userId, 'patient');
+      setVideoCallService(service);
+      
+      // Set up event listeners
+      service.onCallRequestSent((data) => {
+        console.log('Call request sent:', data);
+        setCallStatus('waiting');
+      });
+      
+      service.onCallAccepted((data) => {
+        console.log('Call accepted:', data);
+        setCallStatus('accepted');
+        setShowVideoCallModal(false);
+        // Navigate to video call page
+        navigate(`/patient/video-call/${data.callId}`);
+      });
+      
+      service.onCallRejected((data) => {
+        console.log('Call rejected:', data);
+        setCallStatus('rejected');
+        setTimeout(() => {
+          setShowVideoCallModal(false);
+          setCallStatus('idle');
+          setIsCallingDoctor(null);
+        }, 3000);
+      });
+      
+      service.onCallError((data) => {
+        console.error('Call error:', data);
+        alert(data.message);
+        setCallStatus('idle');
+        setShowVideoCallModal(false);
+        setIsCallingDoctor(null);
+      });
+      
+    } catch (error) {
+      console.error('Failed to initialize video call service:', error);
+    }
+  };
+
 
   const fetchDoctors = async () => {
     try {
@@ -195,55 +255,54 @@ const DoctorsList: React.FC = () => {
     // You could navigate to appointments page or show a success message
   };
 
-  const callDoctor = async (doctor: Doctor) => {
+  const startVideoCall = async (doctor: Doctor) => {
     if (!doctor.isOnline) {
-      alert('Doctor is currently offline. Please try again later.');
+      alert('Doctor is currently offline. Please book an appointment instead.');
+      return;
+    }
+
+    if (!videoCallService) {
+      alert('Video call service not initialized. Please refresh the page.');
       return;
     }
 
     try {
-      setCallingDoctor(doctor.id);
+      setIsCallingDoctor(doctor.id);
+      setSelectedDoctor(doctor);
+      setCallStatus('requesting');
+      setShowVideoCallModal(true);
       
       // Get current user info
       const response = await axios.get('http://localhost:3000/api/auth/me', {
         withCredentials: true
       });
       
-      const patientId = response.data.id;
       const patientName = response.data.fullname || 'Patient';
       
-      // Initialize notification service
-      const notificationService = getNotificationService();
-      
-      if (notificationService) {
-        // Send call request to doctor
-        const callData = {
-          doctorId: doctor.id,
-          doctorName: doctor.name,
-          patientId: patientId,
-          patientName: patientName,
-          specialization: doctor.specialization
-        };
-        
-        // Emit call request to backend
-        notificationService.emit('patient-call-doctor', callData);
-      }
-      
-      // Navigate to video consultation page
-      navigate('/patient/video-consultation', { 
-        state: { 
-          callingDoctor: doctor,
-          isPatientInitiated: true 
-        } 
+      // Request video call
+      videoCallService.requestVideoCall({
+        doctorId: doctor.id,
+        doctorName: doctor.name,
+        patientName: patientName,
+        specialization: doctor.specialization
       });
       
     } catch (error) {
-      console.error('Error calling doctor:', error);
-      alert('Failed to call doctor. Please try again.');
-    } finally {
-      setCallingDoctor(null);
+      console.error('Error starting video call:', error);
+      alert('Failed to start video call. Please try again.');
+      setCallStatus('idle');
+      setShowVideoCallModal(false);
+      setIsCallingDoctor(null);
     }
   };
+
+  const cancelVideoCall = () => {
+    setShowVideoCallModal(false);
+    setCallStatus('idle');
+    setIsCallingDoctor(null);
+    setSelectedDoctor(null);
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
@@ -375,19 +434,41 @@ const DoctorsList: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-bold text-emerald-600">₹{doctor.consultationFee}</span>
-                      <span className="text-sm text-gray-500"> /consultation</span>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-2xl font-bold text-emerald-600">₹{doctor.consultationFee}</span>
+                        <span className="text-sm text-gray-500"> /consultation</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          doctor.isOnline 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {doctor.isOnline ? '🟢 Online' : '🔴 Offline'}
+                        </span>
+                      </div>
                     </div>
                     
-                    <button
-                      onClick={() => openBookingModal(doctor)}
-                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300"
-                    >
-                      <FaVideo />
-                      Book Now
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openBookingModal(doctor)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300 text-sm"
+                      >
+                        <FaCalendar className="text-xs" />
+                        Book Appointment
+                      </button>
+                      
+                      <button
+                        onClick={() => startVideoCall(doctor)}
+                        disabled={!doctor.isOnline || isCallingDoctor === doctor.id}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                      >
+                        <FaVideo className="text-xs" />
+                        {isCallingDoctor === doctor.id ? 'Calling...' : 'Start Video Call'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -479,13 +560,11 @@ const DoctorsList: React.FC = () => {
                   <button 
                     onClick={() => {
                       closeModal();
-                      callDoctor(selectedDoctor);
                     }}
-                    disabled={callingDoctor === selectedDoctor.id || !selectedDoctor.isOnline}
-                    className="flex items-center justify-center gap-2 px-6 py-3 border border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center gap-2 px-6 py-3 border border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all duration-300"
                   >
                     <FaPhone />
-                    {callingDoctor === selectedDoctor.id ? 'Calling...' : 'Call'}
+                    Contact Doctor
                   </button>
                 </div>
               </div>
@@ -502,6 +581,101 @@ const DoctorsList: React.FC = () => {
             onBookingSuccess={handleBookingSuccess}
           />
         )}
+
+        {/* Video Call Modal */}
+        {showVideoCallModal && selectedDoctor && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center">
+              <div className="mb-4">
+                <img 
+                  src={selectedDoctor.image} 
+                  alt={selectedDoctor.name}
+                  className="w-20 h-20 rounded-full mx-auto mb-4 object-cover"
+                />
+                <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedDoctor.name}</h3>
+                <p className="text-emerald-600 font-medium">{selectedDoctor.specialization}</p>
+              </div>
+
+              {callStatus === 'requesting' && (
+                <div className="mb-6">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Sending call request...</p>
+                </div>
+              )}
+
+              {callStatus === 'waiting' && (
+                <div className="mb-6">
+                  <div className="flex justify-center mb-4">
+                    <div className="animate-pulse bg-blue-600 rounded-full h-4 w-4 mx-1"></div>
+                    <div className="animate-pulse bg-blue-600 rounded-full h-4 w-4 mx-1" style={{animationDelay: '0.2s'}}></div>
+                    <div className="animate-pulse bg-blue-600 rounded-full h-4 w-4 mx-1" style={{animationDelay: '0.4s'}}></div>
+                  </div>
+                  <p className="text-gray-800 font-medium">Calling Dr. {selectedDoctor.name}...</p>
+                  <p className="text-gray-600 text-sm mt-2">Waiting for the doctor to respond</p>
+                </div>
+              )}
+
+              {callStatus === 'accepted' && (
+                <div className="mb-6">
+                  <div className="text-green-600 text-4xl mb-4">✅</div>
+                  <p className="text-green-600 font-medium">Call Accepted!</p>
+                  <p className="text-gray-600 text-sm">Joining video call...</p>
+                </div>
+              )}
+
+              {callStatus === 'rejected' && (
+                <div className="mb-6">
+                  <div className="text-red-600 text-4xl mb-4">❌</div>
+                  <p className="text-red-600 font-medium">Call Declined</p>
+                  <p className="text-gray-600 text-sm">Dr. {selectedDoctor.name} is not available right now</p>
+                  <p className="text-gray-500 text-xs mt-2">Try booking an appointment instead</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                {callStatus === 'waiting' && (
+                  <button
+                    onClick={cancelVideoCall}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300"
+                  >
+                    Cancel Call
+                  </button>
+                )}
+                
+                {(callStatus === 'rejected' || callStatus === 'requesting') && (
+                  <>
+                    <button
+                      onClick={cancelVideoCall}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300"
+                    >
+                      Close
+                    </button>
+                    {callStatus === 'rejected' && (
+                      <button
+                        onClick={() => {
+                          cancelVideoCall();
+                          openBookingModal(selectedDoctor);
+                        }}
+                        className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300"
+                      >
+                        Book Appointment
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {callStatus === 'waiting' && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-blue-800 text-sm">
+                    💡 <strong>Tip:</strong> The doctor will receive a notification and can join the call
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );

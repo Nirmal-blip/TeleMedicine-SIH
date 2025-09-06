@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaCalendar, FaClock, FaVideo, FaStethoscope, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
-import { getVideoCallNotificationService } from '../utils/video-call-notifications';
+// import { getVideoCallNotificationService } from '../utils/video-call-notifications'; // Removed
 
 interface Doctor {
   id: string;
@@ -156,13 +156,16 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
       console.log('Immediate consultation booked:', response.data);
       
+      // Video call functionality moved to DoctorsList component
       // Initialize video call notification service if not already done
-      let videoCallService = getVideoCallNotificationService();
-      if (!videoCallService) {
-        const { initializeVideoCallNotificationService } = await import('../utils/video-call-notifications');
-        videoCallService = initializeVideoCallNotificationService(patientResponse.data._id, 'patient');
-      }
+      // let videoCallService = getVideoCallNotificationService();
+      // if (!videoCallService) {
+      //   const { initializeVideoCallNotificationService } = await import('../utils/video-call-notifications');
+      //   videoCallService = initializeVideoCallNotificationService(patientResponse.data._id, 'patient');
+      // }
 
+      // Video call functionality moved to DoctorsList component
+      /*
       if (videoCallService) {
         const callId = videoCallService.requestVideoCall({
           doctorId: doctor.id,
@@ -279,6 +282,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           });
         }
       }
+      */
       
       onClose();
     } catch (error: any) {

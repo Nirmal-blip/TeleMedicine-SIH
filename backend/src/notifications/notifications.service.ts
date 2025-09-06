@@ -20,27 +20,26 @@ export class NotificationsService {
     message: string;
     type: string;
     priority?: 'Low' | 'Medium' | 'High' | 'Critical';
-    relatedEntity?: {
-      entityType: 'Appointment' | 'Prescription' | 'Chat' | 'MedicalRecord';
-      entityId: string;
-    };
     actionUrl?: string;
     actionText?: string;
     metadata?: Record<string, any>;
   }) {
-    const notification = new this.notificationModel(notificationData);
+    const notification = new this.notificationModel({
+      ...notificationData,
+      priority: notificationData.priority || 'Medium',
+      senderType: notificationData.senderType || 'System',
+      isRead: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
     return await notification.save();
   }
 
   async getNotificationsForUser(userId: string, userType: 'Patient' | 'Doctor', limit: number = 50, skip: number = 0) {
-    // Debug logging
-    console.log(`🔍 Searching notifications for: ${userId} (${userType})`);
-    
     const query = userType === 'Doctor' 
       ? { doctorId: userId, recipientType: userType }
       : { patientId: userId, recipientType: userType };
-    
-    console.log('📊 Query:', query);
     
     const notifications = await this.notificationModel
       .find(query)
@@ -49,37 +48,7 @@ export class NotificationsService {
       .skip(skip)
       .exec();
       
-    console.log(`📋 Query result: ${notifications.length} notifications found`);
-    
     return notifications;
-  }
-
-  async getUnreadNotificationsCount(userId: string, userType: 'Patient' | 'Doctor') {
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType, isRead: false }
-      : { patientId: userId, recipientType: userType, isRead: false };
-    
-    return await this.notificationModel.countDocuments(query);
-  }
-
-  async getUnreadNotificationsCountByTypes(userId: string, userType: 'Patient' | 'Doctor', types: string[]) {
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType, isRead: false, type: { $in: types } }
-      : { patientId: userId, recipientType: userType, isRead: false, type: { $in: types } };
-    
-    console.log('🔢 Video call unread count query:', query);
-    
-    return await this.notificationModel.countDocuments(query);
-  }
-
-  async getUnreadNotificationsCountExcludingTypes(userId: string, userType: 'Patient' | 'Doctor', excludeTypes: string[]) {
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType, isRead: false, type: { $nin: excludeTypes } }
-      : { patientId: userId, recipientType: userType, isRead: false, type: { $nin: excludeTypes } };
-    
-    console.log('🚫 Excluding video call unread count query:', query);
-    
-    return await this.notificationModel.countDocuments(query);
   }
 
   async markAsRead(notificationId: string, userId: string) {
@@ -96,102 +65,12 @@ export class NotificationsService {
     );
   }
 
-  async markAllAsRead(userId: string, userType: 'Patient' | 'Doctor') {
+  async getUnreadCount(userId: string, userType: 'Patient' | 'Doctor') {
     const query = userType === 'Doctor' 
       ? { doctorId: userId, recipientType: userType, isRead: false }
       : { patientId: userId, recipientType: userType, isRead: false };
     
-    return await this.notificationModel.updateMany(
-      query,
-      { 
-        isRead: true, 
-        readAt: new Date() 
-      }
-    );
-  }
-
-  async deleteNotification(notificationId: string, userId: string) {
-    return await this.notificationModel.findOneAndDelete({
-      _id: notificationId,
-      $or: [{ patientId: userId }, { doctorId: userId }]
-    });
-  }
-
-  async deleteAllNotifications(userId: string, userType: 'Patient' | 'Doctor'): Promise<any> {
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType }
-      : { patientId: userId, recipientType: userType };
-    
-    return await this.notificationModel.deleteMany(query);
-  }
-
-  async getNotificationsByType(userId: string, userType: 'Patient' | 'Doctor', type: string) {
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType, type: type }
-      : { patientId: userId, recipientType: userType, type: type };
-    
-    return await this.notificationModel
-      .find(query)
-      .sort({ createdAt: -1 })
-      .exec();
-  }
-
-  async getNotificationsByTypes(userId: string, userType: 'Patient' | 'Doctor', types: string[], limit: number = 50, skip: number = 0) {
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType, type: { $in: types } }
-      : { patientId: userId, recipientType: userType, type: { $in: types } };
-    
-    console.log('🎯 Video call notifications query:', query);
-    
-    return await this.notificationModel
-      .find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip(skip)
-      .exec();
-  }
-
-  async getNotificationsExcludingTypes(userId: string, userType: 'Patient' | 'Doctor', excludeTypes: string[], limit: number = 50, skip: number = 0) {
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType, type: { $nin: excludeTypes } }
-      : { patientId: userId, recipientType: userType, type: { $nin: excludeTypes } };
-    
-    console.log('🚫 Excluding video call notifications query:', query);
-    
-    return await this.notificationModel
-      .find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip(skip)
-      .exec();
-  }
-
-  async getNotificationsByPriority(userId: string, userType: 'Patient' | 'Doctor', priority: string) {
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType, priority: priority }
-      : { patientId: userId, recipientType: userType, priority: priority };
-    
-    return await this.notificationModel
-      .find(query)
-      .sort({ createdAt: -1 })
-      .exec();
-  }
-
-  async searchNotifications(userId: string, userType: 'Patient' | 'Doctor', searchQuery: string) {
-    const baseQuery = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType }
-      : { patientId: userId, recipientType: userType };
-    
-    return await this.notificationModel
-      .find({
-        ...baseQuery,
-        $or: [
-          { title: { $regex: searchQuery, $options: 'i' } },
-          { message: { $regex: searchQuery, $options: 'i' } }
-        ]
-      })
-      .sort({ createdAt: -1 })
-      .exec();
+    return await this.notificationModel.countDocuments(query);
   }
 
   // Method to create appointment-related notifications
@@ -216,10 +95,6 @@ export class NotificationsService {
       message: this.getAppointmentMessage(appointmentData.type, 'doctor', appointmentData),
       type: appointmentData.type,
       priority: appointmentData.type === 'appointment_cancelled' ? 'Medium' : 'High',
-      relatedEntity: {
-        entityType: 'Appointment',
-        entityId: appointmentData.appointmentId
-      },
       actionUrl: '/doctor/appointments',
       actionText: 'View Appointment'
     });
@@ -234,10 +109,6 @@ export class NotificationsService {
       message: this.getAppointmentMessage(appointmentData.type, 'patient', appointmentData),
       type: appointmentData.type,
       priority: appointmentData.type === 'appointment_cancelled' ? 'Medium' : 'High',
-      relatedEntity: {
-        entityType: 'Appointment',
-        entityId: appointmentData.appointmentId
-      },
       actionUrl: '/patient/appointments',
       actionText: 'View Appointment'
     });
@@ -287,53 +158,5 @@ export class NotificationsService {
       }
     };
     return messages[type][recipient];
-  }
-
-  // Method to create prescription-related notifications
-  async createPrescriptionNotification(prescriptionData: {
-    prescriptionId: string;
-    doctorId: string;
-    patientId: string;
-    doctorName: string;
-    patientName: string;
-    type: 'prescription_ready';
-  }) {
-    return await this.createNotification({
-      patientId: prescriptionData.patientId,
-      recipientType: 'Patient',
-      senderDoctorId: prescriptionData.doctorId,
-      senderType: 'Doctor',
-      title: 'Prescription Ready',
-      message: `Your prescription from Dr. ${prescriptionData.doctorName} is ready for pickup`,
-      type: prescriptionData.type,
-      priority: 'High',
-      relatedEntity: {
-        entityType: 'Prescription',
-        entityId: prescriptionData.prescriptionId
-      },
-      actionUrl: '/patient/prescriptions',
-      actionText: 'View Prescription'
-    });
-  }
-
-  // Method to create emergency alert notifications
-  async createEmergencyNotification(emergencyData: {
-    patientId: string;
-    doctorId: string;
-    patientName: string;
-    message: string;
-  }) {
-    return await this.createNotification({
-      doctorId: emergencyData.doctorId,
-      recipientType: 'Doctor',
-      senderPatientId: emergencyData.patientId,
-      senderType: 'Patient',
-      title: 'Emergency Alert',
-      message: `Emergency alert from ${emergencyData.patientName}: ${emergencyData.message}`,
-      type: 'emergency_alert',
-      priority: 'Critical',
-      actionUrl: '/doctor/video-consultation',
-      actionText: 'Start Emergency Call'
-    });
   }
 }

@@ -19,7 +19,7 @@ import {
   FaPhone,
   FaTimes
 } from "react-icons/fa";
-import { getVideoCallNotificationService } from "../../utils/video-call-notifications";
+// import { getVideoCallNotificationService } from "../../utils/video-call-notifications"; // Removed
 
 interface Notification {
   _id: string;
@@ -72,12 +72,13 @@ const PatientNotifications: React.FC = () => {
       const patientId = response.data.user.userId;
       
       // Initialize the video call notification service
-      const { initializeVideoCallNotificationService } = await import('../../utils/video-call-notifications');
-      const service = initializeVideoCallNotificationService(patientId, 'patient');
-      setVideoCallService(service);
+      // Video call service removed - will be handled by new VideoCallService
+      // const { initializeVideoCallNotificationService } = await import('../../utils/video-call-notifications');
+      // const service = initializeVideoCallNotificationService(patientId, 'patient');
+      // setVideoCallService(service);
       
-      // Set up event listeners
-      setupVideoCallListeners(service);
+      // Set up event listeners - removed for new video call system
+      // setupVideoCallListeners(service);
     } catch (error) {
       console.error('Error initializing video call service:', error);
     }

@@ -1,70 +1,179 @@
-import React from 'react';
-import { FaVideo, FaPhone, FaTimes } from 'react-icons/fa';
-import { NotificationData } from '../utils/notifications';
+import React, { useState, useEffect } from 'react';
+import { FaVideo, FaPhone, FaUser, FaClock } from 'react-icons/fa';
+import { VideoCallService, VideoCallNotification, initializeVideoCallService } from '../utils/video-call';
+import axios from 'axios';
 
 interface VideoCallNotificationProps {
-  data: NotificationData;
-  onJoin: () => void;
-  onDecline: () => void;
-  onClose: () => void;
+  isDoctor?: boolean;
 }
 
-const VideoCallNotification: React.FC<VideoCallNotificationProps> = ({
-  data,
-  onJoin,
-  onDecline,
-  onClose
-}) => {
-  const { title, message, doctorName, patientName, type } = data;
+const VideoCallNotificationComponent: React.FC<VideoCallNotificationProps> = ({ isDoctor = true }) => {
+  const [videoCallService, setVideoCallService] = useState<VideoCallService | null>(null);
+  const [incomingCalls, setIncomingCalls] = useState<VideoCallNotification[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    if (isDoctor) {
+      initializeVideoCallService();
+    }
+
+    return () => {
+      if (videoCallService) {
+        videoCallService.disconnect();
+      }
+    };
+  }, []);
+
+  const initializeVideoCallService = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/auth/me', {
+        withCredentials: true
+      });
+      
+      const userId = response.data.id;
+      const service = initializeVideoCallService(userId, 'doctor');
+      setVideoCallService(service);
+      setIsInitialized(true);
+      
+      // Set up event listeners for incoming calls
+      service.onIncomingVideoCall((data) => {
+        console.log('Incoming video call:', data);
+        setIncomingCalls(prev => [...prev, data]);
+        
+        // Show browser notification
+        if (Notification.permission === 'granted') {
+          new Notification('Incoming Video Call', {
+            body: `${data.patientName} is requesting a video consultation for ${data.specialization}`,
+            icon: '/user.jpg'
+          });
+        }
+      });
+      
+      service.onCallAcceptedConfirmation((data) => {
+        console.log('Call accepted confirmation:', data);
+        // Remove from incoming calls and navigate to video call
+        setIncomingCalls(prev => prev.filter(call => call.callId !== data.callId));
+        window.location.href = data.videoCallUrl;
+      });
+      
+      service.onCallRejectedConfirmation((data) => {
+        console.log('Call rejected confirmation:', data);
+        // Remove from incoming calls
+        setIncomingCalls(prev => prev.filter(call => call.callId !== data.callId));
+      });
+      
+      // Request notification permission
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+      
+    } catch (error) {
+      console.error('Failed to initialize video call service:', error);
+    }
+  };
+
+  const acceptCall = (callId: string) => {
+    if (videoCallService) {
+      videoCallService.acceptVideoCall(callId);
+    }
+  };
+
+  const rejectCall = (callId: string, reason?: string) => {
+    if (videoCallService) {
+      videoCallService.rejectVideoCall(callId, reason);
+      setIncomingCalls(prev => prev.filter(call => call.callId !== callId));
+    }
+  };
+
+  if (!isDoctor || !isInitialized) {
+    return null;
+  }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-            <FaVideo className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h4 className="font-semibold text-gray-800 text-sm">{title}</h4>
-            <p className="text-xs text-gray-600">{message}</p>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+    <>
+      {/* Incoming Call Notifications */}
+      {incomingCalls.map((call) => (
+        <div
+          key={call.callId}
+          className="fixed top-4 right-4 z-50 bg-white rounded-lg shadow-2xl border border-gray-200 p-6 w-96 animate-slide-in"
         >
-          <FaTimes className="w-4 h-4" />
-        </button>
-      </div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <FaUser className="text-blue-600 text-xl" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-800">{call.patientName}</h3>
+              <p className="text-sm text-gray-600">{call.specialization}</p>
+            </div>
+            <div className="text-right">
+              <div className="animate-pulse w-3 h-3 bg-green-500 rounded-full mb-1"></div>
+              <p className="text-xs text-gray-500">Incoming call</p>
+            </div>
+          </div>
 
-      {(doctorName || patientName) && (
-        <div className="mb-3 text-xs text-gray-500">
-          {type === 'video-call-request' ? (
-            <>From: {doctorName || patientName}</>
-          ) : (
-            <>With: {doctorName || patientName}</>
-          )}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+              <FaClock className="text-xs" />
+              <span>Requested: {new Date(call.requestedAt).toLocaleTimeString()}</span>
+            </div>
+            <p className="text-sm text-gray-700">
+              Patient is requesting a video consultation for <strong>{call.specialization}</strong>
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => rejectCall(call.callId, 'Doctor is busy')}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200"
+            >
+              <FaPhone className="transform rotate-135" />
+              Decline
+            </button>
+            <button
+              onClick={() => acceptCall(call.callId)}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200"
+            >
+              <FaVideo />
+              Accept
+            </button>
+          </div>
+
+          <button
+            onClick={() => setIncomingCalls(prev => prev.filter(c => c.callId !== call.callId))}
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+
+      {/* Connection Status Indicator */}
+      {isInitialized && (
+        <div className="fixed bottom-4 right-4 z-40">
+          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            Video calls enabled
+          </div>
         </div>
       )}
 
-      <div className="flex gap-2">
-        <button
-          onClick={onJoin}
-          className="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs py-2 px-3 rounded flex items-center justify-center gap-1 transition-colors"
-        >
-          <FaVideo className="w-3 h-3" />
-          Join
-        </button>
-        <button
-          onClick={onDecline}
-          className="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs py-2 px-3 rounded flex items-center justify-center gap-1 transition-colors"
-        >
-          <FaPhone className="w-3 h-3" />
-          Decline
-        </button>
-      </div>
-    </div>
+      <style jsx>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
+    </>
   );
 };
 
-export default VideoCallNotification;
+export default VideoCallNotificationComponent;
