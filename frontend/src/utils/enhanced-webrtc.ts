@@ -114,7 +114,18 @@ export class EnhancedWebRTCService {
   }
 
   private async handleSignalingMessage(data: CallData) {
-    if (!this.peerConnection) return;
+    if (!this.peerConnection) {
+      console.warn('Received signaling message but no peer connection exists');
+      return;
+    }
+
+    // Only process messages from the other party
+    if (data.from === this.userId) {
+      console.log('Ignoring signaling message from self');
+      return;
+    }
+
+    console.log(`Handling WebRTC signal: ${data.type} from ${data.from} (${data.fromType})`);
 
     try {
       switch (data.type) {
@@ -130,6 +141,8 @@ export class EnhancedWebRTCService {
         case 'end-call':
           this.endCall();
           break;
+        default:
+          console.warn('Unknown signaling message type:', data.type);
       }
     } catch (error) {
       console.error('Error handling signaling message:', error);
@@ -167,14 +180,27 @@ export class EnhancedWebRTCService {
         this.peerConnection!.addTrack(track, this.localStream!);
       });
 
-      // Join the call room
+      // Join the call room first
       this.socket?.emit('join-call', { callId });
+
+      // Wait for socket confirmation before proceeding
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          console.warn('Socket join-call timeout, proceeding anyway');
+          resolve();
+        }, 2000);
+
+        this.socket?.once('joined-call', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+      });
 
       if (this.isInitiator) {
         // Wait a bit for the other party to join
         setTimeout(() => {
           this.createOffer();
-        }, 1000);
+        }, 1500);
       }
     } catch (error) {
       console.error('Error initializing call:', error);
@@ -283,13 +309,19 @@ export class EnhancedWebRTCService {
   }
 
   private async handleIceCandidate(data: CallData) {
-    if (!this.peerConnection || !data.candidate) return;
+    if (!this.peerConnection || !data.candidate) {
+      console.warn('Cannot handle ICE candidate: no peer connection or candidate data');
+      return;
+    }
 
     try {
+      console.log('Adding ICE candidate:', data.candidate);
       await this.peerConnection.addIceCandidate(data.candidate);
+      console.log('ICE candidate added successfully');
     } catch (error) {
       console.error('Error handling ICE candidate:', error);
       // Don't throw error for ICE candidate failures as they're common
+      // Some ICE candidates might be invalid or duplicates
     }
   }
 
@@ -301,8 +333,8 @@ export class EnhancedWebRTCService {
     this.socket?.emit('start-call', { appointmentId, patientId });
   }
 
-  joinCall(callId: string, appointmentId?: string): void {
-    this.initializeCall(callId, false);
+  async joinCall(callId: string, appointmentId?: string): Promise<void> {
+    await this.initializeCall(callId, false);
   }
 
   toggleVideo(enabled: boolean): void {
@@ -434,7 +466,11 @@ export function generateCallId(): string {
 
 // Utility function to check WebRTC support
 export function isWebRTCSupported(): boolean {
-  return !!(navigator.mediaDevices && 
-           navigator.mediaDevices.getUserMedia && 
-           window.RTCPeerConnection);
+  return !!(
+    typeof navigator !== 'undefined' &&
+    navigator.mediaDevices &&
+    typeof navigator.mediaDevices.getUserMedia === 'function' &&
+    typeof window !== 'undefined' &&
+    window.RTCPeerConnection
+  );
 }

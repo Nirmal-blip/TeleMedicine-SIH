@@ -121,6 +121,9 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
     }
     this.activeCallRooms.get(data.callId)!.add(client.id);
 
+    // Confirm join to the client
+    client.emit('joined-call', { callId: data.callId });
+
     // Notify others in the call that a new user joined
     client.to(data.callId).emit('user-joined', {
       userId: userInfo.userId,
@@ -188,14 +191,30 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
       return;
     }
 
-    console.log(`WebRTC signal from ${userInfo.userId}: ${data.type}`);
+    console.log(`WebRTC signal from ${userInfo.userId} (${userInfo.userType}): ${data.type} for call ${data.callId}`);
+
+    // Validate that the user is part of the call
+    if (userInfo.callId !== data.callId) {
+      console.warn(`User ${userInfo.userId} trying to send signal for call ${data.callId} but is in call ${userInfo.callId}`);
+      return;
+    }
 
     // Forward the signaling data to other participants in the call
-    client.to(data.callId).emit('webrtc-signal', {
+    const signalData = {
       ...data,
       from: userInfo.userId,
       fromType: userInfo.userType,
+      toType: userInfo.userType === 'doctor' ? 'patient' : 'doctor'
+    };
+
+    console.log(`Forwarding WebRTC signal to call room ${data.callId}:`, {
+      type: signalData.type,
+      from: signalData.from,
+      fromType: signalData.fromType,
+      toType: signalData.toType
     });
+
+    client.to(data.callId).emit('webrtc-signal', signalData);
   }
 
   @SubscribeMessage('chat-message')

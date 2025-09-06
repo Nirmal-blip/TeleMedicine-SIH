@@ -19,7 +19,7 @@ import {
 } from "react-icons/fa";
 import DoctorSidebar from "../../Components/DoctorSidebar";
 import PrescriptionForm from "../../Components/PrescriptionForm";
-import { WebRTCService, generateCallId, isWebRTCSupported } from "../../utils/webrtc";
+import { EnhancedWebRTCService, generateCallId, isWebRTCSupported } from "../../utils/enhanced-webrtc";
 
 interface Patient {
   id: string;
@@ -57,7 +57,7 @@ const VideoConsultation: React.FC = () => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const callStartTime = useRef<Date | null>(null);
-  const webrtcService = useRef<WebRTCService | null>(null);
+  const webrtcService = useRef<EnhancedWebRTCService | null>(null);
 
   const fetchTodaysPatients = async () => {
     try {
@@ -162,41 +162,72 @@ const VideoConsultation: React.FC = () => {
     
     setIsWebRTCReady(true);
     
-    // Initialize WebRTC service
-    webrtcService.current = new WebRTCService();
-    
-    // Setup WebRTC event handlers
-    webrtcService.current.onLocalStream = (stream) => {
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+    // Initialize Enhanced WebRTC service for doctors
+    const initializeWebRTC = async () => {
+      try {
+        // Get current doctor ID
+        const response = await axios.get('http://localhost:3000/api/doctors/me', {
+          withCredentials: true,
+        });
+        const doctorId = response.data._id;
+        
+        webrtcService.current = new EnhancedWebRTCService(doctorId, 'doctor');
+        
+        // Setup WebRTC event handlers
+        webrtcService.current.onLocalStream = (stream) => {
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
+          }
+        };
+        
+        webrtcService.current.onRemoteStream = (stream) => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = stream;
+          }
+        };
+        
+        webrtcService.current.onConnectionStateChange = (state) => {
+          setConnectionStatus(state);
+          if (state === 'connected') {
+            console.log('WebRTC connection established');
+          }
+        };
+        
+        webrtcService.current.onCallEnd = () => {
+          handleCallEnd();
+        };
+        
+        webrtcService.current.onError = (error) => {
+          console.error('WebRTC Error:', error);
+          alert('An error occurred during the call. Please try again.');
+        };
+
+        webrtcService.current.onIncomingCall = (callData) => {
+          console.log('Doctor received incoming call:', callData);
+          handleIncomingCall(callData);
+        };
+
+        webrtcService.current.onChatMessage = (message) => {
+          const chatMessage: ChatMessage = {
+            id: Date.now().toString(),
+            sender: message.userType === 'doctor' ? 'doctor' : 'patient',
+            message: message.message,
+            timestamp: new Date(message.timestamp)
+          };
+          setChatMessages(prev => [...prev, chatMessage]);
+        };
+        
+      } catch (error) {
+        console.error('Failed to initialize WebRTC:', error);
+        alert('Failed to initialize video call service. Please refresh the page.');
       }
     };
-    
-    webrtcService.current.onRemoteStream = (stream) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = stream;
-      }
-    };
-    
-    webrtcService.current.onConnectionStateChange = (state) => {
-      setConnectionStatus(state);
-      if (state === 'connected') {
-        console.log('WebRTC connection established');
-      }
-    };
-    
-    webrtcService.current.onCallEnd = () => {
-      handleCallEnd();
-    };
-    
-    webrtcService.current.onError = (error) => {
-      console.error('WebRTC Error:', error);
-      alert('An error occurred during the call. Please try again.');
-    };
+
+    initializeWebRTC();
     
     return () => {
       if (webrtcService.current) {
-        webrtcService.current.endCall();
+        webrtcService.current.disconnect();
       }
     };
   }, []);
@@ -252,7 +283,7 @@ const VideoConsultation: React.FC = () => {
       // Doctor joins the call initiated by patient
       await webrtcService.current.initializeCall(callData.callId, false);
       
-      console.log('Joined call with ID:', callData.callId);
+      console.log('Doctor joined call with ID:', callData.callId);
     } catch (error) {
       console.error('Failed to join call:', error);
       alert('Failed to join the call. Please check your camera and microphone permissions.');
@@ -314,6 +345,12 @@ const VideoConsultation: React.FC = () => {
         timestamp: new Date()
       };
       setChatMessages([...chatMessages, message]);
+      
+      // Send message through WebRTC service
+      if (webrtcService.current) {
+        webrtcService.current.sendChatMessage(newMessage);
+      }
+      
       setNewMessage("");
     }
   };

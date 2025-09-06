@@ -364,9 +364,10 @@ const VideoConsultation: React.FC = () => {
       setCurrentConsultation(consultation);
       setIsCallActive(true);
       setConnectionStatus('connecting');
+      setCallId(consultation.meetingId);
 
       // Patient joins the call using appointment ID
-      webrtcService.current.joinCall(consultation.meetingId, consultation.appointmentId);
+      await webrtcService.current.joinCall(consultation.meetingId, consultation.appointmentId);
       
       console.log('Joined call for appointment:', consultation.appointmentId);
     } catch (error) {
@@ -383,7 +384,7 @@ const VideoConsultation: React.FC = () => {
       setIsCallActive(true);
       setConnectionStatus('connecting');
       
-      webrtcService.current.joinCall(callId);
+      await webrtcService.current.joinCall(callId);
       setWaitingForDoctor(false);
       
       console.log('Joined waiting call with ID:', callId);
