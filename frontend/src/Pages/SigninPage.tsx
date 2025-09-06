@@ -1,6 +1,7 @@
 import React, { useState, FormEvent, ChangeEvent } from "react";
 import { FaEnvelope, FaLock, FaUserMd, FaUser, FaArrowRight, FaArrowLeft, FaGoogle } from "react-icons/fa";
 import { useNavigate, Link } from "react-router-dom";
+import { toast } from 'react-toastify';
 import GrpImg from '../assets/AuthImg.png';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -8,22 +9,25 @@ const SigninPage: React.FC = () => {
     const [userType, setUserType] = useState<string>("patient");
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
-    const [error, setError] = useState<string>("");
-    const [success, setSuccess] = useState<string>("");
     const navigate = useNavigate();
     const { login } = useAuth();
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setError("");
-        setSuccess("");
 
         try {
             await login(email, password, userType as 'patient' | 'doctor');
-            setSuccess(`Login successful as ${userType}`);
+            toast.success(`Login successful as ${userType}!`, {
+                position: "top-right",
+                autoClose: 3000,
+            });
             navigate(userType === "patient" ? "/patient-dashboard" : "/doctor-dashboard");
         } catch (err: any) {
-            setError(err.response?.data?.error || "Invalid email or password. Please try again.");
+            const errorMessage = err.response?.data?.error || "Invalid email or password. Please try again.";
+            toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 5000,
+            });
         }
     };
 
@@ -92,19 +96,6 @@ const SigninPage: React.FC = () => {
                             </button>
                         </div>
 
-                        {/* Error Message */}
-                        {error && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Success Message */}
-                        {success && (
-                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-                                {success}
-                            </div>
-                        )}
 
                         {/* Google Auth Button */}
                         <button

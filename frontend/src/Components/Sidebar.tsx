@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { 
     FaThLarge, 
     FaUserMd, 
@@ -46,12 +47,17 @@ const Sidebar: React.FC = () => {
 
         try {
             await logout();
+            toast.success("Logged out successfully!", {
+                position: "top-right",
+                autoClose: 3000,
+            });
             navigate('/');
-            setTimeout(() => {
-                alert("Logged out successfully!");
-            }, 100);
         } catch (error) {
             console.error("Logout error:", error);
+            toast.error("Failed to logout. Please try again.", {
+                position: "top-right",
+                autoClose: 5000,
+            });
         }
     };
 

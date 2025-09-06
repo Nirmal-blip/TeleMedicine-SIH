@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import Sidebar from '../../Components/Sidebar'
-import PatientHeader from '../../Components/PatientHeader'
 import { FaSearch, FaFilter, FaStar, FaClock, FaVideo, FaMapPin, FaCalendar, FaUser, FaStethoscope, FaHeart, FaPhone, FaEnvelope, FaUserMd } from 'react-icons/fa'
 
 interface Doctor {
@@ -175,8 +174,6 @@ const DoctorsList: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <Sidebar />
       <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
-        <PatientHeader />
-
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-6">

@@ -1,6 +1,5 @@
 import React, { useState, ChangeEvent, useRef } from "react";
 import Sidebar from "../../Components/Sidebar";
-import PatientHeader from "../../Components/PatientHeader";
 import { FaPills, FaSearch, FaSpinner, FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaRobot } from "react-icons/fa";
 
 interface Medicine {
@@ -129,8 +128,6 @@ const MedicineRecommendation: React.FC = () => {
         <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
             <Sidebar />
             <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
-                <PatientHeader />
-                
                 <div className="mt-6">
                     <h1 className="text-3xl font-bold text-gray-800 mb-6">💊 Medicine Alternatives</h1>
                     

@@ -2,6 +2,7 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { FaEnvelope, FaIdCard, FaLock, FaPhone, FaUser, FaCalendar, FaVenusMars, FaMapMarkerAlt, FaStethoscope, FaUserMd, FaArrowRight, FaArrowLeft, FaGoogle } from "react-icons/fa";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import { toast } from 'react-toastify';
 import GrpImg from '../assets/AuthImg.png';
 
 interface FormData {
@@ -30,8 +31,6 @@ const SignupPage: React.FC = () => {
         specialization: ""
     });
 
-    const [error, setError] = useState<string>("");
-    const [success, setSuccess] = useState<string>("");
     const navigate = useNavigate();
 
     // Handle Input Change
@@ -42,8 +41,6 @@ const SignupPage: React.FC = () => {
     // Handle Form Submission
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setError("");
-        setSuccess("");
 
         // Remove unnecessary fields based on user type
         // Only include medicalRegNo and specialization for doctors
@@ -62,7 +59,11 @@ const SignupPage: React.FC = () => {
                 withCredentials: true,
             });
 
-            setSuccess(response.data.message);
+            toast.success(response.data.message || `Registration successful as ${userType}!`, {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            
             setFormData({
                 fullname: "",
                 email: "",
@@ -79,7 +80,10 @@ const SignupPage: React.FC = () => {
         } catch (err: any) {
             console.error('Registration error:', err.response?.data);
             const errorMessage = err.response?.data?.message || err.response?.data?.error || "Registration failed!";
-            setError(errorMessage);
+            toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 5000,
+            });
         }
     };
 
@@ -148,19 +152,6 @@ const SignupPage: React.FC = () => {
                             </button>
                         </div>
 
-                        {/* Error Message */}
-                        {error && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Success Message */}
-                        {success && (
-                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-                                {success}
-                            </div>
-                        )}
 
                         {/* Google Auth Button */}
                         <button

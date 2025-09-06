@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../../Components/Sidebar";
-import PatientHeader from "../../Components/PatientHeader";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -85,8 +84,6 @@ const PatientSupport: React.FC = () => {
         <div className="h-screen bg-cover bg-center bg-[#D8EFED] text-white relative poppins">
             <Sidebar />
             <div className="relative z-10 lg:ml-80 p-4 lg:p-6 min-h-screen overflow-y-auto">
-                <PatientHeader />
-
                 <div className="mt-6">
                     <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
                         <h1 className="text-3xl font-bold text-gray-800 mb-2">🏥 Nearby Hospitals</h1>
