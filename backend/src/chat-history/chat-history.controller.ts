@@ -27,7 +27,7 @@ export class ChatHistoryController {
   @ApiOperation({ summary: 'Create a new chat session' })
   @ApiResponse({ status: 201, description: 'Chat session created successfully' })
   async createSession(@Request() req) {
-    const userId = req.user.sub;
+    const userId = req.user.userId;
     return this.chatHistoryService.createChatSession(userId);
   }
 
@@ -39,7 +39,7 @@ export class ChatHistoryController {
     @Body() body: { text: string; sender: 'user' | 'bot' },
     @Request() req,
   ) {
-    const userId = req.user.sub;
+    const userId = req.user.userId;
     return this.chatHistoryService.addMessage(
       sessionId,
       body.text,
@@ -52,7 +52,7 @@ export class ChatHistoryController {
   @ApiOperation({ summary: 'Get all chat sessions for user' })
   @ApiResponse({ status: 200, description: 'Chat sessions retrieved successfully' })
   async getAllSessions(@Request() req) {
-    const userId = req.user.sub;
+    const userId = req.user.userId;
     return this.chatHistoryService.getAllChatSessions(userId);
   }
 
@@ -60,7 +60,7 @@ export class ChatHistoryController {
   @ApiOperation({ summary: 'Get specific chat session' })
   @ApiResponse({ status: 200, description: 'Chat session retrieved successfully' })
   async getSession(@Param('sessionId') sessionId: string, @Request() req) {
-    const userId = req.user.sub;
+    const userId = req.user.userId;
     return this.chatHistoryService.getChatSession(sessionId, userId);
   }
 
@@ -72,7 +72,7 @@ export class ChatHistoryController {
     @Body() body: { title: string },
     @Request() req,
   ) {
-    const userId = req.user.sub;
+    const userId = req.user.userId;
     return this.chatHistoryService.updateChatTitle(sessionId, userId, body.title);
   }
 
@@ -81,7 +81,7 @@ export class ChatHistoryController {
   @ApiOperation({ summary: 'Delete chat session' })
   @ApiResponse({ status: 204, description: 'Chat session deleted successfully' })
   async deleteSession(@Param('sessionId') sessionId: string, @Request() req) {
-    const userId = req.user.sub;
+    const userId = req.user.userId;
     await this.chatHistoryService.deleteChatSession(sessionId, userId);
   }
 }

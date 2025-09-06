@@ -83,6 +83,15 @@ export class AiMlService {
     }
   }
 
+  // New method to save bot response after streaming is complete
+  async saveBotResponse(sessionId: string, botResponse: string, userId: string) {
+    try {
+      await this.chatHistoryService.addMessage(sessionId, botResponse, 'bot', userId);
+    } catch (error) {
+      console.warn('Failed to save bot response to chat history:', error.message);
+    }
+  }
+
   async getVoiceChatResponse() {
     try {
       const response = await firstValueFrom(

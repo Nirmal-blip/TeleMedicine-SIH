@@ -149,6 +149,38 @@ const Chatbot: React.FC = () => {
         }
     };
 
+    const formatMessageText = (text: string) => {
+        // Convert markdown-style formatting to HTML for medical responses
+        let formatted = text
+            // Headers with emojis (e.g., **📋 Dietary Recommendations:**)
+            .replace(/\*\*([📋💪⚠️📅].*?):\*\*/g, '<h4 class="font-bold text-emerald-600 mt-4 mb-2 flex items-center gap-2">$1</h4>')
+            // Regular bold headers
+            .replace(/\*\*(.*?):\*\*/g, '<h4 class="font-bold text-gray-800 mt-3 mb-2">$1:</h4>')
+            // Bold text (without colons)
+            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-800">$1</strong>')
+            // Italic text
+            .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+            // Convert bullet points to proper list items
+            .replace(/^• (.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
+            // Convert line breaks
+            .replace(/\n\n/g, '</p><p class="mb-3">')
+            .replace(/\n/g, '<br>')
+            // Wrap content in paragraphs
+            .replace(/^(.)/s, '<p class="mb-3">$1')
+            .replace(/(.)$/s, '$1</p>')
+            // Handle lists - wrap consecutive <li> elements in <ul>
+            .replace(/(<li.*?<\/li>(?:\s*<br>\s*<li.*?<\/li>)*)/gs, '<ul class="list-disc list-inside my-2 space-y-1 ml-2">$1</ul>')
+            // Clean up any <br> tags inside lists
+            .replace(/(<ul[^>]*>.*?)<br>\s*(<li)/gs, '$1$2')
+            .replace(/(<\/li>)\s*<br>\s*/gs, '$1')
+            // Add spacing around headers
+            .replace(/<h4/g, '<h4')
+            // Clean up empty paragraphs
+            .replace(/<p[^>]*>\s*<\/p>/g, '');
+        
+        return formatted;
+    };
+
     const addMessage = (text: string, sender: 'user' | 'bot') => {
         const newMessage: Message = {
             id: Date.now(),
@@ -267,7 +299,7 @@ const Chatbot: React.FC = () => {
             }
 
             // Use streaming endpoint
-            const response = await fetch('http://localhost:5000/api/chat/stream', {
+            const response = await fetch('http://localhost:8000/api/chat/stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -331,6 +363,25 @@ const Chatbot: React.FC = () => {
             // Auto-speak the complete response
             if (fullResponse) {
                 speakText(fullResponse);
+                
+                // Save bot response to chat history
+                if (sessionId) {
+                    try {
+                        await fetch('http://localhost:3000/api/ai/chat/save-response', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                sessionId: sessionId,
+                                botResponse: fullResponse
+                            }),
+                        });
+                    } catch (saveError) {
+                        console.warn('Failed to save bot response to history:', saveError);
+                    }
+                }
             }
         } catch (error) {
             console.error('Streaming error:', error);
@@ -567,16 +618,9 @@ const Chatbot: React.FC = () => {
                                                 : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm shadow-sm'
                                         }`}>
                                             <div 
-                                                className="text-sm leading-relaxed formatted-message"
+                                                className="text-sm leading-relaxed formatted-message prose prose-sm max-w-none"
                                                 dangerouslySetInnerHTML={{ 
-                                                    __html: message.text
-                                                        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-                                                        .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-                                                        .replace(/\n\*/g, '<br/>•')
-                                                        .replace(/^\*/gm, '•')
-                                                        .replace(/\n/g, '<br/>')
-                                                        .replace(/• /g, '<span class="inline-block w-2 mr-2">•</span>')
-                                                        .replace(/([।!?:])\s*(\n|<br\/>)/g, '$1<br/><br/>')
+                                                    __html: formatMessageText(message.text)
                                                 }}
                                             />
                                             <p className={`text-xs mt-1 ${

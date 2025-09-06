@@ -51,7 +51,7 @@ export class AiMlController {
   @ApiResponse({ status: 503, description: 'Chatbot service unavailable' })
   async chat(@Body() body: { input: string; sessionId?: string }, @Request() req) {
     // Extract userId if user is authenticated, otherwise null
-    const userId = req.user?.sub || null;
+    const userId = req.user?.userId || null;
     return this.aiMlService.getChatResponse(body.input, userId, body.sessionId);
   }
 
@@ -72,8 +72,31 @@ export class AiMlController {
   @ApiResponse({ status: 503, description: 'Chatbot service unavailable' })
   async chatStream(@Body() body: { input: string; sessionId?: string }, @Request() req) {
     // Extract userId if user is authenticated, otherwise null
-    const userId = req.user?.sub || null;
+    const userId = req.user?.userId || null;
     return this.aiMlService.getChatStreamResponse(body.input, userId, body.sessionId);
+  }
+
+  @Post('chat/save-response')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiCookieAuth('token')
+  @ApiOperation({ summary: 'Save bot response to chat history after streaming' })
+  @ApiBody({ 
+    schema: { 
+      type: 'object', 
+      properties: { 
+        sessionId: { type: 'string', description: 'Chat session ID' },
+        botResponse: { type: 'string', description: 'Complete bot response to save' }
+      },
+      required: ['sessionId', 'botResponse']
+    } 
+  })
+  @ApiResponse({ status: 200, description: 'Bot response saved successfully' })
+  async saveBotResponse(@Body() body: { sessionId: string; botResponse: string }, @Request() req) {
+    const userId = req.user.userId;
+    await this.aiMlService.saveBotResponse(body.sessionId, body.botResponse, userId);
+    return { message: 'Bot response saved successfully' };
   }
 
   @Post('voice-chat')

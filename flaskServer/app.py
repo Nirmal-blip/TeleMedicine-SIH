@@ -53,8 +53,23 @@ GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemin
 
 # Function to get a response from Gemini API
 def gemini_response(prompt):
+    # Enhanced prompt for better medical formatting
+    enhanced_prompt = f"""You are a professional medical AI assistant. Please provide a well-structured, professional response in English only.
+
+User Question: {prompt}
+
+Please format your response with:
+- Clear medical information
+- Professional terminology
+- Bullet points for lists
+- Include disclaimer about consulting healthcare professionals
+- Keep response concise and informative
+- NO mixed languages - English only
+
+Provide practical medical guidance while emphasizing the need for professional medical consultation."""
+    
     headers = {"Content-Type": "application/json"}
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    payload = {"contents": [{"parts": [{"text": enhanced_prompt}]}]}
     
     try:
         response = requests.post(GEMINI_API_URL, headers=headers, json=payload, timeout=10)
@@ -62,13 +77,31 @@ def gemini_response(prompt):
         if response.status_code == 200:
             response_data = response.json()
             try:
-                return response_data["candidates"][0]["content"]["parts"][0]["text"]
+                ai_response = response_data["candidates"][0]["content"]["parts"][0]["text"]
+                return format_medical_response(ai_response)
             except KeyError:
                 return "I'm sorry, but I couldn't process your request. Please try again."
         else:
             return f"Error: {response.status_code}, {response.text}"
     except Exception as e:
         return f"I'm sorry, there was an error processing your request: {str(e)}"
+
+def format_medical_response(response):
+    """Format and clean the medical response for better readability"""
+    import re
+    
+    # Remove any mixed language content and clean up formatting
+    cleaned_response = response
+    
+    # Remove non-English characters and common mixed language patterns
+    cleaned_response = re.sub(r'[^\x00-\x7F]+', '', cleaned_response)  # Remove non-ASCII
+    
+    # Clean up excessive whitespace
+    cleaned_response = re.sub(r'\n\s*\n\s*\n+', '\n\n', cleaned_response)
+    cleaned_response = re.sub(r'\s+', ' ', cleaned_response)
+    cleaned_response = cleaned_response.strip()
+    
+    return cleaned_response
 
 # Function to simulate streaming response (since Gemini doesn't support streaming)
 def stream_response(text, chunk_size=6):
@@ -323,21 +356,34 @@ def chat():
                 detected_disease = disease
                 break
         
-        # Generate response based on disease detection
+        # Generate formatted response based on disease detection
         if detected_disease:
             additional_recs = get_additional_recommendations(detected_disease)
-            response = f"To treat {detected_disease}, follow these steps:\n\n{response}\n\n{get_recommendations(detected_disease)}"
+            formatted_response = f"**{detected_disease.title()} Treatment Guidelines**\n\n{response}\n\n"
             
+            # Add structured recommendations
+            recommendations_text = get_recommendations(detected_disease)
+            formatted_response += f"**Immediate Care Instructions:**\n{recommendations_text}\n\n"
+            
+            # Add additional recommendations with proper formatting
             if additional_recs.get('diet'):
-                response += f"\nDiet: {', '.join(additional_recs.get('diet', []))}"
+                diet_items = '\n• '.join(additional_recs.get('diet', []))
+                formatted_response += f"**📋 Dietary Recommendations:**\n• {diet_items}\n\n"
             if additional_recs.get('precautions'):
-                response += f"\nPrecautions: {', '.join(additional_recs.get('precautions', []))}"
+                precaution_items = '\n• '.join(additional_recs.get('precautions', []))
+                formatted_response += f"**⚠️ Important Precautions:**\n• {precaution_items}\n\n"
             if additional_recs.get('workout'):
-                response += f"\nWorkout: {', '.join(additional_recs.get('workout', []))}"
+                workout_items = '\n• '.join(additional_recs.get('workout', []))
+                formatted_response += f"**💪 Exercise Guidelines:**\n• {workout_items}\n\n"
+            
+            response = formatted_response
+        
+        # Add professional disclaimer
+        response += "\n**⚠️ Medical Disclaimer:**\nThis information is for educational purposes only. Please consult with a healthcare professional for proper medical diagnosis and treatment.\n\n"
 
-        # Automatically book an appointment
+        # Automatically book an appointment with better formatting
         appointment_info = book_appointment()
-        response += f"\n\n{appointment_info}"
+        response += f"**📅 Appointment Information:**\n{appointment_info}"
 
         # Convert response to speech if engine is available
         if engine:
@@ -375,21 +421,34 @@ def chat_stream():
                         detected_disease = disease
                         break
                 
-                # Generate response based on disease detection
+                # Generate formatted response based on disease detection
                 if detected_disease:
                     additional_recs = get_additional_recommendations(detected_disease)
-                    response = f"To treat {detected_disease}, follow these steps:\n\n{response}\n\n{get_recommendations(detected_disease)}"
+                    formatted_response = f"**{detected_disease.title()} Treatment Guidelines**\n\n{response}\n\n"
                     
+                    # Add structured recommendations
+                    recommendations_text = get_recommendations(detected_disease)
+                    formatted_response += f"**Immediate Care Instructions:**\n{recommendations_text}\n\n"
+                    
+                    # Add additional recommendations with proper formatting
                     if additional_recs.get('diet'):
-                        response += f"\nDiet: {', '.join(additional_recs.get('diet', []))}"
+                        diet_items = '\n• '.join(additional_recs.get('diet', []))
+                        formatted_response += f"**📋 Dietary Recommendations:**\n• {diet_items}\n\n"
                     if additional_recs.get('precautions'):
-                        response += f"\nPrecautions: {', '.join(additional_recs.get('precautions', []))}"
+                        precaution_items = '\n• '.join(additional_recs.get('precautions', []))
+                        formatted_response += f"**⚠️ Important Precautions:**\n• {precaution_items}\n\n"
                     if additional_recs.get('workout'):
-                        response += f"\nWorkout: {', '.join(additional_recs.get('workout', []))}"
+                        workout_items = '\n• '.join(additional_recs.get('workout', []))
+                        formatted_response += f"**💪 Exercise Guidelines:**\n• {workout_items}\n\n"
+                    
+                    response = formatted_response
+                
+                # Add professional disclaimer
+                response += "\n**⚠️ Medical Disclaimer:**\nThis information is for educational purposes only. Please consult with a healthcare professional for proper medical diagnosis and treatment.\n\n"
 
-                # Automatically book an appointment
+                # Automatically book an appointment with better formatting
                 appointment_info = book_appointment()
-                response += f"\n\n{appointment_info}"
+                response += f"**📅 Appointment Information:**\n{appointment_info}"
 
                 # Stream the response
                 for chunk in stream_response(response):
