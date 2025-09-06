@@ -52,10 +52,13 @@ export class AuthController {
   @ApiOperation({ summary: 'User logout' })
   @ApiResponse({ status: 302, description: 'Redirected to home page' })
   logout(@Res() res: Response) {
-    res.cookie('token', '', { 
+    const cookieOptions = { 
       httpOnly: true, 
-      expires: new Date(0) 
-    });
-    return res.redirect('/');
+      expires: new Date(0),
+      path: '/', // Make sure to include the path
+    };
+
+    res.cookie('token', '', cookieOptions);
+    return res.status(200).json({ message: 'Logged out successfully' });
   }
 }

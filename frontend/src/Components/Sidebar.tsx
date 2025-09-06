@@ -1,5 +1,6 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { 
     FaThLarge, 
     FaUserMd, 
@@ -33,13 +34,25 @@ const bottomMenuItems: MenuItem[] = [
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
+    const navigate = useNavigate();
 
     const isActive = (path: string) => location.pathname === path;
 
+    const handleLogout = async () => {
+        try {
+            // The API now just clears the cookie and returns a success response
+            await axios.get('http://localhost:3000/logout', { withCredentials: true });
+            
+            // This is now the single source of truth for navigation
+            navigate('/');
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
+
     return (
-        <aside className="w-80 fixed left-0 top-0 h-screen flex flex-col py-6 bg-gradient-to-b from-white via-emerald-50 to-green-50  shadow-xl z-50 hidden lg:flex">
-        
-            {/* User Profile Section */}
+        <aside className="w-80 fixed left-0 top-0 h-screen flex-col py-6 bg-gradient-to-b from-white via-emerald-50 to-green-50  shadow-xl z-50 hidden lg:flex">
+        {/* User Profile Section */}
         {/* Logo */}
         <div className="flex items-center space-x-3 mb-10 px-6 group">
             <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl group-hover:scale-110 transition-transform duration-300">
@@ -100,7 +113,10 @@ const Sidebar: React.FC = () => {
                         </li>
                     ))}
                     <li>
-                        <button className="w-full flex items-center p-3 rounded-xl text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-300 group border border-red-200 hover:border-red-300">
+                        <button 
+                            onClick={handleLogout}
+                            className="w-full flex items-center p-3 rounded-xl text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-300 group border border-red-200 hover:border-red-300 cursor-pointer"
+                        >
                             <span className="mr-4 text-xl text-red-600 group-hover:text-red-700">
                                 <FaSignOutAlt />
                             </span>
