@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Sidebar from "../../Components/Sidebar";
 import { 
   FaBell, 
   FaCalendar, 
@@ -75,7 +77,7 @@ const PatientNotifications: React.FC = () => {
       // Video call service removed - will be handled by new VideoCallService
       // const { initializeVideoCallNotificationService } = await import('../../utils/video-call-notifications');
       // const service = initializeVideoCallNotificationService(patientId, 'patient');
-      // setVideoCallService(service);
+          // setVideoCallService(service);
       
       // Set up event listeners - removed for new video call system
       // setupVideoCallListeners(service);
@@ -137,7 +139,9 @@ const PatientNotifications: React.FC = () => {
         withCredentials: true,
       });
       
-      setNotifications(response.data);
+      // Handle both array response and object with notifications property
+      const notificationsData = Array.isArray(response.data) ? response.data : response.data.notifications || [];
+      setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
       setNotifications([]);
@@ -308,7 +312,7 @@ const PatientNotifications: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <PatientSidebar />
+      <Sidebar />
       <main className="lg:ml-80 px-4 lg:px-8 xl:px-10 py-6">
         {/* Header */}
         <div className="mb-8">

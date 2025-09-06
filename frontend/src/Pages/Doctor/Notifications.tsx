@@ -172,7 +172,9 @@ const Notifications: React.FC = () => {
         withCredentials: true,
       });
       
-      setNotifications(response.data);
+      // Handle both array response and object with notifications property
+      const notificationsData = Array.isArray(response.data) ? response.data : response.data.notifications || [];
+      setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
       setNotifications([]);
