@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaCalendar, FaClock, FaVideo, FaStethoscope, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
-import { getNotificationService } from '../utils/real-time-notifications';
+import { getVideoCallNotificationService } from '../utils/video-call-notifications';
 
 interface Doctor {
   id: string;
@@ -156,37 +156,61 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
       console.log('Immediate consultation booked:', response.data);
       
-      // Start video consultation immediately
-      const callId = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Get notification service and request video call
-      const notificationService = getNotificationService();
-      if (notificationService) {
-        // Request video call with doctor
-        notificationService.requestVideoCall(doctor.id, patientResponse.data._id, response.data._id);
-        
-        // Notify about appointment booking
-        notificationService.notifyAppointmentBooked({
-          appointmentId: response.data._id,
+      // Initialize video call notification service if not already done
+      let videoCallService = getVideoCallNotificationService();
+      if (!videoCallService) {
+        const { initializeVideoCallNotificationService } = await import('../utils/video-call-notifications');
+        videoCallService = initializeVideoCallNotificationService(patientResponse.data._id, 'patient');
+      }
+
+      if (videoCallService) {
+        const callId = videoCallService.requestVideoCall({
           doctorId: doctor.id,
-          patientId: patientResponse.data._id,
           doctorName: doctor.name,
           patientName: patientResponse.data.fullname || 'Patient',
-          date: currentDate,
-          time: currentTime,
+          specialization: doctor.specialization,
+          appointmentId: response.data._id,
         });
-      }
-      
-      // Store appointment data for video consultation
-      localStorage.setItem('activeAppointment', JSON.stringify({
-        appointmentId: response.data._id,
-        doctorId: doctor.id,
-        doctorName: doctor.name,
-        callId: callId
-      }));
 
-      // Navigate to video consultation page
-      window.location.href = '/video-consultation';
+        if (callId) {
+          // Store appointment data for video consultation
+          localStorage.setItem('activeAppointment', JSON.stringify({
+            appointmentId: response.data._id,
+            doctorId: doctor.id,
+            doctorName: doctor.name,
+            callId: callId
+          }));
+
+          // Set up event listeners for call response
+          videoCallService.onCallAccepted((data) => {
+            console.log('Call accepted:', data);
+            // Navigate to video consultation page
+            window.location.href = '/video-consultation';
+          });
+
+          videoCallService.onCallRejected((data) => {
+            console.log('Call rejected:', data);
+            setBookingError(data.message || 'Doctor is not available at the moment.');
+            setIsBooking(false);
+            // Redirect to dashboard after a delay
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 3000);
+          });
+
+          videoCallService.onCallRequestSent((data) => {
+            console.log('Call request sent:', data);
+            // Show success message
+            setBookingError('');
+          });
+
+          videoCallService.onCallError((data) => {
+            console.error('Call error:', data);
+            setBookingError(data.message);
+            setIsBooking(false);
+          });
+        }
+      }
       
       onClose();
     } catch (error: any) {

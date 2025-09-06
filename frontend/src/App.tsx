@@ -23,6 +23,7 @@ import DoctorVideoConsultation from './Pages/Doctor/VideoConsultation'
 import PrescribedPatients from './Pages/Doctor/PrescribedPatients'
 import DoctorConsultationHistory from './Pages/Doctor/ConsultationHistory'
 import DoctorNotifications from './Pages/Doctor/Notifications'
+import DoctorVideoCallNotifications from './Pages/Doctor/VideoCallNotifications'
 
 // Auth Pages
 import SignupPage from './Pages/SignupPage'
@@ -59,6 +60,7 @@ const App: React.FC = () => {
             <Route path='/doctor/prescribed-patients' element={<ProtectedRoute><PrescribedPatients /></ProtectedRoute>}></Route>
             <Route path='/doctor/consultation-history' element={<ProtectedRoute><DoctorConsultationHistory /></ProtectedRoute>}></Route>
             <Route path='/doctor/notifications' element={<ProtectedRoute><DoctorNotifications /></ProtectedRoute>}></Route>
+            <Route path='/doctor/video-call-notifications' element={<ProtectedRoute><DoctorVideoCallNotifications /></ProtectedRoute>}></Route>
         </Routes>
         <ToastContainer
             position="top-right"

@@ -11,6 +11,7 @@ import { UploadsModule } from './uploads/uploads.module';
 import { AiMlModule } from './ai-ml/ai-ml.module';
 import { ChatHistoryModule } from './chat-history/chat-history.module';
 import { VideoConsultationModule } from './video-consultation/video-consultation.module';
+import { VideoCallNotificationsModule } from './video-call-notifications/video-call-notifications.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MedicinesModule } from './medicines/medicines.module';
 import { CartModule } from './cart/cart.module';
@@ -49,6 +50,7 @@ import { AppController } from './app.controller';
     AiMlModule,
     ChatHistoryModule,
     VideoConsultationModule,
+    VideoCallNotificationsModule,
     NotificationsModule,
     MedicinesModule,
     CartModule,

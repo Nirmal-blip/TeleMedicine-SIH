@@ -20,6 +20,7 @@ import {
 import DoctorSidebar from "../../Components/DoctorSidebar";
 import PrescriptionForm from "../../Components/PrescriptionForm";
 import { EnhancedWebRTCService, generateCallId, isWebRTCSupported } from "../../utils/enhanced-webrtc";
+import { getVideoCallNotificationService } from "../../utils/video-call-notifications";
 
 interface Patient {
   id: string;
@@ -52,6 +53,7 @@ const VideoConsultation: React.FC = () => {
   const [isWebRTCReady, setIsWebRTCReady] = useState<boolean>(false);
   const [isPrescriptionFormOpen, setIsPrescriptionFormOpen] = useState<boolean>(false);
   const [doctorData, setDoctorData] = useState<any>(null);
+  const [videoCallService, setVideoCallService] = useState<any>(null);
   const [currentAppointmentId, setCurrentAppointmentId] = useState<string>('');
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -173,6 +175,11 @@ const VideoConsultation: React.FC = () => {
         
         webrtcService.current = new EnhancedWebRTCService(doctorId, 'doctor');
         
+        // Initialize video call notification service
+        const { initializeVideoCallNotificationService } = await import('../../utils/video-call-notifications');
+        const videoCallService = initializeVideoCallNotificationService(doctorId, 'doctor');
+        setVideoCallService(videoCallService);
+        
         // Setup WebRTC event handlers
         webrtcService.current.onLocalStream = (stream) => {
           if (localVideoRef.current) {
@@ -204,7 +211,8 @@ const VideoConsultation: React.FC = () => {
 
         webrtcService.current.onIncomingCall = (callData) => {
           console.log('Doctor received incoming call:', callData);
-          handleIncomingCall(callData);
+          // Handle incoming call through notification system instead
+          handleIncomingCallFromNotification(callData);
         };
 
         webrtcService.current.onChatMessage = (message) => {
@@ -216,6 +224,13 @@ const VideoConsultation: React.FC = () => {
           };
           setChatMessages(prev => [...prev, chatMessage]);
         };
+
+        // Setup video call notification listeners
+        videoCallService.onIncomingVideoCall((data: any) => {
+          console.log('Incoming video call notification:', data);
+          // Show notification and handle the call
+          handleIncomingCallFromNotification(data);
+        });
         
       } catch (error) {
         console.error('Failed to initialize WebRTC:', error);
@@ -228,6 +243,9 @@ const VideoConsultation: React.FC = () => {
     return () => {
       if (webrtcService.current) {
         webrtcService.current.disconnect();
+      }
+      if (videoCallService) {
+        videoCallService.disconnect();
       }
     };
   }, []);
@@ -266,14 +284,25 @@ const VideoConsultation: React.FC = () => {
     }
   };
 
-  // Doctors can only receive calls, not initiate them
-  const handleIncomingCall = async (callData: any) => {
+  // Handle incoming call from video call notification
+  const handleIncomingCallFromNotification = async (callData: any) => {
     if (!webrtcService.current || !isWebRTCReady) {
       alert('WebRTC is not ready. Please refresh the page and try again.');
       return;
     }
 
     try {
+      // Update patient information
+      const patient: Patient = {
+        id: callData.patientId,
+        name: callData.patientName,
+        age: 30, // Default age, could be fetched from API
+        condition: callData.specialization || 'Video Consultation',
+        appointmentTime: 'Now'
+      };
+      setCurrentPatient(patient);
+      setCurrentAppointmentId(callData.appointmentId || '');
+
       setCallId(callData.callId);
       setIsCallActive(true);
       callStartTime.current = new Date();
@@ -283,9 +312,9 @@ const VideoConsultation: React.FC = () => {
       // Doctor joins the call initiated by patient
       await webrtcService.current.initializeCall(callData.callId, false);
       
-      console.log('Doctor joined call with ID:', callData.callId);
+      console.log('Doctor joined call from notification with ID:', callData.callId);
     } catch (error) {
-      console.error('Failed to join call:', error);
+      console.error('Failed to join call from notification:', error);
       alert('Failed to join the call. Please check your camera and microphone permissions.');
       handleCallEnd();
     }

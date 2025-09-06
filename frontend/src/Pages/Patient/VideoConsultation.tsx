@@ -6,7 +6,7 @@ import PrescriptionForm from '../../Components/PrescriptionForm'
 import { FaVideo, FaMicrophone, FaMicrophoneSlash, FaVideoSlash, FaPhone, FaPhoneSlash, FaUser, FaCalendar, FaClock, FaStethoscope, FaHeart, FaPaperclip, FaSmile, FaFileAlt, FaPills } from 'react-icons/fa'
 import { IoChatbubbleEllipsesSharp } from "react-icons/io5";
 import { EnhancedWebRTCService, generateCallId, isWebRTCSupported, ChatMessage } from "../../utils/enhanced-webrtc";
-import { initializeNotificationService, getNotificationService } from "../../utils/real-time-notifications";
+import { getVideoCallNotificationService } from "../../utils/video-call-notifications";
 
 interface Consultation {
   id: string;
@@ -40,7 +40,7 @@ const VideoConsultation: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [callingDoctor, setCallingDoctor] = useState<any>(null);
   const [isPatientInitiated, setIsPatientInitiated] = useState<boolean>(false);
-  const [notificationService, setNotificationService] = useState<any>(null);
+  const [videoCallService, setVideoCallService] = useState<any>(null);
   const [patientData, setPatientData] = useState<any>(null);
   const [doctorData, setDoctorData] = useState<any>(null);
   const [isPrescriptionFormOpen, setIsPrescriptionFormOpen] = useState<boolean>(false);
@@ -157,35 +157,34 @@ const VideoConsultation: React.FC = () => {
       setCurrentUserId(userId);
       setPatientData(response.data);
       
-      // Initialize real-time notification service
-      const service = getNotificationService();
+      // Initialize video call notification service
+      const { initializeVideoCallNotificationService } = await import('../../utils/video-call-notifications');
+      const service = initializeVideoCallNotificationService(userId, 'patient');
+      setVideoCallService(service);
       
-      if (service) {
-        // Listen for call responses
-        service.on('call-accepted', (data: any) => {
-          console.log('Call accepted by doctor:', data);
-          setWaitingForDoctor(false);
-          setIsCallActive(true);
-          setCallId(data.callId);
-          setConnectionStatus('connecting');
-          
-          // Initialize WebRTC for the accepted call
-          if (webrtcService.current) {
-            webrtcService.current.initializeCall(data.callId, true);
-          }
-        });
+      // Set up event listeners for call responses
+      service.onCallAccepted((data: any) => {
+        console.log('Call accepted by doctor:', data);
+        setWaitingForDoctor(false);
+        setIsCallActive(true);
+        setCallId(data.callId);
+        setConnectionStatus('connecting');
         
-        service.on('call-rejected', (data: any) => {
-          console.log('Call rejected by doctor:', data);
-          setWaitingForDoctor(false);
-          alert(`Call rejected: ${data.reason}`);
-          setCurrentConsultation(null);
-          setCallingDoctor(null);
-        });
-        
-        setNotificationService(service);
-      }
-      console.log('Real-time notifications initialized for patient:', userId);
+        // Initialize WebRTC for the accepted call
+        if (webrtcService.current) {
+          webrtcService.current.initializeCall(data.callId, true);
+        }
+      });
+      
+      service.onCallRejected((data: any) => {
+        console.log('Call rejected by doctor:', data);
+        setWaitingForDoctor(false);
+        alert(`Call rejected: ${data.reason || 'Doctor is not available'}`);
+        setCurrentConsultation(null);
+        setCallingDoctor(null);
+      });
+      
+      console.log('Video call notification service initialized for patient:', userId);
     } catch (error) {
       console.error('Failed to get current user:', error);
       setError('Failed to authenticate user');
