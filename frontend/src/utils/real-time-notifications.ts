@@ -209,6 +209,18 @@ export class RealTimeNotificationService {
   public isServiceConnected(): boolean {
     return this.isConnected;
   }
+
+  public emit(event: string, data: any) {
+    if (this.socket) {
+      this.socket.emit(event, data);
+    }
+  }
+
+  public on(event: string, callback: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on(event, callback);
+    }
+  }
 }
 
 // Global instance

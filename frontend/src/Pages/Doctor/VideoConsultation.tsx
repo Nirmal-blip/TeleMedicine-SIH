@@ -183,30 +183,27 @@ const VideoConsultation: React.FC = () => {
     }
   };
 
-  const startCall = async () => {
+  // Doctors can only receive calls, not initiate them
+  const handleIncomingCall = async (callData: any) => {
     if (!webrtcService.current || !isWebRTCReady) {
       alert('WebRTC is not ready. Please refresh the page and try again.');
       return;
     }
 
     try {
-      const newCallId = generateCallId();
-      setCallId(newCallId);
+      setCallId(callData.callId);
       setIsCallActive(true);
       callStartTime.current = new Date();
       setCallDuration(0);
       setConnectionStatus('connecting');
 
-      // Doctor is the initiator
-      await webrtcService.current.initializeCall(newCallId, true);
+      // Doctor joins the call initiated by patient
+      await webrtcService.current.initializeCall(callData.callId, false);
       
-      // Store call ID for patient to join
-      localStorage.setItem('activeCallId', newCallId);
-      
-      console.log('Call started with ID:', newCallId);
+      console.log('Joined call with ID:', callData.callId);
     } catch (error) {
-      console.error('Failed to start call:', error);
-      alert('Failed to start the call. Please check your camera and microphone permissions.');
+      console.error('Failed to join call:', error);
+      alert('Failed to join the call. Please check your camera and microphone permissions.');
       handleCallEnd();
     }
   };
@@ -369,18 +366,14 @@ const VideoConsultation: React.FC = () => {
                       <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FaVideo className="w-12 h-12" />
                       </div>
-                      <h3 className="text-xl font-bold mb-2">Ready to start consultation</h3>
+                      <h3 className="text-xl font-bold mb-2">Waiting for patient calls</h3>
                       <p className="text-gray-300 mb-6">
-                        {!isWebRTCReady ? 'Initializing WebRTC...' : 'Click the call button to begin the video session'}
+                        {!isWebRTCReady ? 'Initializing WebRTC...' : 'Patients can call you directly. You will receive notifications when they do.'}
                       </p>
-                      <button
-                        onClick={startCall}
-                        disabled={!isWebRTCReady}
-                        className="bg-green-500 hover:bg-green-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-medium transition-colors duration-300 flex items-center gap-2 mx-auto"
-                      >
+                      <div className="bg-blue-500 text-white px-8 py-3 rounded-xl font-medium flex items-center gap-2 mx-auto opacity-75">
                         <FaVideo className="w-5 h-5" />
-                        Start Call
-                      </button>
+                        Ready to Receive Calls
+                      </div>
                     </div>
                   </div>
                 )}

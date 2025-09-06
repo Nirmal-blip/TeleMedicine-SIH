@@ -15,9 +15,13 @@ import {
   FaSearch,
   FaClock,
   FaVideo,
-  FaFileAlt
+  FaFileAlt,
+  FaPhone,
+  FaTimes
 } from "react-icons/fa";
 import DoctorSidebar from "../../Components/DoctorSidebar";
+import { getNotificationService } from "../../utils/real-time-notifications";
+import { useNavigate } from "react-router-dom";
 
 interface Notification {
   id: string;
@@ -33,16 +37,80 @@ interface Notification {
 }
 
 const Notifications: React.FC = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [incomingCall, setIncomingCall] = useState<any>(null);
+  const [notificationService, setNotificationService] = useState<any>(null);
 
   useEffect(() => {
     fetchNotifications();
+    initializeNotificationService();
   }, []);
+
+  const initializeNotificationService = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/auth/me', {
+        withCredentials: true
+      });
+      
+      const doctorId = response.data.id;
+      const service = getNotificationService();
+      
+      if (service) {
+        // Listen for incoming calls
+        service.on('incoming-call', (data: any) => {
+          console.log('Incoming call notification:', data);
+          setIncomingCall(data);
+        });
+        
+        setNotificationService(service);
+      }
+    } catch (error) {
+      console.error('Error initializing notification service:', error);
+    }
+  };
+
+  const acceptCall = () => {
+    if (!incomingCall || !notificationService) return;
+    
+    // Emit accept call event
+    notificationService.emit('doctor-accept-call', {
+      callId: incomingCall.callId,
+      doctorId: incomingCall.doctorId,
+      patientId: incomingCall.patientId
+    });
+    
+    // Navigate to video consultation
+    navigate('/doctor/video-consultation', {
+      state: {
+        callId: incomingCall.callId,
+        patientId: incomingCall.patientId,
+        patientName: incomingCall.patientName,
+        isIncomingCall: true
+      }
+    });
+    
+    setIncomingCall(null);
+  };
+
+  const rejectCall = () => {
+    if (!incomingCall || !notificationService) return;
+    
+    // Emit reject call event
+    notificationService.emit('doctor-reject-call', {
+      callId: incomingCall.callId,
+      doctorId: incomingCall.doctorId,
+      patientId: incomingCall.patientId,
+      reason: 'Doctor is not available'
+    });
+    
+    setIncomingCall(null);
+  };
 
   useEffect(() => {
     filterNotifications();
@@ -490,6 +558,44 @@ const Notifications: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Incoming Call Notification Modal */}
+      {incomingCall && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <FaPhone className="w-10 h-10 text-emerald-600" />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Incoming Call</h3>
+              <p className="text-gray-600 mb-4">
+                <span className="font-semibold">{incomingCall.patientName}</span> is requesting a video consultation
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                Specialization: {incomingCall.specialization}
+              </p>
+              
+              <div className="flex gap-4">
+                <button
+                  onClick={rejectCall}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-300"
+                >
+                  <FaTimes />
+                  Reject
+                </button>
+                <button
+                  onClick={acceptCall}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300"
+                >
+                  <FaVideo />
+                  Accept
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

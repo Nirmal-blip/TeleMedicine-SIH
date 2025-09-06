@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
+import { useLocation } from 'react-router-dom'
 import Sidebar from '../../Components/Sidebar'
 import { FaVideo, FaMicrophone, FaMicrophoneSlash, FaVideoSlash, FaPhone, FaPhoneSlash, FaUser, FaCalendar, FaClock, FaStethoscope, FaHeart, FaPaperclip, FaSmile, FaFileAlt } from 'react-icons/fa'
 import { IoChatbubbleEllipsesSharp } from "react-icons/io5";
@@ -21,6 +22,7 @@ interface Consultation {
 }
 
 const VideoConsultation: React.FC = () => {
+  const location = useLocation();
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isCallActive, setIsCallActive] = useState(false);
@@ -35,6 +37,9 @@ const VideoConsultation: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [callingDoctor, setCallingDoctor] = useState<any>(null);
+  const [isPatientInitiated, setIsPatientInitiated] = useState<boolean>(false);
+  const [notificationService, setNotificationService] = useState<any>(null);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -46,7 +51,33 @@ const VideoConsultation: React.FC = () => {
     fetchConsultations();
     getCurrentUser();
     checkForActiveAppointment();
+    checkForDirectCall();
   }, []);
+
+  const checkForDirectCall = () => {
+    // Check if user came from direct doctor calling
+    if (location.state?.callingDoctor && location.state?.isPatientInitiated) {
+      const doctor = location.state.callingDoctor;
+      setCallingDoctor(doctor);
+      setIsPatientInitiated(true);
+      setWaitingForDoctor(true);
+      
+      // Create a consultation object for the direct call
+      setCurrentConsultation({
+        id: `direct-${Date.now()}`,
+        doctorName: doctor.name,
+        specialization: doctor.specialization,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+        duration: '30 minutes',
+        status: 'Scheduled',
+        meetingId: `call-${Date.now()}`,
+        reason: 'Direct consultation request',
+        appointmentId: `direct-${Date.now()}`,
+        doctorId: doctor.id
+      });
+    }
+  };
 
   const checkForActiveAppointment = () => {
     // Check if user came from appointment booking
@@ -122,7 +153,33 @@ const VideoConsultation: React.FC = () => {
       setCurrentUserId(userId);
       
       // Initialize real-time notification service
-      initializeNotificationService(userId, 'patient');
+      const service = getNotificationService();
+      
+      if (service) {
+        // Listen for call responses
+        service.on('call-accepted', (data: any) => {
+          console.log('Call accepted by doctor:', data);
+          setWaitingForDoctor(false);
+          setIsCallActive(true);
+          setCallId(data.callId);
+          setConnectionStatus('connecting');
+          
+          // Initialize WebRTC for the accepted call
+          if (webrtcService.current) {
+            webrtcService.current.initializeCall(data.callId, true);
+          }
+        });
+        
+        service.on('call-rejected', (data: any) => {
+          console.log('Call rejected by doctor:', data);
+          setWaitingForDoctor(false);
+          alert(`Call rejected: ${data.reason}`);
+          setCurrentConsultation(null);
+          setCallingDoctor(null);
+        });
+        
+        setNotificationService(service);
+      }
       console.log('Real-time notifications initialized for patient:', userId);
     } catch (error) {
       console.error('Failed to get current user:', error);
@@ -562,8 +619,46 @@ const VideoConsultation: React.FC = () => {
           </div>
         </div>
 
+        {/* Patient-initiated Call Waiting */}
+        {waitingForDoctor && !isCallActive && isPatientInitiated && (
+          <div className="card p-8 rounded-2xl mb-8 animate-fade-scale bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center animate-pulse">
+                  <FaPhone className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-emerald-800 mb-2">
+                    Calling {callingDoctor?.name}...
+                  </h3>
+                  <p className="text-emerald-600">
+                    Waiting for {callingDoctor?.name} to accept your call. Please wait...
+                  </p>
+                  <p className="text-sm text-emerald-500 mt-1">
+                    Specialization: {callingDoctor?.specialization}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setWaitingForDoctor(false);
+                    setCurrentConsultation(null);
+                    setCallingDoctor(null);
+                    setIsPatientInitiated(false);
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-colors duration-300 flex items-center gap-2"
+                >
+                  <FaPhoneSlash className="w-5 h-5" />
+                  Cancel Call
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Doctor Call Notification */}
-        {waitingForDoctor && !isCallActive && (
+        {waitingForDoctor && !isCallActive && !isPatientInitiated && (
           <div className="card p-8 rounded-2xl mb-8 animate-fade-scale bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

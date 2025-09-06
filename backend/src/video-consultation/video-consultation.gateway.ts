@@ -211,6 +211,153 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
     });
   }
 
+  @SubscribeMessage('patient-call-doctor')
+  async handlePatientCallDoctor(
+    @MessageBody() data: { 
+      doctorId: string; 
+      doctorName: string; 
+      patientId: string; 
+      patientName: string; 
+      specialization: string; 
+    },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userInfo = this.connectedUsers.get(client.id);
+    if (!userInfo || userInfo.userType !== 'patient') {
+      client.emit('error', 'Unauthorized: Only patients can initiate calls');
+      return;
+    }
+
+    try {
+      // Generate a unique call ID
+      const callId = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Find doctor's socket connection
+      const doctorSocketIds = Array.from(this.connectedUsers.entries())
+        .filter(([_, user]) => user.userId === data.doctorId && user.userType === 'doctor')
+        .map(([socketId, _]) => socketId);
+
+      if (doctorSocketIds.length === 0) {
+        client.emit('call-error', { message: 'Doctor is not available online' });
+        return;
+      }
+
+      // Send incoming call notification to doctor
+      doctorSocketIds.forEach(socketId => {
+        this.server.to(socketId).emit('incoming-call', {
+          callId,
+          doctorId: data.doctorId,
+          doctorName: data.doctorName,
+          patientId: data.patientId,
+          patientName: data.patientName,
+          specialization: data.specialization,
+          initiatedBy: 'patient'
+        });
+      });
+
+      // Confirm to patient that call request was sent
+      client.emit('call-request-sent', {
+        callId,
+        doctorName: data.doctorName,
+        message: 'Call request sent to doctor. Waiting for response...'
+      });
+
+      console.log(`Patient ${data.patientName} called doctor ${data.doctorName}`);
+
+    } catch (error) {
+      console.error('Error handling patient call request:', error);
+      client.emit('call-error', { message: 'Failed to send call request' });
+    }
+  }
+
+  @SubscribeMessage('doctor-accept-call')
+  async handleDoctorAcceptCall(
+    @MessageBody() data: { callId: string; doctorId: string; patientId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userInfo = this.connectedUsers.get(client.id);
+    if (!userInfo || userInfo.userType !== 'doctor') {
+      client.emit('error', 'Unauthorized: Only doctors can accept calls');
+      return;
+    }
+
+    try {
+      // Find patient's socket connection
+      const patientSocketIds = Array.from(this.connectedUsers.entries())
+        .filter(([_, user]) => user.userId === data.patientId && user.userType === 'patient')
+        .map(([socketId, _]) => socketId);
+
+      if (patientSocketIds.length === 0) {
+        client.emit('call-error', { message: 'Patient is not available online' });
+        return;
+      }
+
+      // Notify patient that doctor accepted the call
+      patientSocketIds.forEach(socketId => {
+        this.server.to(socketId).emit('call-accepted', {
+          callId: data.callId,
+          doctorId: data.doctorId,
+          message: 'Doctor accepted your call. Starting video consultation...'
+        });
+      });
+
+      // Notify doctor that call was accepted
+      client.emit('call-accepted-confirmation', {
+        callId: data.callId,
+        message: 'Call accepted. Video consultation started.'
+      });
+
+      console.log(`Doctor ${data.doctorId} accepted call ${data.callId}`);
+
+    } catch (error) {
+      console.error('Error handling doctor accept call:', error);
+      client.emit('call-error', { message: 'Failed to accept call' });
+    }
+  }
+
+  @SubscribeMessage('doctor-reject-call')
+  async handleDoctorRejectCall(
+    @MessageBody() data: { callId: string; doctorId: string; patientId: string; reason?: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userInfo = this.connectedUsers.get(client.id);
+    if (!userInfo || userInfo.userType !== 'doctor') {
+      client.emit('error', 'Unauthorized: Only doctors can reject calls');
+      return;
+    }
+
+    try {
+      // Find patient's socket connection
+      const patientSocketIds = Array.from(this.connectedUsers.entries())
+        .filter(([_, user]) => user.userId === data.patientId && user.userType === 'patient')
+        .map(([socketId, _]) => socketId);
+
+      if (patientSocketIds.length > 0) {
+        // Notify patient that doctor rejected the call
+        patientSocketIds.forEach(socketId => {
+          this.server.to(socketId).emit('call-rejected', {
+            callId: data.callId,
+            doctorId: data.doctorId,
+            reason: data.reason || 'Doctor is not available',
+            message: 'Doctor is not available at the moment. Please try again later.'
+          });
+        });
+      }
+
+      // Notify doctor that call was rejected
+      client.emit('call-rejected-confirmation', {
+        callId: data.callId,
+        message: 'Call rejected successfully.'
+      });
+
+      console.log(`Doctor ${data.doctorId} rejected call ${data.callId}`);
+
+    } catch (error) {
+      console.error('Error handling doctor reject call:', error);
+      client.emit('call-error', { message: 'Failed to reject call' });
+    }
+  }
+
   @SubscribeMessage('start-call')
   async handleStartCall(
     @MessageBody() data: { appointmentId: string; patientId: string; doctorId?: string },

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import Sidebar from '../../Components/Sidebar'
 import AppointmentBooking from '../../Components/AppointmentBooking'
 import { FaSearch, FaFilter, FaStar, FaClock, FaVideo, FaMapPin, FaCalendar, FaUser, FaStethoscope, FaHeart, FaPhone, FaEnvelope, FaUserMd } from 'react-icons/fa'
 import axios from 'axios'
+import { getNotificationService } from '../../utils/real-time-notifications'
 
 interface Doctor {
   id: string;
@@ -25,6 +26,7 @@ interface Doctor {
 
 const DoctorsList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedSpecialization, setSelectedSpecialization] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name' | 'experience' | 'rating' | 'fee'>('rating');
@@ -43,6 +45,7 @@ const DoctorsList: React.FC = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [callingDoctor, setCallingDoctor] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
@@ -190,6 +193,56 @@ const DoctorsList: React.FC = () => {
   const handleBookingSuccess = (appointmentId: string) => {
     alert(`Appointment booked successfully! Appointment ID: ${appointmentId}`);
     // You could navigate to appointments page or show a success message
+  };
+
+  const callDoctor = async (doctor: Doctor) => {
+    if (!doctor.isOnline) {
+      alert('Doctor is currently offline. Please try again later.');
+      return;
+    }
+
+    try {
+      setCallingDoctor(doctor.id);
+      
+      // Get current user info
+      const response = await axios.get('http://localhost:3000/api/auth/me', {
+        withCredentials: true
+      });
+      
+      const patientId = response.data.id;
+      const patientName = response.data.fullname || 'Patient';
+      
+      // Initialize notification service
+      const notificationService = getNotificationService();
+      
+      if (notificationService) {
+        // Send call request to doctor
+        const callData = {
+          doctorId: doctor.id,
+          doctorName: doctor.name,
+          patientId: patientId,
+          patientName: patientName,
+          specialization: doctor.specialization
+        };
+        
+        // Emit call request to backend
+        notificationService.emit('patient-call-doctor', callData);
+      }
+      
+      // Navigate to video consultation page
+      navigate('/patient/video-consultation', { 
+        state: { 
+          callingDoctor: doctor,
+          isPatientInitiated: true 
+        } 
+      });
+      
+    } catch (error) {
+      console.error('Error calling doctor:', error);
+      alert('Failed to call doctor. Please try again.');
+    } finally {
+      setCallingDoctor(null);
+    }
   };
 
   return (
@@ -423,9 +476,16 @@ const DoctorsList: React.FC = () => {
                     <FaVideo />
                     Book Video Consultation
                   </button>
-                  <button className="flex items-center justify-center gap-2 px-6 py-3 border border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all duration-300">
+                  <button 
+                    onClick={() => {
+                      closeModal();
+                      callDoctor(selectedDoctor);
+                    }}
+                    disabled={callingDoctor === selectedDoctor.id || !selectedDoctor.isOnline}
+                    className="flex items-center justify-center gap-2 px-6 py-3 border border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <FaPhone />
-                    Call
+                    {callingDoctor === selectedDoctor.id ? 'Calling...' : 'Call'}
                   </button>
                 </div>
               </div>
