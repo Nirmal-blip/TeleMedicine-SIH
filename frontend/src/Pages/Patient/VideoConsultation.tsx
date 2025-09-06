@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import Sidebar from '../../Components/Sidebar'
 import { FaVideo, FaMicrophone, FaMicrophoneSlash, FaVideoSlash, FaPhone, FaPhoneSlash, FaUser, FaCalendar, FaClock, FaStethoscope, FaHeart, FaPaperclip, FaSmile, FaFileAlt } from 'react-icons/fa'
 import { IoChatbubbleEllipsesSharp } from "react-icons/io5";
+import { WebRTCService, generateCallId, isWebRTCSupported } from "../../utils/webrtc";
 
 interface Consultation {
   id: number;
@@ -22,7 +23,14 @@ const VideoConsultation: React.FC = () => {
   const [currentConsultation, setCurrentConsultation] = useState<Consultation | null>(null);
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{id: number, sender: string, message: string, timestamp: string}>>([]);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
+  const [callId, setCallId] = useState<string>('');
+  const [isWebRTCReady, setIsWebRTCReady] = useState<boolean>(false);
+  const [waitingForDoctor, setWaitingForDoctor] = useState<boolean>(false);
+  
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const webrtcService = useRef<WebRTCService | null>(null);
 
   const consultations: Consultation[] = [
     {
@@ -51,25 +59,133 @@ const VideoConsultation: React.FC = () => {
 
   const upcomingConsultation = consultations.find(c => c.status === 'Scheduled');
 
-  const startCall = (consultation: Consultation) => {
-    setCurrentConsultation(consultation);
-    setIsCallActive(true);
-    // Simulate starting video call
-    if (videoRef.current) {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-          videoRef.current!.srcObject = stream;
-        })
-        .catch(err => console.error('Error accessing media devices:', err));
+  useEffect(() => {
+    // Check WebRTC support
+    if (!isWebRTCSupported()) {
+      alert('WebRTC is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
+      return;
+    }
+    
+    setIsWebRTCReady(true);
+    
+    // Initialize WebRTC service
+    webrtcService.current = new WebRTCService();
+    
+    // Setup WebRTC event handlers
+    webrtcService.current.onLocalStream = (stream) => {
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+    };
+    
+    webrtcService.current.onRemoteStream = (stream) => {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
+      }
+    };
+    
+    webrtcService.current.onConnectionStateChange = (state) => {
+      setConnectionStatus(state);
+      if (state === 'connected') {
+        console.log('WebRTC connection established');
+        setWaitingForDoctor(false);
+      }
+    };
+    
+    webrtcService.current.onCallEnd = () => {
+      handleCallEnd();
+    };
+    
+    webrtcService.current.onError = (error) => {
+      console.error('WebRTC Error:', error);
+      alert('An error occurred during the call. Please try again.');
+    };
+
+    // Check for active call from doctor
+    const checkForActiveCall = () => {
+      const activeCallId = localStorage.getItem('activeCallId');
+      if (activeCallId && !isCallActive) {
+        setCallId(activeCallId);
+        setWaitingForDoctor(true);
+      }
+    };
+
+    // Check periodically for doctor calls
+    const callCheckInterval = setInterval(checkForActiveCall, 2000);
+    
+    return () => {
+      clearInterval(callCheckInterval);
+      if (webrtcService.current) {
+        webrtcService.current.endCall();
+      }
+    };
+  }, [isCallActive]);
+
+  const startCall = async (consultation: Consultation) => {
+    if (!webrtcService.current || !isWebRTCReady) {
+      alert('WebRTC is not ready. Please refresh the page and try again.');
+      return;
+    }
+
+    try {
+      setCurrentConsultation(consultation);
+      setIsCallActive(true);
+      setConnectionStatus('connecting');
+
+      // Patient joins the call (not initiator)
+      const activeCallId = localStorage.getItem('activeCallId') || generateCallId();
+      setCallId(activeCallId);
+      
+      await webrtcService.current.initializeCall(activeCallId, false);
+      
+      console.log('Joined call with ID:', activeCallId);
+    } catch (error) {
+      console.error('Failed to join call:', error);
+      alert('Failed to join the call. Please check your camera and microphone permissions.');
+      handleCallEnd();
+    }
+  };
+
+  const joinWaitingCall = async () => {
+    if (!webrtcService.current || !callId) return;
+    
+    try {
+      setIsCallActive(true);
+      setConnectionStatus('connecting');
+      
+      await webrtcService.current.initializeCall(callId, false);
+      setWaitingForDoctor(false);
+      
+      console.log('Joined waiting call with ID:', callId);
+    } catch (error) {
+      console.error('Failed to join waiting call:', error);
+      alert('Failed to join the call. Please try again.');
+      setWaitingForDoctor(false);
     }
   };
 
   const endCall = () => {
+    if (webrtcService.current) {
+      webrtcService.current.endCall();
+    }
+    handleCallEnd();
+  };
+
+  const handleCallEnd = () => {
     setIsCallActive(false);
     setCurrentConsultation(null);
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+    setConnectionStatus('disconnected');
+    setCallId('');
+    setWaitingForDoctor(false);
+    
+    // Clear local video
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+    
+    // Clear remote video  
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
     }
   };
 
@@ -83,6 +199,22 @@ const VideoConsultation: React.FC = () => {
       };
       setChatMessages(prev => [...prev, newMessage]);
       setChatMessage('');
+    }
+  };
+
+  const toggleVideo = () => {
+    const newVideoState = !isVideoOn;
+    setIsVideoOn(newVideoState);
+    if (webrtcService.current) {
+      webrtcService.current.toggleVideo(newVideoState);
+    }
+  };
+
+  const toggleAudio = () => {
+    const newAudioState = !isAudioOn;
+    setIsAudioOn(newAudioState);
+    if (webrtcService.current) {
+      webrtcService.current.toggleAudio(newAudioState);
     }
   };
 
@@ -134,28 +266,55 @@ const VideoConsultation: React.FC = () => {
           <div className="flex-1 flex">
             {/* Video Area */}
             <div className="flex-1 relative bg-gray-800">
+              {/* Remote Video (Doctor) */}
               <video
-                ref={videoRef}
+                ref={remoteVideoRef}
                 autoPlay
-                muted
+                playsInline
                 className="w-full h-full object-cover"
               />
               
-              {/* Doctor Video Placeholder */}
-              <div className="absolute top-4 right-4 w-64 h-48 bg-gray-700 rounded-lg flex items-center justify-center">
-                <div className="text-center text-white">
-                  <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FaUser className="w-8 h-8 text-white" />
+              {/* Local Video (Patient) - Picture in Picture */}
+              <div className="absolute top-4 right-4 w-64 h-48 bg-gray-700 rounded-lg overflow-hidden shadow-lg border-2 border-emerald-500">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
+                {!isVideoOn && (
+                  <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                    <FaVideoSlash className="w-8 h-8 text-gray-400" />
                   </div>
-                  <p className="font-semibold">{currentConsultation.doctorName}</p>
-                  <p className="text-sm text-gray-300">Connecting...</p>
+                )}
+                <div className="absolute bottom-2 left-2 bg-emerald-500 text-white px-2 py-1 rounded text-xs font-medium">
+                  You
                 </div>
               </div>
+
+              {/* Connection Status */}
+              <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium ${
+                connectionStatus === 'connected' ? 'bg-green-500 text-white' :
+                connectionStatus === 'connecting' ? 'bg-yellow-500 text-white' :
+                'bg-red-500 text-white'
+              }`}>
+                {connectionStatus === 'connected' ? 'Connected' :
+                 connectionStatus === 'connecting' ? 'Connecting...' :
+                 'Disconnected'}
+              </div>
+
+              {/* Call ID Display */}
+              {callId && (
+                <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded text-xs">
+                  Call ID: {callId}
+                </div>
+              )}
 
               {/* Controls */}
               <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
                 <button
-                  onClick={() => setIsAudioOn(!isAudioOn)}
+                  onClick={toggleAudio}
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-300 ${
                     isAudioOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-700'
                   }`}
@@ -164,7 +323,7 @@ const VideoConsultation: React.FC = () => {
                 </button>
                 
                 <button
-                  onClick={() => setIsVideoOn(!isVideoOn)}
+                  onClick={toggleVideo}
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-300 ${
                     isVideoOn ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-700'
                   }`}
@@ -174,7 +333,7 @@ const VideoConsultation: React.FC = () => {
                 
                 <button
                   onClick={endCall}
-                  className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors duration-300"
+                  className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors duration-300 animate-pulse"
                 >
                   <FaPhoneSlash className="w-6 h-6 text-white" />
                 </button>
@@ -246,8 +405,41 @@ const VideoConsultation: React.FC = () => {
           </div>
         </div>
 
+        {/* Doctor Call Notification */}
+        {waitingForDoctor && !isCallActive && (
+          <div className="card p-8 rounded-2xl mb-8 animate-fade-scale bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center animate-bounce">
+                  <FaVideo className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-blue-800 mb-2">Doctor is calling!</h3>
+                  <p className="text-blue-600">A doctor has started a video consultation. Click to join.</p>
+                  <p className="text-sm text-blue-500 mt-1">Call ID: {callId}</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={joinWaitingCall}
+                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-colors duration-300 flex items-center gap-2"
+                >
+                  <FaVideo className="w-5 h-5" />
+                  Join Call
+                </button>
+                <button
+                  onClick={() => setWaitingForDoctor(false)}
+                  className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-colors duration-300"
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Upcoming Consultation */}
-        {upcomingConsultation && (
+        {upcomingConsultation && !waitingForDoctor && (
           <div className="card p-8 rounded-2xl mb-8 animate-fade-scale">
             <div className="flex items-center gap-3 mb-6">
               <FaCalendar className="w-6 h-6 text-emerald-600" />
@@ -278,10 +470,11 @@ const VideoConsultation: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => startCall(upcomingConsultation)}
-                  className="btn-primary flex items-center gap-2"
+                  disabled={!isWebRTCReady}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FaVideo className="w-4 h-4" />
-                  Start Call
+                  {!isWebRTCReady ? 'Loading...' : 'Start Call'}
                 </button>
                 <button className="btn-secondary flex items-center gap-2">
                   <FaHeart className="w-4 h-4" />
@@ -340,10 +533,11 @@ const VideoConsultation: React.FC = () => {
                   {consultation.status === 'Scheduled' && (
                     <button
                       onClick={() => startCall(consultation)}
-                      className="flex-1 btn-primary flex items-center justify-center gap-2"
+                      disabled={!isWebRTCReady}
+                      className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <FaVideo className="w-4 h-4" />
-                      Join Call
+                      {!isWebRTCReady ? 'Loading...' : 'Join Call'}
                     </button>
                   )}
                   
