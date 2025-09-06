@@ -86,7 +86,7 @@ const App: React.FC = () => {
             <Route path='/doctor/prescribed-patients' element={<ProtectedRoute><PrescribedPatients /></ProtectedRoute>}></Route>
             <Route path='/doctor/consultation-history' element={<ProtectedRoute><DoctorConsultationHistory /></ProtectedRoute>}></Route>
             <Route path='/doctor/notifications' element={<ProtectedRoute><DoctorNotifications /></ProtectedRoute>}></Route>
-            {/* <Route path='/doctor/video-call-notifications' element={<ProtectedRoute><DoctorVideoCallNotifications /></ProtectedRoute>}></Route> */}
+            <Route path='/doctor/video-call-notifications' element={<ProtectedRoute><DoctorNotifications /></ProtectedRoute>}></Route>
         </Routes>
         <ToastContainer
             position="top-right"

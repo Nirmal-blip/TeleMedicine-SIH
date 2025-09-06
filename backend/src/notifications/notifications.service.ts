@@ -163,4 +163,25 @@ export class NotificationsService {
     };
     return messages[type][recipient];
   }
+
+  async markAllAsRead(userId: string, userType: 'Patient' | 'Doctor') {
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType, isRead: false }
+      : { patientId: userId, recipientType: userType, isRead: false };
+    
+    return await this.notificationModel.updateMany(
+      query,
+      { 
+        isRead: true, 
+        readAt: new Date() 
+      }
+    );
+  }
+
+  async deleteNotification(notificationId: string, userId: string) {
+    return await this.notificationModel.findOneAndDelete({
+      _id: notificationId,
+      $or: [{ patientId: userId }, { doctorId: userId }]
+    });
+  }
 }

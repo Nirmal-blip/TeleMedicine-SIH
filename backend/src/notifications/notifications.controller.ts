@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, UseGuards, Req, Query } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 
@@ -26,10 +26,7 @@ export class NotificationsController {
         skip || 0
       );
 
-      return {
-        success: true,
-        notifications,
-      };
+      return notifications;
     } catch (error) {
       return {
         success: false,
@@ -61,6 +58,7 @@ export class NotificationsController {
   }
 
   @Post('mark-read/:notificationId')
+  @Patch(':notificationId/read')
   async markAsRead(
     @Param('notificationId') notificationId: string,
     @Req() req: any,
@@ -82,6 +80,50 @@ export class NotificationsController {
       return {
         success: false,
         message: 'Failed to mark notification as read',
+        error: error.message,
+      };
+    }
+  }
+
+  @Patch('mark-all-read')
+  async markAllAsRead(@Req() req: any) {
+    try {
+      const userId = req.user.userId;
+      const userType = req.user.userType;
+      
+      await this.notificationsService.markAllAsRead(userId, userType);
+
+      return {
+        success: true,
+        message: 'All notifications marked as read',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to mark all notifications as read',
+        error: error.message,
+      };
+    }
+  }
+
+  @Delete(':notificationId')
+  async deleteNotification(
+    @Param('notificationId') notificationId: string,
+    @Req() req: any,
+  ) {
+    try {
+      const userId = req.user.userId;
+      
+      await this.notificationsService.deleteNotification(notificationId, userId);
+
+      return {
+        success: true,
+        message: 'Notification deleted',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to delete notification',
         error: error.message,
       };
     }

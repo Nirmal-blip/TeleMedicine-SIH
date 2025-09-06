@@ -38,6 +38,11 @@ export class DoctorsController {
     return this.doctorsService.update(req.user.userId, updateData);
   }
 
+  @Get('me/stats')
+  getCurrentDoctorStats(@Request() req) {
+    return this.doctorsService.getDoctorStats(req.user.userId);
+  }
+
   @Get(':id/stats')
   getDoctorStats(@Param('id') id: string) {
     return this.doctorsService.getDoctorStats(id);
