@@ -265,7 +265,7 @@ def get_recommendations(disease):
     if disease in recommendations:
         dos = "\n✔ " + "\n✔ ".join(recommendations[disease]["do"])
         donts = "\n❌ " + "\n❌ ".join(recommendations[disease]["dont"])
-        return f"*Do's:{dos}\n\nDon'ts:*{donts}"
+        return f"**Do's:**{dos}\n\n**Don'ts:**{donts}"
     return "No specific recommendations available."
 
 # Appointment booking function
