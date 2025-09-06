@@ -495,7 +495,7 @@ export class SeederService {
   private async seedNotifications(patients: any[], doctors: any[]) {
     const notificationsData = [
       {
-        recipient: patients[0]._id,
+        patientId: patients[0].patientId,
         recipientType: 'Patient',
         title: 'Appointment Confirmed',
         message: 'Your appointment with Dr. Michael Brown has been confirmed for February 15th at 10:00 AM.',
@@ -503,7 +503,7 @@ export class SeederService {
         priority: 'Medium'
       },
       {
-        recipient: patients[1]._id,
+        patientId: patients[1].patientId,
         recipientType: 'Patient',
         title: 'Prescription Ready',
         message: 'Your prescription is ready for pickup at the pharmacy.',
@@ -511,7 +511,7 @@ export class SeederService {
         priority: 'High'
       },
       {
-        recipient: doctors[0]._id,
+        doctorId: doctors[0].doctorId,
         recipientType: 'Doctor',
         title: 'New Patient Appointment',
         message: 'You have a new appointment request from John Smith.',

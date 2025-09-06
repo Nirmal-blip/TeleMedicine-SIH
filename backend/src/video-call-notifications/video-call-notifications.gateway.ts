@@ -97,9 +97,9 @@ export class VideoCallNotificationsGateway implements OnGatewayConnection, OnGat
       // Create database notification for the doctor
       try {
         await this.notificationsService.createNotification({
-          recipient: data.doctorId,
+          doctorId: data.doctorId,
           recipientType: 'Doctor',
-          sender: data.patientId,
+          senderPatientId: data.patientId,
           senderType: 'Patient',
           title: 'Incoming Video Call Request',
           message: `${data.patientName} is requesting a video consultation for ${data.specialization}`,
@@ -179,9 +179,9 @@ export class VideoCallNotificationsGateway implements OnGatewayConnection, OnGat
       // Create notification for patient about call acceptance
       try {
         await this.notificationsService.createNotification({
-          recipient: data.patientId,
+          patientId: data.patientId,
           recipientType: 'Patient',
-          sender: data.doctorId,
+          senderDoctorId: data.doctorId,
           senderType: 'Doctor',
           title: 'Video Call Accepted',
           message: 'Doctor has accepted your video call request. Please join the call.',
@@ -243,9 +243,9 @@ export class VideoCallNotificationsGateway implements OnGatewayConnection, OnGat
         // Create notification for patient about call rejection
         try {
           await this.notificationsService.createNotification({
-            recipient: data.patientId,
+            patientId: data.patientId,
             recipientType: 'Patient',
-            sender: data.doctorId,
+            senderDoctorId: data.doctorId,
             senderType: 'Doctor',
             title: 'Video Call Rejected',
             message: data.reason || 'Doctor is not available at the moment. Please try again later.',

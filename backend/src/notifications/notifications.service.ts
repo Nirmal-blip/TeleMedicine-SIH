@@ -10,9 +10,11 @@ export class NotificationsService {
   ) {}
 
   async createNotification(notificationData: {
-    recipient: string;
+    patientId?: string;
+    doctorId?: string;
     recipientType: 'Patient' | 'Doctor';
-    sender?: string;
+    senderPatientId?: string;
+    senderDoctorId?: string;
     senderType?: 'Patient' | 'Doctor' | 'System';
     title: string;
     message: string;
@@ -34,10 +36,9 @@ export class NotificationsService {
     // Debug logging
     console.log(`🔍 Searching notifications for: ${userId} (${userType})`);
     
-    const query = { 
-      recipient: userId, 
-      recipientType: userType 
-    };
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType }
+      : { patientId: userId, recipientType: userType };
     
     console.log('📊 Query:', query);
     
@@ -46,7 +47,6 @@ export class NotificationsService {
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(skip)
-      .populate('sender', 'name email')
       .exec();
       
     console.log(`📋 Query result: ${notifications.length} notifications found`);
@@ -55,18 +55,18 @@ export class NotificationsService {
   }
 
   async getUnreadNotificationsCount(userId: string, userType: 'Patient' | 'Doctor') {
-    return await this.notificationModel.countDocuments({
-      recipient: userId,
-      recipientType: userType,
-      isRead: false
-    });
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType, isRead: false }
+      : { patientId: userId, recipientType: userType, isRead: false };
+    
+    return await this.notificationModel.countDocuments(query);
   }
 
   async markAsRead(notificationId: string, userId: string) {
     return await this.notificationModel.findOneAndUpdate(
       { 
         _id: notificationId, 
-        recipient: userId 
+        $or: [{ patientId: userId }, { doctorId: userId }]
       },
       { 
         isRead: true, 
@@ -77,12 +77,12 @@ export class NotificationsService {
   }
 
   async markAllAsRead(userId: string, userType: 'Patient' | 'Doctor') {
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType, isRead: false }
+      : { patientId: userId, recipientType: userType, isRead: false };
+    
     return await this.notificationModel.updateMany(
-      { 
-        recipient: userId, 
-        recipientType: userType, 
-        isRead: false 
-      },
+      query,
       { 
         isRead: true, 
         readAt: new Date() 
@@ -93,53 +93,54 @@ export class NotificationsService {
   async deleteNotification(notificationId: string, userId: string) {
     return await this.notificationModel.findOneAndDelete({
       _id: notificationId,
-      recipient: userId
+      $or: [{ patientId: userId }, { doctorId: userId }]
     });
   }
 
   async deleteAllNotifications(userId: string, userType: 'Patient' | 'Doctor'): Promise<any> {
-    return await this.notificationModel.deleteMany({
-      recipient: userId,
-      recipientType: userType
-    });
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType }
+      : { patientId: userId, recipientType: userType };
+    
+    return await this.notificationModel.deleteMany(query);
   }
 
   async getNotificationsByType(userId: string, userType: 'Patient' | 'Doctor', type: string) {
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType, type: type }
+      : { patientId: userId, recipientType: userType, type: type };
+    
     return await this.notificationModel
-      .find({ 
-        recipient: userId, 
-        recipientType: userType, 
-        type: type 
-      })
+      .find(query)
       .sort({ createdAt: -1 })
-      .populate('sender', 'name email')
       .exec();
   }
 
   async getNotificationsByPriority(userId: string, userType: 'Patient' | 'Doctor', priority: string) {
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType, priority: priority }
+      : { patientId: userId, recipientType: userType, priority: priority };
+    
     return await this.notificationModel
-      .find({ 
-        recipient: userId, 
-        recipientType: userType, 
-        priority: priority 
-      })
+      .find(query)
       .sort({ createdAt: -1 })
-      .populate('sender', 'name email')
       .exec();
   }
 
   async searchNotifications(userId: string, userType: 'Patient' | 'Doctor', searchQuery: string) {
+    const baseQuery = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType }
+      : { patientId: userId, recipientType: userType };
+    
     return await this.notificationModel
       .find({
-        recipient: userId,
-        recipientType: userType,
+        ...baseQuery,
         $or: [
           { title: { $regex: searchQuery, $options: 'i' } },
           { message: { $regex: searchQuery, $options: 'i' } }
         ]
       })
       .sort({ createdAt: -1 })
-      .populate('sender', 'name email')
       .exec();
   }
 
@@ -157,9 +158,9 @@ export class NotificationsService {
 
     // Notification for doctor
     notifications.push({
-      recipient: appointmentData.doctorId,
+      doctorId: appointmentData.doctorId,
       recipientType: 'Doctor',
-      sender: appointmentData.patientId,
+      senderPatientId: appointmentData.patientId,
       senderType: 'Patient',
       title: this.getAppointmentTitle(appointmentData.type, 'doctor'),
       message: this.getAppointmentMessage(appointmentData.type, 'doctor', appointmentData),
@@ -175,9 +176,9 @@ export class NotificationsService {
 
     // Notification for patient
     notifications.push({
-      recipient: appointmentData.patientId,
+      patientId: appointmentData.patientId,
       recipientType: 'Patient',
-      sender: appointmentData.doctorId,
+      senderDoctorId: appointmentData.doctorId,
       senderType: 'Doctor',
       title: this.getAppointmentTitle(appointmentData.type, 'patient'),
       message: this.getAppointmentMessage(appointmentData.type, 'patient', appointmentData),
@@ -248,9 +249,9 @@ export class NotificationsService {
     type: 'prescription_ready';
   }) {
     return await this.createNotification({
-      recipient: prescriptionData.patientId,
+      patientId: prescriptionData.patientId,
       recipientType: 'Patient',
-      sender: prescriptionData.doctorId,
+      senderDoctorId: prescriptionData.doctorId,
       senderType: 'Doctor',
       title: 'Prescription Ready',
       message: `Your prescription from Dr. ${prescriptionData.doctorName} is ready for pickup`,
@@ -273,9 +274,9 @@ export class NotificationsService {
     message: string;
   }) {
     return await this.createNotification({
-      recipient: emergencyData.doctorId,
+      doctorId: emergencyData.doctorId,
       recipientType: 'Doctor',
-      sender: emergencyData.patientId,
+      senderPatientId: emergencyData.patientId,
       senderType: 'Patient',
       title: 'Emergency Alert',
       message: `Emergency alert from ${emergencyData.patientName}: ${emergencyData.message}`,

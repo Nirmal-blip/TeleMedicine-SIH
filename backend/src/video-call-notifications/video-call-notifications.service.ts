@@ -19,9 +19,9 @@ export class VideoCallNotificationsService {
   }) {
     try {
       const notification = new this.notificationModel({
-        recipient: data.doctorId,
+        doctorId: data.doctorId,
         recipientType: 'Doctor',
-        sender: data.patientId,
+        senderPatientId: data.patientId,
         senderType: 'Patient',
         title: 'Incoming Video Call Request',
         message: `${data.patientName} is requesting a video consultation for ${data.specialization}`,
@@ -52,9 +52,9 @@ export class VideoCallNotificationsService {
   }) {
     try {
       const notification = new this.notificationModel({
-        recipient: data.patientId,
+        patientId: data.patientId,
         recipientType: 'Patient',
-        sender: data.doctorId,
+        senderDoctorId: data.doctorId,
         senderType: 'Doctor',
         title: 'Video Call Accepted',
         message: 'Doctor has accepted your video call request. Please join the call.',
@@ -83,9 +83,9 @@ export class VideoCallNotificationsService {
   }) {
     try {
       const notification = new this.notificationModel({
-        recipient: data.patientId,
+        patientId: data.patientId,
         recipientType: 'Patient',
-        sender: data.doctorId,
+        senderDoctorId: data.doctorId,
         senderType: 'Doctor',
         title: 'Video Call Rejected',
         message: data.reason || 'Doctor is not available at the moment. Please try again later.',
@@ -109,10 +109,13 @@ export class VideoCallNotificationsService {
 
   async getVideoCallNotifications(userId: string, userType: 'doctor' | 'patient') {
     try {
+      const query = userType === 'doctor' 
+        ? { doctorId: userId, recipientType: 'Doctor' }
+        : { patientId: userId, recipientType: 'Patient' };
+
       const notifications = await this.notificationModel
         .find({
-          recipient: userId,
-          recipientType: userType === 'doctor' ? 'Doctor' : 'Patient',
+          ...query,
           type: { $in: ['video_call_request', 'video_call_accepted', 'video_call_rejected'] }
         })
         .sort({ createdAt: -1 })
