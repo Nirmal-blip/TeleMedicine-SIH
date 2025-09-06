@@ -4,6 +4,7 @@ import Sidebar from '../../Components/Sidebar'
 import { FaVideo, FaMicrophone, FaMicrophoneSlash, FaVideoSlash, FaPhone, FaPhoneSlash, FaUser, FaCalendar, FaClock, FaStethoscope, FaHeart, FaPaperclip, FaSmile, FaFileAlt } from 'react-icons/fa'
 import { IoChatbubbleEllipsesSharp } from "react-icons/io5";
 import { EnhancedWebRTCService, generateCallId, isWebRTCSupported, ChatMessage } from "../../utils/enhanced-webrtc";
+import { initializeNotificationService, getNotificationService } from "../../utils/real-time-notifications";
 
 interface Consultation {
   id: string;
@@ -117,7 +118,12 @@ const VideoConsultation: React.FC = () => {
       const response = await axios.get('http://localhost:3000/api/patients/me', {
         withCredentials: true,
       });
-      setCurrentUserId(response.data._id);
+      const userId = response.data._id;
+      setCurrentUserId(userId);
+      
+      // Initialize real-time notification service
+      initializeNotificationService(userId, 'patient');
+      console.log('Real-time notifications initialized for patient:', userId);
     } catch (error) {
       console.error('Failed to get current user:', error);
       setError('Failed to authenticate user');
@@ -599,16 +605,16 @@ const VideoConsultation: React.FC = () => {
           </div>
         )}
 
-        {/* Request Immediate Consultation */}
-        {!waitingForDoctor && !upcomingConsultation && !loading && consultations.length === 0 && (
+        {/* Find Available Doctors - Always Show */}
+        {!waitingForDoctor && !isCallActive && (
           <div className="card p-8 rounded-2xl mb-8 animate-fade-scale bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
                 <FaStethoscope className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">No Upcoming Consultations</h2>
-                <p className="text-gray-600">Book a video consultation with our available doctors</p>
+                <h2 className="text-2xl font-bold text-gray-800">Start Video Consultation</h2>
+                <p className="text-gray-600">Connect with available doctors for immediate or scheduled consultations</p>
               </div>
             </div>
             
@@ -621,7 +627,7 @@ const VideoConsultation: React.FC = () => {
                 Find Available Doctors
               </button>
               <button
-                onClick={() => window.location.href = '/patient/appointments'}
+                onClick={() => window.location.href = '/appointments'}
                 className="flex items-center gap-2 px-6 py-3 border border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-colors duration-300 font-medium"
               >
                 <FaCalendar className="w-5 h-5" />

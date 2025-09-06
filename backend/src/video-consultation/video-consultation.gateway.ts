@@ -8,7 +8,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { VideoConsultationService } from './video-consultation.service';
+import { VideoConsultationService } from '../video-consultation/video-consultation.service';
 import { UseGuards } from '@nestjs/common';
 
 interface CallData {
@@ -33,10 +33,12 @@ interface UserInfo {
 
 @WebSocketGateway({
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: ['http://localhost:5173', 'http://localhost:3001', 'http://localhost:3000'],
     credentials: true,
   },
   namespace: '/video-consultation',
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
 })
 export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -222,11 +224,25 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
 
     try {
       // Create a new call session
-      const callId = await this.videoConsultationService.createCallSession(
+      const result = await this.videoConsultationService.startCallForAppointment(
         data.appointmentId,
-        userInfo.userId,
-        data.patientId,
+        data.patientId
       );
+      
+      if (!result.success) {
+        client.emit('call-error', { message: 'Failed to start call' });
+        return;
+      }
+      
+      const callId = result.callId;
+
+      // Get doctor and patient details from database
+      const appointment = await this.videoConsultationService.getAppointmentDetails(data.appointmentId);
+      
+      if (!appointment) {
+        client.emit('call-error', { message: 'Appointment not found' });
+        return;
+      }
 
       // Notify the patient about the incoming call
       const patientSocketIds = Array.from(this.connectedUsers.entries())
@@ -238,11 +254,17 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
           callId,
           appointmentId: data.appointmentId,
           doctorId: userInfo.userId,
-          doctorName: userInfo.userId, // We'll get this from the database
+          doctorName: appointment.doctor?.fullname || `Dr. ${appointment.doctor?.email}` || 'Doctor',
+          patientId: data.patientId,
+          patientName: appointment.patient?.fullname || 'Patient',
         });
       });
 
-      client.emit('call-started', { callId });
+      // Also notify the doctor that call is initiated
+      client.emit('call-started', { 
+        callId,
+        patientName: appointment.patient?.fullname || 'Patient',
+      });
     } catch (error) {
       client.emit('error', error.message);
     }

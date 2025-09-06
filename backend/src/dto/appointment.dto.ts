@@ -19,7 +19,7 @@ export class CreateAppointmentDto {
   reason: string;
 
   @IsOptional()
-  @IsEnum(['Pending', 'Confirmed', 'Completed', 'Canceled'])
+  @IsEnum(['Pending', 'Confirmed', 'In Progress', 'Completed', 'Canceled', 'Rescheduled'])
   status?: string;
 }
 
@@ -33,7 +33,7 @@ export class UpdateAppointmentDto {
   time?: string;
 
   @IsOptional()
-  @IsEnum(['Pending', 'Confirmed', 'Completed', 'Canceled'])
+  @IsEnum(['Pending', 'Confirmed', 'In Progress', 'Completed', 'Canceled', 'Rescheduled'])
   status?: string;
 
   @IsOptional()

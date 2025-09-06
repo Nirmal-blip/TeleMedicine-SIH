@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaCalendar, FaClock, FaVideo, FaStethoscope, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
+import { getNotificationService } from '../utils/real-time-notifications';
 
 interface Doctor {
   id: string;
@@ -95,8 +96,14 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     setBookingError('');
 
     try {
+      // Get current patient ID
+      const patientResponse = await axios.get('http://localhost:3000/api/patients/me', {
+        withCredentials: true
+      });
+      
       const response = await axios.post('http://localhost:3000/api/appointments', {
         doctor: doctor.id,
+        patient: patientResponse.data._id,
         date: selectedDate,
         time: selectedTime,
         reason: reason.trim(),
@@ -127,12 +134,18 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     setBookingError('');
 
     try {
+      // Get current patient ID
+      const patientResponse = await axios.get('http://localhost:3000/api/patients/me', {
+        withCredentials: true
+      });
+      
       const now = new Date();
       const currentDate = now.toISOString().split('T')[0];
       const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
 
       const response = await axios.post('http://localhost:3000/api/appointments', {
         doctor: doctor.id,
+        patient: patientResponse.data._id,
         date: currentDate,
         time: currentTime,
         reason: 'Immediate Video Consultation',
@@ -146,6 +159,24 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       // Start video consultation immediately
       const callId = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
+      // Get notification service and request video call
+      const notificationService = getNotificationService();
+      if (notificationService) {
+        // Request video call with doctor
+        notificationService.requestVideoCall(doctor.id, patientResponse.data._id, response.data._id);
+        
+        // Notify about appointment booking
+        notificationService.notifyAppointmentBooked({
+          appointmentId: response.data._id,
+          doctorId: doctor.id,
+          patientId: patientResponse.data._id,
+          doctorName: doctor.name,
+          patientName: patientResponse.data.fullname || 'Patient',
+          date: currentDate,
+          time: currentTime,
+        });
+      }
+      
       // Store appointment data for video consultation
       localStorage.setItem('activeAppointment', JSON.stringify({
         appointmentId: response.data._id,
@@ -155,7 +186,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       }));
 
       // Navigate to video consultation page
-      window.location.href = '/patient/video-consultation';
+      window.location.href = '/video-consultation';
       
       onClose();
     } catch (error: any) {

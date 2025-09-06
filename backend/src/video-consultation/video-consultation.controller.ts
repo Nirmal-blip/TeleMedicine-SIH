@@ -65,16 +65,15 @@ export class VideoConsultationController {
     }
 
     try {
-      const callId = await this.videoConsultationService.createCallSession(
+      const result = await this.videoConsultationService.startCallForAppointment(
         body.appointmentId,
-        doctorId,
         body.patientId
       );
 
       return { 
-        success: true, 
-        callId,
-        message: 'Call started successfully'
+        success: result.success, 
+        callId: result.callId,
+        message: result.success ? 'Call started successfully' : 'Failed to start call'
       };
     } catch (error) {
       return { 
@@ -91,7 +90,7 @@ export class VideoConsultationController {
     const userId = req.user.userId;
 
     try {
-      await this.videoConsultationService.endCallSession(callId, userId);
+      await this.videoConsultationService.endCallSession(callId);
       
       return { 
         success: true, 
@@ -114,11 +113,7 @@ export class VideoConsultationController {
     @Request() req
   ) {
     try {
-      await this.videoConsultationService.updateAppointmentCallStatus(
-        appointmentId,
-        body.status,
-        body.callData
-      );
+      // Appointment status is automatically updated in the service
 
       return { 
         success: true, 

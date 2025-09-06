@@ -1,22 +1,22 @@
 import { Module } from '@nestjs/common';
-import { VideoConsultationGateway } from './video-consultation.gateway';
-import { VideoConsultationService } from './video-consultation.service';
-import { VideoConsultationController } from './video-consultation.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AppointmentSchema } from '../schemas/appointment.schema';
-import { DoctorSchema } from '../schemas/doctor.schema';
-import { PatientSchema } from '../schemas/patient.schema';
+
+// Video consultation components
+import { VideoConsultationController } from '../video-consultation/video-consultation.controller';
+import { VideoConsultationService } from '../video-consultation/video-consultation.service';  
+import { VideoConsultationGateway } from '../video-consultation/video-consultation.gateway';
+
+// Schemas
+import { Appointment, AppointmentSchema } from '../schemas/appointment.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: 'Appointment', schema: AppointmentSchema },
-      { name: 'Doctor', schema: DoctorSchema },
-      { name: 'Patient', schema: PatientSchema },
+      { name: Appointment.name, schema: AppointmentSchema },
     ]),
   ],
-  providers: [VideoConsultationGateway, VideoConsultationService],
   controllers: [VideoConsultationController],
+  providers: [VideoConsultationGateway, VideoConsultationService],
   exports: [VideoConsultationService],
 })
 export class VideoConsultationModule {}
