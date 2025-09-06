@@ -70,7 +70,8 @@ const DoctorsList: React.FC = () => {
         withCredentials: true
       });
       
-      const userId = response.data.id;
+      const userId = response.data.user.userId;
+      console.log('🔥 PATIENT: Initializing video call service with ID:', userId);
       const service = initializeVideoCallService(userId, 'patient');
       setVideoCallService(service);
       
@@ -277,7 +278,9 @@ const DoctorsList: React.FC = () => {
         withCredentials: true
       });
       
-      const patientName = response.data.fullname || 'Patient';
+      const patientName = response.data.user.fullname || 'Patient';
+      console.log('🔥 PATIENT: Starting video call with doctor:', doctor.name);
+      console.log('🔥 PATIENT: Patient name:', patientName);
       
       // Request video call
       videoCallService.requestVideoCall({
