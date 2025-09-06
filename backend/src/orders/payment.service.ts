@@ -1,11 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import * as Razorpay from 'razorpay';
 
 @Injectable()
 export class PaymentService {
-  private razorpay: Razorpay;
+  private razorpay: any;
 
   constructor() {
+    const Razorpay = require('razorpay');
     this.razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_your_key_id',
       key_secret: process.env.RAZORPAY_KEY_SECRET || 'your_key_secret',

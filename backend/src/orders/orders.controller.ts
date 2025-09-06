@@ -33,7 +33,7 @@ export class OrdersController {
     // Create Razorpay order if payment method is razorpay
     if (createOrderDto.paymentMethod === 'razorpay') {
       const razorpayOrder = await this.paymentService.createRazorpayOrder(
-        order._id.toString(),
+        (order as any)._id.toString(),
         order.totalAmount
       );
       return { order, razorpayOrder };

@@ -19,7 +19,7 @@ import {
   ApiCookieAuth 
 } from '@nestjs/swagger';
 import { AiMlService } from './ai-ml.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('AI/ML')
 @Controller('api/ai')

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { VideoConsultationService, CallSession } from './video-consultation.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Video Consultation')
 @Controller('api/video-consultation')

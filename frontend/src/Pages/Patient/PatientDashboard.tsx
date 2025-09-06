@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaVideo, FaMapPin, FaCalendar, FaUsers, FaStar, FaHeart, FaClock, FaStethoscope, FaPills, FaHospital, FaSearch } from "react-icons/fa";
+import { FaVideo, FaMapPin, FaCalendar, FaUsers, FaStar, FaHeart, FaClock, FaStethoscope, FaPills, FaHospital, FaSearch, FaShoppingCart } from "react-icons/fa";
 import { FaShield } from "react-icons/fa6";
 import Chatbot from "../../Components/Chatbot";
 import Sidebar from "../../Components/Sidebar";
@@ -94,6 +94,13 @@ const PatientDashboard: React.FC = () => {
       icon: <FaStethoscope className="w-8 h-8" />, 
       route: "/video-consultation",
       color: "from-emerald-500 to-teal-500"
+    },
+    { 
+      title: "Medicine Shop", 
+      desc: "Order medicines online with fast delivery and prescription upload", 
+      icon: <FaShoppingCart className="w-8 h-8" />, 
+      route: "/patient/medicine-shop",
+      color: "from-blue-500 to-indigo-500"
     },
     { 
       title: "Medicine Recommendation", 
@@ -192,7 +199,7 @@ const PatientDashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {specialties.map((specialty, index) => (
               <div 
                 key={index} 

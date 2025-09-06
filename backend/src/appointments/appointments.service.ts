@@ -24,7 +24,7 @@ export class AppointmentsService {
         patientId: savedAppointment.patient.toString(),
         doctorName: 'Dr. Smith', // You might want to populate this from the doctor data
         patientName: 'Patient', // You might want to populate this from the patient data
-        appointmentDate: savedAppointment.appointmentDate,
+        appointmentDate: savedAppointment.date,
         type: 'appointment_booked'
       });
     } catch (error) {

@@ -15,7 +15,7 @@ export class OrdersService {
     @InjectModel(Medicine.name) private medicineModel: Model<MedicineDocument>,
   ) {}
 
-  async createOrder(patientId: string, createOrderDto: CreateOrderDto): Promise<Order> {
+  async createOrder(patientId: string, createOrderDto: CreateOrderDto): Promise<OrderDocument> {
     // Get cart
     const cart = await this.cartModel
       .findOne({ patientId })
@@ -86,7 +86,7 @@ export class OrdersService {
   }
 
   async findOrdersByPatient(patientId: string, page = 1, limit = 10): Promise<{
-    orders: Order[];
+    orders: OrderDocument[];
     total: number;
     page: number;
     totalPages: number;
@@ -112,7 +112,7 @@ export class OrdersService {
     };
   }
 
-  async findOne(id: string, patientId?: string): Promise<Order> {
+  async findOne(id: string, patientId?: string): Promise<OrderDocument> {
     const filter: any = { _id: id };
     if (patientId) {
       filter.patientId = patientId;
@@ -130,7 +130,7 @@ export class OrdersService {
     return order;
   }
 
-  async verifyRazorpayPayment(paymentDto: PaymentVerificationDto): Promise<Order> {
+  async verifyRazorpayPayment(paymentDto: PaymentVerificationDto): Promise<OrderDocument> {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId } = paymentDto;
 
     // Verify signature
@@ -160,7 +160,7 @@ export class OrdersService {
     return order.save();
   }
 
-  async updateOrderStatus(id: string, updateDto: UpdateOrderStatusDto): Promise<Order> {
+  async updateOrderStatus(id: string, updateDto: UpdateOrderStatusDto): Promise<OrderDocument> {
     const order = await this.orderModel.findById(id).exec();
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -183,7 +183,7 @@ export class OrdersService {
     return order.save();
   }
 
-  async cancelOrder(id: string, patientId: string, reason: string): Promise<Order> {
+  async cancelOrder(id: string, patientId: string, reason: string): Promise<OrderDocument> {
     const order = await this.orderModel.findOne({ _id: id, patientId }).exec();
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -203,7 +203,7 @@ export class OrdersService {
   }
 
   async getAllOrders(page = 1, limit = 20, status?: string): Promise<{
-    orders: Order[];
+    orders: OrderDocument[];
     total: number;
     page: number;
     totalPages: number;

@@ -11,14 +11,9 @@ import { UploadsModule } from './uploads/uploads.module';
 import { AiMlModule } from './ai-ml/ai-ml.module';
 import { ChatHistoryModule } from './chat-history/chat-history.module';
 import { VideoConsultationModule } from './video-consultation/video-consultation.module';
-<<<<<<< HEAD
 import { MedicinesModule } from './medicines/medicines.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
-=======
-import { NotificationsModule } from './notifications/notifications.module';
-import { PrescriptionsModule } from './prescriptions/prescriptions.module';
->>>>>>> e7852b323928ecda54d3355246f3425d8d5d280e
 
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
@@ -49,18 +44,13 @@ import { AppController } from './app.controller';
     PatientsModule,
     DoctorsModule,
     AppointmentsModule,
-    PrescriptionsModule,
     UploadsModule,
     AiMlModule,
     ChatHistoryModule,
     VideoConsultationModule,
-<<<<<<< HEAD
     MedicinesModule,
     CartModule,
     OrdersModule,
-=======
-    NotificationsModule,
->>>>>>> e7852b323928ecda54d3355246f3425d8d5d280e
   ],
   controllers: [AppController],
 })

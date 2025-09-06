@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('api/notifications')
 @UseGuards(JwtAuthGuard)
@@ -62,7 +62,7 @@ export class NotificationsController {
   }
 
   @Delete()
-  async deleteAllNotifications(@Request() req) {
+  async deleteAllNotifications(@Request() req): Promise<any> {
     const userId = req.user.userId;
     const userType = req.user.userType;
     return await this.notificationsService.deleteAllNotifications(userId, userType);

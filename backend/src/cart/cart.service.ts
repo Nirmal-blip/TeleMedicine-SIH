@@ -12,7 +12,7 @@ export class CartService {
     @InjectModel(Medicine.name) private medicineModel: Model<MedicineDocument>,
   ) {}
 
-  async getCart(patientId: string): Promise<Cart> {
+  async getCart(patientId: string): Promise<CartDocument> {
     const cart = await this.cartModel
       .findOne({ patientId })
       .populate({
@@ -36,7 +36,7 @@ export class CartService {
     return cart;
   }
 
-  async addToCart(patientId: string, addToCartDto: AddToCartDto): Promise<Cart> {
+  async addToCart(patientId: string, addToCartDto: AddToCartDto): Promise<CartDocument> {
     const { medicineId, quantity } = addToCartDto;
 
     // Check if medicine exists and is active
@@ -50,10 +50,15 @@ export class CartService {
       throw new BadRequestException(`Only ${medicine.stock} items available in stock`);
     }
 
-    let cart = await this.cartModel.findOne({ patientId }).exec();
+    let cart: CartDocument | null = await this.cartModel.findOne({ patientId }).exec();
     
     if (!cart) {
       cart = await this.createCart(patientId);
+    }
+
+    // At this point cart is guaranteed to be not null
+    if (!cart) {
+      throw new BadRequestException('Failed to create or retrieve cart');
     }
 
     // Check if item already exists in cart
@@ -86,7 +91,7 @@ export class CartService {
     return cart.save();
   }
 
-  async updateCartItem(patientId: string, updateCartItemDto: UpdateCartItemDto): Promise<Cart> {
+  async updateCartItem(patientId: string, updateCartItemDto: UpdateCartItemDto): Promise<CartDocument> {
     const { medicineId, quantity } = updateCartItemDto;
 
     const cart = await this.cartModel.findOne({ patientId }).exec();
@@ -121,7 +126,7 @@ export class CartService {
     return cart.save();
   }
 
-  async removeFromCart(patientId: string, medicineId: string): Promise<Cart> {
+  async removeFromCart(patientId: string, medicineId: string): Promise<CartDocument> {
     const cart = await this.cartModel.findOne({ patientId }).exec();
     if (!cart) {
       throw new NotFoundException('Cart not found');
@@ -137,7 +142,7 @@ export class CartService {
     return cart.save();
   }
 
-  async clearCart(patientId: string): Promise<Cart> {
+  async clearCart(patientId: string): Promise<CartDocument> {
     const cart = await this.cartModel.findOne({ patientId }).exec();
     if (!cart) {
       throw new NotFoundException('Cart not found');
@@ -154,7 +159,7 @@ export class CartService {
   async validateCartForCheckout(patientId: string): Promise<{
     isValid: boolean;
     errors: string[];
-    cart: Cart;
+    cart: CartDocument;
   }> {
     const cart = await this.getCart(patientId);
     const errors: string[] = [];
@@ -193,7 +198,7 @@ export class CartService {
     };
   }
 
-  private async createCart(patientId: string): Promise<Cart> {
+  private async createCart(patientId: string): Promise<CartDocument> {
     const newCart = new this.cartModel({
       patientId,
       items: [],
@@ -205,7 +210,7 @@ export class CartService {
     return newCart.save();
   }
 
-  private async recalculateCart(cart: Cart): Promise<void> {
+  private async recalculateCart(cart: CartDocument): Promise<void> {
     let totalAmount = 0;
     let totalItems = 0;
 
