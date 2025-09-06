@@ -16,6 +16,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MedicinesModule } from './medicines/medicines.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
+import { PrescriptionsModule } from './prescriptions/prescriptions.module';
 
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
@@ -55,6 +56,7 @@ import { AppController } from './app.controller';
     MedicinesModule,
     CartModule,
     OrdersModule,
+    PrescriptionsModule,
   ],
   controllers: [AppController],
 })

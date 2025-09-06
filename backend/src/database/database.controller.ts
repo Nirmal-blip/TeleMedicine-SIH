@@ -14,6 +14,22 @@ export class DatabaseController {
     return await this.seederService.seedDatabase();
   }
 
+  @Post('migrate-patient-ids')
+  @ApiOperation({ summary: 'Migrate existing patients to have patientId' })
+  @ApiResponse({ status: 201, description: 'Patient IDs migrated successfully' })
+  async migratePatientIds() {
+    await this.seederService.migratePatientIds();
+    return { message: 'Patient IDs migration completed successfully' };
+  }
+
+  @Post('migrate-doctor-ids')
+  @ApiOperation({ summary: 'Migrate existing doctors to have doctorId' })
+  @ApiResponse({ status: 201, description: 'Doctor IDs migrated successfully' })
+  async migrateDoctorIds() {
+    await this.seederService.migrateDoctorIds();
+    return { message: 'Doctor IDs migration completed successfully' };
+  }
+
   @Get('summary')
   @ApiOperation({ summary: 'Get database data summary' })
   @ApiResponse({ status: 200, description: 'Database summary retrieved' })

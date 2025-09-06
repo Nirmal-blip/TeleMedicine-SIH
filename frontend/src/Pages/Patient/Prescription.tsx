@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import Sidebar from "../../Components/Sidebar"
 import { FaFileExport, FaCalendar, FaUser, FaDownload, FaEye, FaFilter, FaSearch, FaClock, FaCheckCircle, FaExclamationTriangle, FaPills, FaStethoscope, FaHeart, FaFileAlt, FaPlus } from 'react-icons/fa'
 import { FaShield } from "react-icons/fa6";
@@ -13,17 +14,37 @@ interface Medication {
 }
 
 interface PrescriptionData {
-  id: number;
+  _id: string;
   prescriptionNumber: string;
-  doctorName: string;
-  specialization: string;
-  date: string;
+  patient: {
+    _id: string;
+    fullname: string;
+  };
+  doctor: {
+    _id: string;
+    fullname: string;
+    specialization?: string;
+  };
+  patientId: string;
+  doctorId: string;
   diagnosis: string;
   medications: Medication[];
+  symptoms?: string[];
+  notes?: string;
+  issueDate: string;
+  expiryDate?: string;
   status: 'Active' | 'Completed' | 'Cancelled';
+  allergies?: string[];
+  warnings?: string[];
+  priority?: 'Low' | 'Medium' | 'High';
+  monitoringInstructions?: string;
+  followUpRequired?: boolean;
+  followUpDate?: string;
   refillsRemaining?: number;
   nextRefillDate?: string;
-  consultationFee: number;
+  consultationFee?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const Prescription: React.FC = () => {
@@ -32,110 +53,84 @@ const Prescription: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'Active' | 'Completed' | 'Cancelled'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'doctor' | 'diagnosis'>('date');
+  const [prescriptions, setPrescriptions] = useState<PrescriptionData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [patientData, setPatientData] = useState<any>(null);
 
-  const prescriptions: PrescriptionData[] = [
-    {
-      id: 1,
-      prescriptionNumber: "RX-2024-001",
-      doctorName: "Dr. Sarah Johnson",
-      specialization: "Cardiologist",
-      date: "2024-01-15",
-      diagnosis: "Hypertension Management",
-      medications: [
-        {
-          name: "Lisinopril",
-          dosage: "10mg",
-          frequency: "Once daily",
-          duration: "30 days",
-          instructions: "Take in the morning with food"
+  // Fetch patient data and prescriptions
+  useEffect(() => {
+    fetchPatientData();
+  }, []);
+
+  const fetchPatientData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current patient data
+      const patientResponse = await axios.get('http://localhost:3000/api/patients/me', {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          name: "Aspirin",
-          dosage: "81mg",
-          frequency: "Once daily",
-          duration: "30 days",
-          instructions: "Take with water after breakfast"
-        }
-      ],
-      status: "Active",
-      refillsRemaining: 2,
-      nextRefillDate: "2024-02-15",
-      consultationFee: 150
-    },
-    {
-      id: 2,
-      prescriptionNumber: "RX-2024-002",
-      doctorName: "Dr. Michael Chen",
-      specialization: "Dermatologist",
-      date: "2024-01-10",
-      diagnosis: "Acne Treatment",
-      medications: [
-        {
-          name: "Tretinoin Cream",
-          dosage: "0.05%",
-          frequency: "Once daily",
-          duration: "60 days",
-          instructions: "Apply to affected areas at bedtime"
-        },
-        {
-          name: "Benzoyl Peroxide",
-          dosage: "5%",
-          frequency: "Twice daily",
-          duration: "60 days",
-          instructions: "Apply in morning and evening"
-        }
-      ],
-      status: "Active",
-      refillsRemaining: 1,
-      nextRefillDate: "2024-02-10",
-      consultationFee: 120
-    },
-    {
-      id: 3,
-      prescriptionNumber: "RX-2024-003",
-      doctorName: "Dr. Emily Rodriguez",
-      specialization: "Pediatrician",
-      date: "2024-01-05",
-      diagnosis: "Common Cold",
-      medications: [
-        {
-          name: "Children's Acetaminophen",
-          dosage: "160mg/5ml",
-          frequency: "Every 6 hours",
-          duration: "7 days",
-          instructions: "Give with food, do not exceed 4 doses per day"
-        }
-      ],
-      status: "Completed",
-      consultationFee: 100
-    },
-    {
-      id: 4,
-      prescriptionNumber: "RX-2024-004",
-      doctorName: "Dr. David Wilson",
-      specialization: "Orthopedist",
-      date: "2024-01-02",
-      diagnosis: "Knee Pain Management",
-      medications: [
-        {
-          name: "Ibuprofen",
-          dosage: "400mg",
-          frequency: "Three times daily",
-          duration: "14 days",
-          instructions: "Take with food to reduce stomach irritation"
-        },
-        {
-          name: "Physical Therapy",
-          dosage: "N/A",
-          frequency: "Twice weekly",
-          duration: "4 weeks",
-          instructions: "Follow prescribed exercises"
-        }
-      ],
-      status: "Completed",
-      consultationFee: 180
+      });
+      
+      const patient = patientResponse.data;
+      setPatientData(patient);
+      
+      // Fetch prescriptions using patientId
+      if (patient.patientId) {
+        console.log('Patient data loaded:', patient);
+        await fetchPrescriptions(patient.patientId);
+      } else {
+        console.warn('No patientId found in patient data:', patient);
+        setError('Patient ID not found. Please contact support.');
+      }
+    } catch (error: any) {
+      console.error('Error fetching patient data:', error);
+      setError('Failed to load patient data. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const fetchPrescriptions = async (patientId: string) => {
+    try {
+      console.log(`Fetching prescriptions for patientId: ${patientId}`);
+      const response = await axios.get(`http://localhost:3000/api/prescriptions/patient-id/${patientId}`, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('Fetched prescriptions response:', response.data);
+      setPrescriptions(response.data || []);
+      
+      if (!response.data || response.data.length === 0) {
+        console.log('No prescriptions found for this patient');
+      }
+    } catch (error: any) {
+      console.error('Error fetching prescriptions:', error);
+      if (error.response?.status === 404) {
+        // No prescriptions found is okay
+        console.log('404: No prescriptions found for this patient');
+        setPrescriptions([]);
+      } else {
+        console.error('Prescription fetch error details:', error.response?.data);
+        setError(`Failed to load prescriptions: ${error.response?.data?.message || error.message}`);
+      }
+    }
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   const filteredPrescriptions = prescriptions.filter(prescription => {
     // Filter by tab
@@ -146,10 +141,11 @@ const Prescription: React.FC = () => {
     
     // Filter by search term
     const matchesSearch = searchTerm === '' || 
-      prescription.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      prescription.doctor.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
       prescription.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()) ||
       prescription.medications.some(med => med.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      prescription.prescriptionNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      prescription.prescriptionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (prescription.doctor.specialization && prescription.doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Filter by status
     const matchesStatus = filterStatus === 'all' || prescription.status === filterStatus;
@@ -158,12 +154,12 @@ const Prescription: React.FC = () => {
   }).sort((a, b) => {
     switch (sortBy) {
       case 'doctor':
-        return a.doctorName.localeCompare(b.doctorName);
+        return a.doctor.fullname.localeCompare(b.doctor.fullname);
       case 'diagnosis':
         return a.diagnosis.localeCompare(b.diagnosis);
       case 'date':
       default:
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        return new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime();
     }
   });
 
@@ -300,14 +296,41 @@ const Prescription: React.FC = () => {
           </div>
         </div>
 
-        {/* Prescriptions List */}
-        <div className="space-y-6">
-          {filteredPrescriptions.map((prescription, index) => (
-            <div 
-              key={prescription.id} 
-              className="card card-hover p-6 rounded-2xl animate-fade-scale"
-              style={{ animationDelay: `${index * 0.1}s` }}
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Loading Prescriptions...</h3>
+            <p className="text-gray-600">Please wait while we fetch your prescription data.</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FaExclamationTriangle className="w-12 h-12 text-red-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Prescriptions</h3>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button 
+              onClick={fetchPatientData}
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105"
             >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Prescriptions List */}
+        {!loading && !error && (
+          <div className="space-y-6">
+            {filteredPrescriptions.map((prescription, index) => (
+              <div 
+                key={prescription._id} 
+                className="card card-hover p-6 rounded-2xl animate-fade-scale"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
               {/* Header */}
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
@@ -315,8 +338,8 @@ const Prescription: React.FC = () => {
                     <FaStethoscope className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-800 text-xl">{prescription.doctorName}</h3>
-                    <p className="text-emerald-600 font-medium">{prescription.specialization}</p>
+                    <h3 className="font-bold text-gray-800 text-xl">{prescription.doctor.fullname}</h3>
+                    <p className="text-emerald-600 font-medium">{prescription.doctor.specialization || 'General Medicine'}</p>
                     <p className="text-sm text-gray-500">Prescription #{prescription.prescriptionNumber}</p>
                   </div>
                 </div>
@@ -325,9 +348,11 @@ const Prescription: React.FC = () => {
                   <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(prescription.status)}`}>
                     {prescription.status}
                   </span>
-                  <div className="text-sm text-gray-500 mt-1">
-                    ${prescription.consultationFee}
-                  </div>
+                  {prescription.consultationFee && (
+                    <div className="text-sm text-gray-500 mt-1">
+                      ${prescription.consultationFee}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -336,7 +361,7 @@ const Prescription: React.FC = () => {
                 <div className="flex items-center gap-3 text-gray-600">
                   <FaCalendar className="w-4 h-4 text-emerald-500" />
                   <div>
-                    <p className="text-sm font-medium">{new Date(prescription.date).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium">{formatDate(prescription.issueDate)}</p>
                     <p className="text-xs">Prescribed Date</p>
                   </div>
                 </div>
@@ -428,28 +453,29 @@ const Prescription: React.FC = () => {
               </div>
             </div>
           ))}
-        </div>
 
-        {/* Empty State */}
-        {filteredPrescriptions.length === 0 && (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FaPills className="w-12 h-12 text-emerald-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No prescriptions found</h3>
-            <p className="text-gray-600 mb-6">
-              {searchTerm || filterStatus !== 'all' 
-                ? "No prescriptions match your current filters. Try adjusting your search or filters."
-                : `You don't have any ${activeTab} prescriptions at the moment.`
-              }
-            </p>
-            <button 
-              onClick={handleBookConsultation}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center gap-2 mx-auto"
-            >
-              <FaPlus className="w-4 h-4" />
-              Book Consultation
-            </button>
+            {/* Empty State */}
+            {filteredPrescriptions.length === 0 && (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <FaPills className="w-12 h-12 text-emerald-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">No prescriptions found</h3>
+                <p className="text-gray-600 mb-6">
+                  {searchTerm || filterStatus !== 'all' 
+                    ? "No prescriptions match your current filters. Try adjusting your search or filters."
+                    : `You don't have any ${activeTab} prescriptions at the moment.`
+                  }
+                </p>
+                <button 
+                  onClick={handleBookConsultation}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center gap-2 mx-auto"
+                >
+                  <FaPlus className="w-4 h-4" />
+                  Book Consultation
+                </button>
+              </div>
+            )}
           </div>
         )}
 
