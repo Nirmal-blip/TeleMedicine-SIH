@@ -4,13 +4,32 @@ import axios from 'axios';
 // import { getVideoCallNotificationService } from '../utils/video-call-notifications'; // Removed
 
 interface Doctor {
+  _id: string;
+  doctorId: string;
+  fullname: string;
+  email: string;
+  phone: string;
+  dateOfBirth: Date;
+  gender: string;
+  location: string;
+  medicalRegNo: string;
+  specialization: string;
+  password?: string;
+  profileImage?: string;
+  qualification?: string;
+  experience?: number;
+  consultationFee?: number;
+  about?: string;
+  rating?: number;
+  totalRatings?: number;
+  isVerified: boolean;
+  lastLogin?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Frontend display fields (computed)
   id: string;
   name: string;
-  specialization: string;
-  experience: number;
-  rating: number;
   totalPatients: number;
-  consultationFee: number;
   languages: string[];
   education: string;
   hospital: string;
@@ -99,7 +118,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       });
       
       const response = await axios.post('http://localhost:3000/api/appointments', {
-        doctor: doctor.id,
+        doctor: doctor._id,
         patient: patientResponse.data._id,
         date: selectedDate,
         time: selectedTime,
@@ -151,9 +170,9 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
               className="w-16 h-16 rounded-xl object-cover"
             />
             <div>
-              <h3 className="text-lg font-bold text-gray-800">{doctor.name}</h3>
+              <h3 className="text-lg font-bold text-gray-800">{doctor.fullname}</h3>
               <p className="text-emerald-600 font-medium">{doctor.specialization}</p>
-              <p className="text-sm text-gray-600">{doctor.experience} years experience</p>
+              <p className="text-sm text-gray-600">{doctor.experience || 0} years experience</p>
             </div>
           </div>
 
@@ -223,7 +242,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           <div className="mb-6 p-4 bg-gray-50 rounded-xl">
             <div className="flex justify-between items-center">
               <span className="text-gray-700 font-medium">Consultation Fee:</span>
-              <span className="text-2xl font-bold text-emerald-600">₹{doctor.consultationFee}</span>
+              <span className="text-2xl font-bold text-emerald-600">₹{doctor.consultationFee || 100}</span>
             </div>
           </div>
 

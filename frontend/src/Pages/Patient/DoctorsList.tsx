@@ -8,13 +8,32 @@ import { getNotificationService } from '../../utils/real-time-notifications'
 import { VideoCallService, initializeVideoCallService } from '../../utils/video-call'
 
 interface Doctor {
+  _id: string;
+  doctorId: string;
+  fullname: string;
+  email: string;
+  phone: string;
+  dateOfBirth: Date;
+  gender: string;
+  location: string;
+  medicalRegNo: string;
+  specialization: string;
+  password?: string;
+  profileImage?: string;
+  qualification?: string;
+  experience?: number;
+  consultationFee?: number;
+  about?: string;
+  rating?: number;
+  totalRatings?: number;
+  isVerified: boolean;
+  lastLogin?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Frontend display fields (computed)
   id: string;
   name: string;
-  specialization: string;
-  experience: number;
-  rating: number;
   totalPatients: number;
-  consultationFee: number;
   languages: string[];
   education: string;
   hospital: string;
@@ -119,13 +138,32 @@ const DoctorsList: React.FC = () => {
       
       // Transform the database doctors to match frontend interface
       const transformedDoctors: Doctor[] = response.data.map((doctor: any, index: number) => ({
+        // Keep all original schema fields
+        _id: doctor._id,
+        doctorId: doctor.doctorId,
+        fullname: doctor.fullname,
+        email: doctor.email,
+        phone: doctor.phone,
+        dateOfBirth: doctor.dateOfBirth,
+        gender: doctor.gender,
+        location: doctor.location,
+        medicalRegNo: doctor.medicalRegNo,
+        specialization: doctor.specialization,
+        profileImage: doctor.profileImage,
+        qualification: doctor.qualification,
+        experience: doctor.experience || 0,
+        consultationFee: doctor.consultationFee || 100,
+        about: doctor.about,
+        rating: doctor.rating || 4.5,
+        totalRatings: doctor.totalRatings || 0,
+        isVerified: doctor.isVerified || false,
+        lastLogin: doctor.lastLogin,
+        createdAt: doctor.createdAt,
+        updatedAt: doctor.updatedAt,
+        // Computed frontend display fields
         id: doctor._id,
         name: doctor.fullname,
-        specialization: doctor.specialization,
-        experience: doctor.experience || 0,
-        rating: doctor.rating || 4.5,
         totalPatients: doctor.totalRatings || 0,
-        consultationFee: doctor.consultationFee || 100,
         languages: ["English"], // Default for now
         education: doctor.qualification || "Medical Degree",
         hospital: doctor.location || "Medical Center",
@@ -197,18 +235,18 @@ const DoctorsList: React.FC = () => {
 
   const filteredDoctors = doctors
     .filter(doctor => 
-      doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doctor.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase())
+      doctor.location.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .filter(doctor => 
       selectedSpecialization === 'all' || doctor.specialization === selectedSpecialization
     )
     .sort((a, b) => {
-      if (sortBy === 'rating') return b.rating - a.rating;
-      if (sortBy === 'experience') return b.experience - a.experience;
-      if (sortBy === 'fee') return a.consultationFee - b.consultationFee;
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'experience') return (b.experience || 0) - (a.experience || 0);
+      if (sortBy === 'fee') return (a.consultationFee || 0) - (b.consultationFee || 0);
+      if (sortBy === 'name') return a.fullname.localeCompare(b.fullname);
       return 0;
     });
 
@@ -244,7 +282,7 @@ const DoctorsList: React.FC = () => {
     }
 
     try {
-      setIsCallingDoctor(doctor.id);
+      setIsCallingDoctor(doctor._id);
       setSelectedDoctor(doctor);
       setCallStatus('requesting');
       setShowVideoCallModal(true);
@@ -269,7 +307,7 @@ const DoctorsList: React.FC = () => {
         const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
 
         const appointmentResponse = await axios.post('http://localhost:3000/api/appointments', {
-          doctor: doctor.id,
+          doctor: doctor._id,
           patient: patientResponse.data._id,
           date: currentDate,
           time: currentTime,
@@ -284,8 +322,8 @@ const DoctorsList: React.FC = () => {
         // Store appointment data for reference
         localStorage.setItem('activeAppointment', JSON.stringify({
           appointmentId: appointmentResponse.data._id,
-          doctorId: doctor.id,
-          doctorName: doctor.name,
+          doctorId: doctor._id,
+          doctorName: doctor.fullname,
         }));
         
       } catch (appointmentError) {
@@ -295,8 +333,8 @@ const DoctorsList: React.FC = () => {
       
       // Request video call
       videoCallService.requestVideoCall({
-        doctorId: doctor.id,
-        doctorName: doctor.name,
+        doctorId: doctor._id,
+        doctorName: doctor.fullname,
         patientName: patientName,
         specialization: doctor.specialization
       });
@@ -410,35 +448,35 @@ const DoctorsList: React.FC = () => {
                 </div>
                 
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">{doctor.name}</h3>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">{doctor.fullname}</h3>
                   <p className="text-emerald-600 font-medium mb-2">{doctor.specialization}</p>
                   
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex items-center gap-1">
                       <FaStar className="text-yellow-500" />
-                      <span className="text-sm font-medium">{doctor.rating}</span>
+                      <span className="text-sm font-medium">{doctor.rating || 4.5}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <FaUser className="text-gray-400" />
-                      <span className="text-sm text-gray-600">{doctor.totalPatients}+ patients</span>
+                      <span className="text-sm text-gray-600">{doctor.totalRatings || 0}+ ratings</span>
                     </div>
                   </div>
                   
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2">
                       <FaStethoscope className="text-gray-400" />
-                      <span className="text-sm text-gray-600">{doctor.experience} years experience</span>
+                      <span className="text-sm text-gray-600">{doctor.experience || 0} years experience</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <FaMapPin className="text-gray-400" />
-                      <span className="text-sm text-gray-600">{doctor.hospital}</span>
+                      <span className="text-sm text-gray-600">{doctor.location}</span>
                     </div>
                   </div>
                   
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-2xl font-bold text-emerald-600">₹{doctor.consultationFee}</span>
+                        <span className="text-2xl font-bold text-emerald-600">₹{doctor.consultationFee || 100}</span>
                         <span className="text-sm text-gray-500"> /consultation</span>
                       </div>
                     </div>
@@ -454,11 +492,11 @@ const DoctorsList: React.FC = () => {
                       
                       <button
                         onClick={() => startVideoCall(doctor)}
-                        disabled={isCallingDoctor === doctor.id}
+                        disabled={isCallingDoctor === doctor._id}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
                       >
                         <FaVideo className="text-xs" />
-                        {isCallingDoctor === doctor.id ? 'Calling...' : 'Start Video Call'}
+                        {isCallingDoctor === doctor._id ? 'Calling...' : 'Start Video Call'}
                       </button>
                     </div>
                   </div>
@@ -501,41 +539,41 @@ const DoctorsList: React.FC = () => {
                     className="w-32 h-32 rounded-2xl object-cover"
                   />
                   <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-2">{selectedDoctor.name}</h3>
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">{selectedDoctor.fullname}</h3>
                     <p className="text-emerald-600 font-medium mb-2">{selectedDoctor.specialization}</p>
                     <div className="flex items-center gap-4 mb-2">
                       <div className="flex items-center gap-1">
                         <FaStar className="text-yellow-500" />
-                        <span className="font-medium">{selectedDoctor.rating}</span>
+                        <span className="font-medium">{selectedDoctor.rating || 4.5}</span>
                       </div>
-                      <span className="text-gray-600">{selectedDoctor.totalPatients}+ patients</span>
+                      <span className="text-gray-600">{selectedDoctor.totalRatings || 0}+ ratings</span>
                     </div>
-                    <p className="text-gray-600">{selectedDoctor.education}</p>
+                    <p className="text-gray-600">{selectedDoctor.qualification || 'Medical Degree'}</p>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-6 mb-6">
                   <div>
                     <h4 className="font-semibold text-gray-800 mb-2">Experience</h4>
-                    <p className="text-gray-600">{selectedDoctor.experience} years</p>
+                    <p className="text-gray-600">{selectedDoctor.experience || 0} years</p>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-800 mb-2">Hospital</h4>
-                    <p className="text-gray-600">{selectedDoctor.hospital}</p>
+                    <h4 className="font-semibold text-gray-800 mb-2">Location</h4>
+                    <p className="text-gray-600">{selectedDoctor.location}</p>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-800 mb-2">Languages</h4>
-                    <p className="text-gray-600">{selectedDoctor.languages.join(', ')}</p>
+                    <h4 className="font-semibold text-gray-800 mb-2">Medical Reg. No.</h4>
+                    <p className="text-gray-600">{selectedDoctor.medicalRegNo}</p>
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-800 mb-2">Consultation Fee</h4>
-                    <p className="text-emerald-600 font-bold text-xl">₹{selectedDoctor.consultationFee}</p>
+                    <p className="text-emerald-600 font-bold text-xl">₹{selectedDoctor.consultationFee || 100}</p>
                   </div>
                 </div>
                 
                 <div className="mb-6">
                   <h4 className="font-semibold text-gray-800 mb-2">About</h4>
-                  <p className="text-gray-600">{selectedDoctor.bio}</p>
+                  <p className="text-gray-600">{selectedDoctor.about || `Experienced ${selectedDoctor.specialization} specialist.`}</p>
                 </div>
                 
                 <div className="flex gap-4">
@@ -584,7 +622,7 @@ const DoctorsList: React.FC = () => {
                   alt={selectedDoctor.name}
                   className="w-20 h-20 rounded-full mx-auto mb-4 object-cover"
                 />
-                <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedDoctor.name}</h3>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedDoctor.fullname}</h3>
                 <p className="text-emerald-600 font-medium">{selectedDoctor.specialization}</p>
               </div>
 
@@ -602,7 +640,7 @@ const DoctorsList: React.FC = () => {
                     <div className="animate-pulse bg-blue-600 rounded-full h-4 w-4 mx-1" style={{animationDelay: '0.2s'}}></div>
                     <div className="animate-pulse bg-blue-600 rounded-full h-4 w-4 mx-1" style={{animationDelay: '0.4s'}}></div>
                   </div>
-                  <p className="text-gray-800 font-medium">Calling Dr. {selectedDoctor.name}...</p>
+                  <p className="text-gray-800 font-medium">Calling Dr. {selectedDoctor.fullname}...</p>
                   <p className="text-gray-600 text-sm mt-2">Waiting for the doctor to respond</p>
                 </div>
               )}
@@ -619,7 +657,7 @@ const DoctorsList: React.FC = () => {
                 <div className="mb-6">
                   <div className="text-red-600 text-4xl mb-4">❌</div>
                   <p className="text-red-600 font-medium">Call Declined</p>
-                  <p className="text-gray-600 text-sm">Dr. {selectedDoctor.name} is not available right now</p>
+                  <p className="text-gray-600 text-sm">Dr. {selectedDoctor.fullname} is not available right now</p>
                   <p className="text-gray-500 text-xs mt-2">Try booking an appointment instead</p>
                 </div>
               )}
