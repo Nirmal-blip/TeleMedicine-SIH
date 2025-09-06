@@ -21,6 +21,7 @@ import {
 } from "react-icons/fa";
 import DoctorSidebar from "../../Components/DoctorSidebar";
 import { getNotificationService } from "../../utils/real-time-notifications";
+import { VideoCallService, initializeVideoCallService, getVideoCallService } from "../../utils/video-call";
 import { useNavigate } from "react-router-dom";
 
 interface Notification {
@@ -60,10 +61,12 @@ const Notifications: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [notificationService, setNotificationService] = useState<any>(null);
+  const [videoCallService, setVideoCallService] = useState<VideoCallService | null>(null);
 
   useEffect(() => {
     fetchNotifications();
     initializeNotificationService();
+    initializeVideoCallServiceForDoctor();
   }, []);
 
   const initializeNotificationService = async () => {
@@ -93,10 +96,64 @@ const Notifications: React.FC = () => {
     }
   };
 
-  const setupNotificationListeners = (service: any) => {
+  const initializeVideoCallServiceForDoctor = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/auth/me', {
+        withCredentials: true
+      });
+      
+      const doctorId = response.data.user.userId;
+      
+      // Initialize video call service
+      let service = getVideoCallService();
+      if (!service) {
+        service = initializeVideoCallService(doctorId, 'doctor');
+      }
+      setVideoCallService(service);
+      
+      // Set up video call event listeners
+      setupVideoCallListeners(service);
+    } catch (error) {
+      console.error('Error initializing video call service:', error);
+    }
+  };
+
+  const setupVideoCallListeners = (service: VideoCallService) => {
+    console.log('Setting up video call listeners for doctor');
+    
     // Listen for incoming video calls
+    service.onIncomingVideoCall((data: any) => {
+      console.log('🔥 INCOMING VIDEO CALL RECEIVED:', data);
+      setIncomingCall(data);
+      // Refresh notifications to include the new video call request
+      fetchNotifications();
+    });
+
+    // Listen for call accepted confirmation
+    service.onCallAcceptedConfirmation((data: any) => {
+      console.log('Call accepted confirmation:', data);
+      // Refresh notifications
+      fetchNotifications();
+    });
+
+    // Listen for call rejected confirmation
+    service.onCallRejectedConfirmation((data: any) => {
+      console.log('Call rejected confirmation:', data);
+      // Refresh notifications
+      fetchNotifications();
+    });
+
+    // Listen for call errors
+    service.onCallError((data: any) => {
+      console.error('Video call error:', data);
+      alert('Video call error: ' + data.message);
+    });
+  };
+
+  const setupNotificationListeners = (service: any) => {
+    // Listen for incoming video calls (backup from notification service)
     service.on('incoming-video-call', (data: any) => {
-      console.log('Incoming video call notification:', data);
+      console.log('Incoming video call notification (backup):', data);
       setIncomingCall(data);
       // Refresh notifications to include the new video call request
       fetchNotifications();
@@ -125,10 +182,10 @@ const Notifications: React.FC = () => {
   };
 
   const acceptCall = () => {
-    if (!incomingCall || !notificationService) return;
+    if (!incomingCall || !videoCallService) return;
     
-    // Accept the video call using the service
-    notificationService.acceptVideoCall(incomingCall.callId);
+    // Accept the video call using the video call service
+    videoCallService.acceptVideoCall(incomingCall.callId);
     
     // Navigate to video consultation
     navigate('/doctor/video-consultation', {
@@ -144,10 +201,10 @@ const Notifications: React.FC = () => {
   };
 
   const rejectCall = () => {
-    if (!incomingCall || !notificationService) return;
+    if (!incomingCall || !videoCallService) return;
     
-    // Reject the video call using the service
-    notificationService.rejectVideoCall(incomingCall.callId, 'Doctor is not available');
+    // Reject the video call using the video call service
+    videoCallService.rejectVideoCall(incomingCall.callId, 'Doctor is not available');
     
     setIncomingCall(null);
   };
@@ -358,8 +415,8 @@ const Notifications: React.FC = () => {
   const handleVideoCallAction = (notification: Notification) => {
     if (notification.type === 'video_call_request' && notification.metadata?.callId) {
       // Accept the video call directly
-      if (notificationService) {
-        notificationService.acceptVideoCall(notification.metadata.callId);
+      if (videoCallService) {
+        videoCallService.acceptVideoCall(notification.metadata.callId);
         
         // Navigate to video consultation
         navigate('/doctor/video-consultation', {
@@ -380,10 +437,10 @@ const Notifications: React.FC = () => {
   };
 
   const rejectCallFromNotification = (notification: Notification) => {
-    if (!notification.metadata?.callId || !notificationService) return;
+    if (!notification.metadata?.callId || !videoCallService) return;
     
-    // Reject the video call using the service
-    notificationService.rejectVideoCall(notification.metadata.callId, 'Doctor is not available');
+    // Reject the video call using the video call service
+    videoCallService.rejectVideoCall(notification.metadata.callId, 'Doctor is not available');
     
     // Mark notification as read
     markAsRead(notification._id);
