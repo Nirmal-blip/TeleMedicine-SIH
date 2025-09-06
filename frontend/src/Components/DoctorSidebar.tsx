@@ -81,21 +81,6 @@ const DoctorSidebar: React.FC = () => {
                 </span>
             </div>
 
-            {/* Doctor Badge */}
-            <div className="px-6 mb-6">
-                <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-4 text-white">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                            <FaStethoscope className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium">Doctor Portal</p>
-                            <p className="text-xs text-emerald-100">Medical Professional</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Main Navigation */}
             <nav className="flex-grow px-6">
                 <ul className="space-y-3">

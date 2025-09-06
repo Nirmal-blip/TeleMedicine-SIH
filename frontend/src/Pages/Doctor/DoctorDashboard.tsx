@@ -17,7 +17,7 @@ import {
 import { FaShield } from "react-icons/fa6";
 import Chatbot from "../../Components/Chatbot";
 import DoctorSidebar from "../../Components/DoctorSidebar";
-import doctorImage from "../../assets/image2.jpg";
+import doctorImage from "../../assets/girl.png";
 
 interface QuickAction {
   title: string;
@@ -185,7 +185,7 @@ const DoctorDashboard: React.FC = () => {
                         title="Click to change name"
                       >
                         {doctorName}
-                      </span>! 👨‍⚕️
+                      </span>!
                     </h1>
                     <p className="text-emerald-100">Ready to help your patients today?</p>
                   </div>
@@ -193,6 +193,10 @@ const DoctorDashboard: React.FC = () => {
                 
                 <p className="text-lg text-white/90 mb-8 max-w-2xl leading-relaxed">
                   Your medical practice dashboard - manage consultations, track patient progress, and provide excellent healthcare.
+                </p>
+                
+                <p className="text-sm text-white/90 mb-8 max-w-2xl leading-relaxed">
+                  <span className="font-bold">Medical Insight: </span>Remember to follow up with patients within 24-48 hours after prescribing new medications to monitor for side effects and treatment compliance.
                 </p>
                 
                 <div className="flex flex-wrap gap-4">
@@ -329,21 +333,6 @@ const DoctorDashboard: React.FC = () => {
               </div>
               <h4 className="font-semibold text-gray-800 mb-1">Rating</h4>
               <p className="text-sm text-gray-600">Patient satisfaction</p>
-            </div>
-          </div>
-          
-          {/* Medical Tip */}
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-3xl p-6 border border-emerald-100 animate-slide-up">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <FaStethoscope className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-2">🩺 Medical Insight</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  Remember to follow up with patients within 24-48 hours after prescribing new medications to monitor for side effects and treatment compliance.
-                </p>
-              </div>
             </div>
           </div>
         </section>
