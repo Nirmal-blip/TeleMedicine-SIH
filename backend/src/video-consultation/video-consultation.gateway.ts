@@ -392,27 +392,11 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
       }
 
       if (userInfo.userType === 'doctor') {
-        // Doctor initiating call to patient
-        const patientSocketIds = Array.from(this.connectedUsers.entries())
-          .filter(([_, user]) => user.userId === data.patientId && user.userType === 'patient')
-          .map(([socketId, _]) => socketId);
-
-        patientSocketIds.forEach(socketId => {
-          this.server.to(socketId).emit('incoming-call', {
-            callId,
-            appointmentId: data.appointmentId,
-            doctorId: userInfo.userId,
-            doctorName: appointment.doctor?.fullname || `Dr. ${appointment.doctor?.email}` || 'Doctor',
-            patientId: data.patientId,
-            patientName: appointment.patient?.fullname || 'Patient',
-          });
+        // Doctors cannot initiate calls - only patients can call doctors
+        client.emit('call-error', { 
+          message: 'Doctors cannot initiate calls. Only patients can call doctors.' 
         });
-
-        // Notify the doctor that call is initiated
-        client.emit('call-started', { 
-          callId,
-          patientName: appointment.patient?.fullname || 'Patient',
-        });
+        return;
 
       } else if (userInfo.userType === 'patient') {
         // Patient initiating call to doctor

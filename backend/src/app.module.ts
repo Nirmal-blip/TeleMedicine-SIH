@@ -11,6 +11,7 @@ import { UploadsModule } from './uploads/uploads.module';
 import { AiMlModule } from './ai-ml/ai-ml.module';
 import { ChatHistoryModule } from './chat-history/chat-history.module';
 import { VideoConsultationModule } from './video-consultation/video-consultation.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
@@ -45,6 +46,7 @@ import { AppController } from './app.controller';
     AiMlModule,
     ChatHistoryModule,
     VideoConsultationModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
 })

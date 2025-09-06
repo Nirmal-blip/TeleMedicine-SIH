@@ -24,16 +24,24 @@ import { getNotificationService } from "../../utils/real-time-notifications";
 import { useNavigate } from "react-router-dom";
 
 interface Notification {
-  id: string;
-  type: 'appointment' | 'prescription' | 'emergency' | 'system' | 'reminder' | 'review';
+  _id: string;
+  type: 'appointment_booked' | 'appointment_confirmed' | 'appointment_cancelled' | 'appointment_reminder' | 'prescription_ready' | 'message_received' | 'payment_received' | 'profile_updated' | 'system_maintenance' | 'emergency_alert';
   title: string;
   message: string;
-  timestamp: string;
+  createdAt: string;
   isRead: boolean;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  patientName?: string;
-  actionRequired?: boolean;
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  sender?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   actionUrl?: string;
+  actionText?: string;
+  relatedEntity?: {
+    entityType: 'Appointment' | 'Prescription' | 'Chat' | 'MedicalRecord';
+    entityId: string;
+  };
 }
 
 const Notifications: React.FC = () => {
@@ -119,95 +127,11 @@ const Notifications: React.FC = () => {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      // const response = await axios.get('http://localhost:3000/api/doctors/notifications', {
-      //   withCredentials: true,
-      // });
+      const response = await axios.get('http://localhost:3000/api/notifications', {
+        withCredentials: true,
+      });
       
-      // Mock data for demonstration
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          type: 'appointment',
-          title: 'Upcoming Appointment',
-          message: 'You have an appointment with John Doe in 30 minutes.',
-          timestamp: '2024-01-15T09:30:00Z',
-          isRead: false,
-          priority: 'high',
-          patientName: 'John Doe',
-          actionRequired: true,
-          actionUrl: '/doctor/video-consultation'
-        },
-        {
-          id: '2',
-          type: 'prescription',
-          title: 'Prescription Refill Request',
-          message: 'Jane Smith has requested a refill for Metformin 500mg.',
-          timestamp: '2024-01-15T08:45:00Z',
-          isRead: false,
-          priority: 'medium',
-          patientName: 'Jane Smith',
-          actionRequired: true,
-          actionUrl: '/doctor/prescribed-patients'
-        },
-        {
-          id: '3',
-          type: 'emergency',
-          title: 'Emergency Consultation Request',
-          message: 'Bob Johnson is requesting an emergency consultation for severe chest pain.',
-          timestamp: '2024-01-15T07:15:00Z',
-          isRead: true,
-          priority: 'urgent',
-          patientName: 'Bob Johnson',
-          actionRequired: true,
-          actionUrl: '/doctor/video-consultation'
-        },
-        {
-          id: '4',
-          type: 'review',
-          title: 'Patient Review Received',
-          message: 'Alice Brown left a 5-star review for your consultation.',
-          timestamp: '2024-01-14T16:30:00Z',
-          isRead: true,
-          priority: 'low',
-          patientName: 'Alice Brown',
-          actionRequired: false
-        },
-        {
-          id: '5',
-          type: 'reminder',
-          title: 'Follow-up Reminder',
-          message: 'Schedule follow-up appointment for Mike Wilson within 2 weeks.',
-          timestamp: '2024-01-14T14:20:00Z',
-          isRead: false,
-          priority: 'medium',
-          patientName: 'Mike Wilson',
-          actionRequired: true,
-          actionUrl: '/doctor/patient-list'
-        },
-        {
-          id: '6',
-          type: 'system',
-          title: 'System Maintenance',
-          message: 'Scheduled system maintenance tonight from 11 PM to 2 AM.',
-          timestamp: '2024-01-14T10:00:00Z',
-          isRead: true,
-          priority: 'low',
-          actionRequired: false
-        },
-        {
-          id: '7',
-          type: 'appointment',
-          title: 'Appointment Cancelled',
-          message: 'Sarah Davis has cancelled her appointment scheduled for tomorrow.',
-          timestamp: '2024-01-13T18:45:00Z',
-          isRead: false,
-          priority: 'medium',
-          patientName: 'Sarah Davis',
-          actionRequired: false
-        }
-      ];
-      
-      setNotifications(mockNotifications);
+      setNotifications(response.data);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
       setNotifications([]);
@@ -220,7 +144,7 @@ const Notifications: React.FC = () => {
     let filtered = notifications.filter(notification => {
       const matchesSearch = notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            notification.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           (notification.patientName && notification.patientName.toLowerCase().includes(searchQuery.toLowerCase()));
+                           (notification.sender?.name && notification.sender.name.toLowerCase().includes(searchQuery.toLowerCase()));
       
       const matchesType = filterType === 'all' || notification.type === filterType;
       const matchesStatus = filterStatus === 'all' || 
@@ -232,8 +156,8 @@ const Notifications: React.FC = () => {
 
     // Sort by timestamp (most recent first) and then by priority
     filtered.sort((a, b) => {
-      const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-      const timeDiff = new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      const priorityOrder = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+      const timeDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       
       if (timeDiff === 0) {
         return priorityOrder[b.priority] - priorityOrder[a.priority];
@@ -246,17 +170,20 @@ const Notifications: React.FC = () => {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'appointment':
+      case 'appointment_booked':
+      case 'appointment_confirmed':
+      case 'appointment_cancelled':
+      case 'appointment_reminder':
         return <FaCalendar className="w-5 h-5" />;
-      case 'prescription':
+      case 'prescription_ready':
         return <FaPills className="w-5 h-5" />;
-      case 'emergency':
+      case 'emergency_alert':
         return <FaExclamationTriangle className="w-5 h-5" />;
-      case 'system':
+      case 'system_maintenance':
         return <FaInfoCircle className="w-5 h-5" />;
-      case 'reminder':
+      case 'message_received':
         return <FaClock className="w-5 h-5" />;
-      case 'review':
+      case 'payment_received':
         return <FaCheckCircle className="w-5 h-5" />;
       default:
         return <FaBell className="w-5 h-5" />;
@@ -264,21 +191,24 @@ const Notifications: React.FC = () => {
   };
 
   const getNotificationColor = (type: string, priority: string) => {
-    if (priority === 'urgent') return 'border-red-500 bg-red-50';
-    if (priority === 'high') return 'border-orange-500 bg-orange-50';
+    if (priority === 'Critical') return 'border-red-500 bg-red-50';
+    if (priority === 'High') return 'border-orange-500 bg-orange-50';
     
     switch (type) {
-      case 'appointment':
+      case 'appointment_booked':
+      case 'appointment_confirmed':
+      case 'appointment_cancelled':
+      case 'appointment_reminder':
         return 'border-blue-500 bg-blue-50';
-      case 'prescription':
+      case 'prescription_ready':
         return 'border-purple-500 bg-purple-50';
-      case 'emergency':
+      case 'emergency_alert':
         return 'border-red-500 bg-red-50';
-      case 'system':
+      case 'system_maintenance':
         return 'border-gray-500 bg-gray-50';
-      case 'reminder':
+      case 'message_received':
         return 'border-yellow-500 bg-yellow-50';
-      case 'review':
+      case 'payment_received':
         return 'border-green-500 bg-green-50';
       default:
         return 'border-gray-500 bg-gray-50';
@@ -286,21 +216,24 @@ const Notifications: React.FC = () => {
   };
 
   const getIconColor = (type: string, priority: string) => {
-    if (priority === 'urgent') return 'text-red-600';
-    if (priority === 'high') return 'text-orange-600';
+    if (priority === 'Critical') return 'text-red-600';
+    if (priority === 'High') return 'text-orange-600';
     
     switch (type) {
-      case 'appointment':
+      case 'appointment_booked':
+      case 'appointment_confirmed':
+      case 'appointment_cancelled':
+      case 'appointment_reminder':
         return 'text-blue-600';
-      case 'prescription':
+      case 'prescription_ready':
         return 'text-purple-600';
-      case 'emergency':
+      case 'emergency_alert':
         return 'text-red-600';
-      case 'system':
+      case 'system_maintenance':
         return 'text-gray-600';
-      case 'reminder':
+      case 'message_received':
         return 'text-yellow-600';
-      case 'review':
+      case 'payment_received':
         return 'text-green-600';
       default:
         return 'text-gray-600';
@@ -329,12 +262,12 @@ const Notifications: React.FC = () => {
 
   const markAsRead = async (id: string) => {
     try {
-      // await axios.patch(`http://localhost:3000/api/doctors/notifications/${id}/read`, {}, {
-      //   withCredentials: true,
-      // });
+      await axios.patch(`http://localhost:3000/api/notifications/${id}/read`, {}, {
+        withCredentials: true,
+      });
       
       setNotifications(notifications.map(notification =>
-        notification.id === id ? { ...notification, isRead: true } : notification
+        notification._id === id ? { ...notification, isRead: true } : notification
       ));
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
@@ -343,11 +276,11 @@ const Notifications: React.FC = () => {
 
   const deleteNotification = async (id: string) => {
     try {
-      // await axios.delete(`http://localhost:3000/api/doctors/notifications/${id}`, {
-      //   withCredentials: true,
-      // });
+      await axios.delete(`http://localhost:3000/api/notifications/${id}`, {
+        withCredentials: true,
+      });
       
-      setNotifications(notifications.filter(notification => notification.id !== id));
+      setNotifications(notifications.filter(notification => notification._id !== id));
     } catch (error) {
       console.error('Failed to delete notification:', error);
     }
@@ -355,9 +288,9 @@ const Notifications: React.FC = () => {
 
   const markAllAsRead = async () => {
     try {
-      // await axios.patch('http://localhost:3000/api/doctors/notifications/mark-all-read', {}, {
-      //   withCredentials: true,
-      // });
+      await axios.patch('http://localhost:3000/api/notifications/mark-all-read', {}, {
+        withCredentials: true,
+      });
       
       setNotifications(notifications.map(notification => ({ ...notification, isRead: true })));
     } catch (error) {
@@ -418,12 +351,16 @@ const Notifications: React.FC = () => {
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none"
               >
                 <option value="all">All Types</option>
-                <option value="appointment">Appointments</option>
-                <option value="prescription">Prescriptions</option>
-                <option value="emergency">Emergency</option>
-                <option value="reminder">Reminders</option>
-                <option value="review">Reviews</option>
-                <option value="system">System</option>
+                <option value="appointment_booked">Appointment Booked</option>
+                <option value="appointment_confirmed">Appointment Confirmed</option>
+                <option value="appointment_cancelled">Appointment Cancelled</option>
+                <option value="appointment_reminder">Appointment Reminder</option>
+                <option value="prescription_ready">Prescription Ready</option>
+                <option value="emergency_alert">Emergency Alert</option>
+                <option value="message_received">Message Received</option>
+                <option value="payment_received">Payment Received</option>
+                <option value="profile_updated">Profile Updated</option>
+                <option value="system_maintenance">System Maintenance</option>
               </select>
             </div>
 
@@ -466,7 +403,7 @@ const Notifications: React.FC = () => {
           <div className="space-y-4">
             {filteredNotifications.map((notification, index) => (
               <div 
-                key={notification.id} 
+                key={notification._id} 
                 className={`bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border-l-4 animate-fade-scale ${
                   getNotificationColor(notification.type, notification.priority)
                 } ${!notification.isRead ? 'bg-opacity-75' : ''}`}
@@ -475,8 +412,8 @@ const Notifications: React.FC = () => {
                 <div className="flex items-start gap-4">
                   {/* Icon */}
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    notification.priority === 'urgent' ? 'bg-red-100' :
-                    notification.priority === 'high' ? 'bg-orange-100' :
+                    notification.priority === 'Critical' ? 'bg-red-100' :
+                    notification.priority === 'High' ? 'bg-orange-100' :
                     'bg-blue-100'
                   }`}>
                     <span className={getIconColor(notification.type, notification.priority)}>
@@ -494,19 +431,19 @@ const Notifications: React.FC = () => {
                         {!notification.isRead && (
                           <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
                         )}
-                        {notification.priority === 'urgent' && (
+                        {notification.priority === 'Critical' && (
                           <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                            URGENT
+                            CRITICAL
                           </span>
                         )}
-                        {notification.priority === 'high' && (
+                        {notification.priority === 'High' && (
                           <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                             HIGH
                           </span>
                         )}
                       </div>
                       <span className="text-sm text-gray-500 whitespace-nowrap">
-                        {formatTimestamp(notification.timestamp)}
+                        {formatTimestamp(notification.createdAt)}
                       </span>
                     </div>
 
@@ -514,28 +451,30 @@ const Notifications: React.FC = () => {
                       {notification.message}
                     </p>
 
-                    {notification.patientName && (
+                    {notification.sender?.name && (
                       <div className="flex items-center gap-2 mb-3">
                         <FaUser className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Patient: {notification.patientName}</span>
+                        <span className="text-sm text-gray-600">From: {notification.sender.name}</span>
                       </div>
                     )}
 
                     {/* Actions */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {notification.actionRequired && notification.actionUrl && (
-                          <button className="bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors duration-300 text-sm font-medium flex items-center gap-2">
-                            {notification.type === 'appointment' && <FaVideo className="w-4 h-4" />}
-                            {notification.type === 'prescription' && <FaPills className="w-4 h-4" />}
-                            {notification.type === 'reminder' && <FaCalendar className="w-4 h-4" />}
-                            {notification.type === 'emergency' && <FaStethoscope className="w-4 h-4" />}
-                            Take Action
+                        {notification.actionUrl && (
+                          <button 
+                            onClick={() => navigate(notification.actionUrl!)}
+                            className="bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors duration-300 text-sm font-medium flex items-center gap-2"
+                          >
+                            {notification.type.includes('appointment') && <FaVideo className="w-4 h-4" />}
+                            {notification.type === 'prescription_ready' && <FaPills className="w-4 h-4" />}
+                            {notification.type === 'emergency_alert' && <FaStethoscope className="w-4 h-4" />}
+                            {notification.actionText || 'Take Action'}
                           </button>
                         )}
                         {!notification.isRead && (
                           <button
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => markAsRead(notification._id)}
                             className="text-emerald-600 hover:text-emerald-700 transition-colors duration-300 text-sm font-medium"
                           >
                             Mark as Read
@@ -544,7 +483,7 @@ const Notifications: React.FC = () => {
                       </div>
                       
                       <button
-                        onClick={() => deleteNotification(notification.id)}
+                        onClick={() => deleteNotification(notification._id)}
                         className="text-red-600 hover:text-red-700 transition-colors duration-300 p-2"
                         title="Delete notification"
                       >
