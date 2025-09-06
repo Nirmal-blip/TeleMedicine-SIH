@@ -68,14 +68,26 @@ export class VideoCallService {
     specialization: string;
   }): string | null {
     if (this.socket && this.isConnected && this.userType === 'patient') {
-      this.socket.emit('request-video-call', {
+      const requestData = {
         doctorId: data.doctorId,
         doctorName: data.doctorName,
         patientId: this.userId,
         patientName: data.patientName,
         specialization: data.specialization,
-      });
+      };
+      
+      console.log('🚀 SENDING VIDEO CALL REQUEST:', requestData);
+      console.log('🔌 Socket connected:', this.isConnected);
+      console.log('👤 Patient ID:', this.userId);
+      
+      this.socket.emit('request-video-call', requestData);
       return `call-${Date.now()}`;
+    } else {
+      console.error('❌ Cannot send video call request:', {
+        hasSocket: !!this.socket,
+        isConnected: this.isConnected,
+        userType: this.userType
+      });
     }
     return null;
   }

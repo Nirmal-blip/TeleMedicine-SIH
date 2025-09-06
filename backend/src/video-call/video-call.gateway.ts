@@ -59,7 +59,10 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
         socketId: client.id,
       });
       
-      console.log(`User ${userId} (${userType}) connected for video calls`);
+      console.log(`🔥 BACKEND: User ${userId} (${userType}) connected for video calls`);
+      console.log(`📊 BACKEND: Total connected users: ${this.connectedUsers.size}`);
+    } else {
+      console.log(`❌ BACKEND: Invalid connection - missing userId or userType`);
     }
   }
 
@@ -91,14 +94,19 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Store the call request
       this.activeCalls.set(callId, videoCallRequest);
 
-      console.log(`Patient ${data.patientName} requesting video call with doctor ${data.doctorName}`);
+      console.log(`🔥 BACKEND: Patient ${data.patientName} requesting video call with doctor ${data.doctorName}`);
+      console.log(`🔍 BACKEND: Looking for doctor with ID: ${data.doctorId}`);
+      console.log(`👥 BACKEND: Connected users:`, Array.from(this.connectedUsers.values()));
 
       // Find doctor's socket connections
       const doctorSockets = Array.from(this.connectedUsers.entries())
         .filter(([_, user]) => user.userId === data.doctorId && user.userType === 'doctor')
         .map(([socketId, _]) => socketId);
 
+      console.log(`🔌 BACKEND: Found ${doctorSockets.length} doctor socket(s) for ID ${data.doctorId}`);
+
       if (doctorSockets.length === 0) {
+        console.log(`❌ BACKEND: Doctor not available online`);
         client.emit('call-error', { message: 'Doctor is not available online' });
         this.activeCalls.delete(callId);
         return;
