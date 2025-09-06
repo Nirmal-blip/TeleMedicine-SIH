@@ -10,6 +10,8 @@ import PatientDashboard from './Pages/Patient/PatientDashboard'
 import PatientSupport from './Pages/Patient/PatientSupport'
 import Prescription from './Pages/Patient/Prescription'
 import VideoConsultation from './Pages/Patient/VideoConsultation'
+import Settings from './Pages/Patient/Settings'
+import Notifications from './Pages/Patient/Notifications'
 import SignupPage from './Pages/SignupPage'
 import SigninPage from './Pages/SigninPage'
 
@@ -31,6 +33,8 @@ const App: React.FC = () => {
             <Route path='/patient-support' element={<PatientSupport />}></Route>
             <Route path='/prescription' element={<Prescription />}></Route>
             <Route path='/video-consultation' element={<VideoConsultation />}></Route>
+            <Route path='/settings' element={<Settings />}></Route>
+            <Route path='/notifications' element={<Notifications />}></Route>
 
             <Route path='/doctor-dashboard' element={<DoctorDashboard />}></Route>
         </Routes>

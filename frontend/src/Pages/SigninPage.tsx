@@ -18,7 +18,7 @@ const SigninPage: React.FC = () => {
         setSuccess("");
 
         try {
-            const response = await axios.post("http://localhost:3000/login", {
+            const response = await axios.post("http://localhost:3000/api/auth/login", {
                 email,
                 password,
                 userType,

@@ -57,7 +57,7 @@ const SignupPage: React.FC = () => {
 
         try {
             console.log('Sending registration payload:', payload);
-            const response = await axios.post("http://localhost:3000/register", payload, {
+            const response = await axios.post("http://localhost:3000/api/auth/register", payload, {
                 headers: { "Content-Type": "application/json" },
                 withCredentials: true,
             });

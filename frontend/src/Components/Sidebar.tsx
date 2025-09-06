@@ -39,15 +39,39 @@ const Sidebar: React.FC = () => {
     const isActive = (path: string) => location.pathname === path;
 
     const handleLogout = async () => {
+        // Show confirmation dialog
+        const confirmLogout = window.confirm("Are you sure you want to logout?");
+        if (!confirmLogout) return;
+
         try {
-            // The API now just clears the cookie and returns a success response
-            await axios.get('http://localhost:3000/logout', { withCredentials: true });
-            
-            // This is now the single source of truth for navigation
-            navigate('/');
-        } catch (error) {
-            console.error("Logout failed:", error);
+            // Try to call the logout endpoint to clear server-side session
+            await axios.get('http://localhost:3000/api/auth/logout', { withCredentials: true });
+            console.log("Successfully logged out from server");
+        } catch (error: any) {
+            // Handle different error types appropriately
+            if (error.response?.status === 401) {
+                console.log("Not authenticated on server, proceeding with local logout. This is normal.");
+            } else if (error.response?.status === 404) {
+                console.log("Logout endpoint not found, proceeding with local logout anyway.");
+            } else {
+                console.error("Unexpected logout error:", error);
+            }
         }
+        
+        // Always clear any local storage and redirect to landing page
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Clear any cookies client-side as backup
+        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        
+        // Navigate to landing page
+        navigate('/');
+        
+        // Show success message after navigation
+        setTimeout(() => {
+            alert("Logged out successfully!");
+        }, 100);
     };
 
     return (
