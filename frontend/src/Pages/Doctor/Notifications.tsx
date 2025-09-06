@@ -25,7 +25,7 @@ import { useNavigate } from "react-router-dom";
 
 interface Notification {
   _id: string;
-  type: 'appointment_booked' | 'appointment_confirmed' | 'appointment_cancelled' | 'appointment_reminder' | 'prescription_ready' | 'message_received' | 'payment_received' | 'profile_updated' | 'system_maintenance' | 'emergency_alert';
+  type: 'appointment_booked' | 'appointment_confirmed' | 'appointment_cancelled' | 'appointment_reminder' | 'prescription_ready' | 'message_received' | 'payment_received' | 'profile_updated' | 'system_maintenance' | 'emergency_alert' | 'video_call_request' | 'video_call_accepted' | 'video_call_rejected' | 'video_call_ended';
   title: string;
   message: string;
   createdAt: string;
@@ -41,6 +41,12 @@ interface Notification {
   relatedEntity?: {
     entityType: 'Appointment' | 'Prescription' | 'Chat' | 'MedicalRecord';
     entityId: string;
+  };
+  metadata?: {
+    callId?: string;
+    patientName?: string;
+    specialization?: string;
+    requestedAt?: string;
   };
 }
 
@@ -74,6 +80,29 @@ const Notifications: React.FC = () => {
         service.on('incoming-call', (data: any) => {
           console.log('Incoming call notification:', data);
           setIncomingCall(data);
+          // Refresh notifications to include the new video call request
+          fetchNotifications();
+        });
+
+        // Listen for new notifications in general
+        service.on('new-notification', (data: any) => {
+          console.log('New notification received:', data);
+          // Refresh notifications list
+          fetchNotifications();
+        });
+
+        // Listen for call accepted
+        service.on('call-accepted-confirmation', (data: any) => {
+          console.log('Call accepted:', data);
+          // Refresh notifications
+          fetchNotifications();
+        });
+
+        // Listen for call rejected
+        service.on('call-rejected-confirmation', (data: any) => {
+          console.log('Call rejected:', data);
+          // Refresh notifications
+          fetchNotifications();
         });
         
         setNotificationService(service);
@@ -185,6 +214,11 @@ const Notifications: React.FC = () => {
         return <FaClock className="w-5 h-5" />;
       case 'payment_received':
         return <FaCheckCircle className="w-5 h-5" />;
+      case 'video_call_request':
+      case 'video_call_accepted':
+      case 'video_call_rejected':
+      case 'video_call_ended':
+        return <FaVideo className="w-5 h-5" />;
       default:
         return <FaBell className="w-5 h-5" />;
     }
@@ -210,6 +244,14 @@ const Notifications: React.FC = () => {
         return 'border-yellow-500 bg-yellow-50';
       case 'payment_received':
         return 'border-green-500 bg-green-50';
+      case 'video_call_request':
+        return 'border-emerald-500 bg-emerald-50';
+      case 'video_call_accepted':
+        return 'border-green-500 bg-green-50';
+      case 'video_call_rejected':
+        return 'border-red-500 bg-red-50';
+      case 'video_call_ended':
+        return 'border-gray-500 bg-gray-50';
       default:
         return 'border-gray-500 bg-gray-50';
     }
@@ -235,6 +277,14 @@ const Notifications: React.FC = () => {
         return 'text-yellow-600';
       case 'payment_received':
         return 'text-green-600';
+      case 'video_call_request':
+        return 'text-emerald-600';
+      case 'video_call_accepted':
+        return 'text-green-600';
+      case 'video_call_rejected':
+        return 'text-red-600';
+      case 'video_call_ended':
+        return 'text-gray-600';
       default:
         return 'text-gray-600';
     }
@@ -300,6 +350,21 @@ const Notifications: React.FC = () => {
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  const handleVideoCallAction = (notification: Notification) => {
+    if (notification.type === 'video_call_request' && notification.metadata?.callId) {
+      // Set incoming call data from notification
+      setIncomingCall({
+        callId: notification.metadata.callId,
+        patientName: notification.metadata.patientName,
+        specialization: notification.metadata.specialization,
+        patientId: notification.sender?._id,
+        doctorId: '', // This would be current user
+      });
+    } else if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <DoctorSidebar />
@@ -361,6 +426,10 @@ const Notifications: React.FC = () => {
                 <option value="payment_received">Payment Received</option>
                 <option value="profile_updated">Profile Updated</option>
                 <option value="system_maintenance">System Maintenance</option>
+                <option value="video_call_request">Video Call Request</option>
+                <option value="video_call_accepted">Video Call Accepted</option>
+                <option value="video_call_rejected">Video Call Rejected</option>
+                <option value="video_call_ended">Video Call Ended</option>
               </select>
             </div>
 
@@ -461,15 +530,16 @@ const Notifications: React.FC = () => {
                     {/* Actions */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {notification.actionUrl && (
+                        {(notification.actionUrl || notification.type === 'video_call_request') && (
                           <button 
-                            onClick={() => navigate(notification.actionUrl!)}
+                            onClick={() => handleVideoCallAction(notification)}
                             className="bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors duration-300 text-sm font-medium flex items-center gap-2"
                           >
                             {notification.type.includes('appointment') && <FaVideo className="w-4 h-4" />}
                             {notification.type === 'prescription_ready' && <FaPills className="w-4 h-4" />}
                             {notification.type === 'emergency_alert' && <FaStethoscope className="w-4 h-4" />}
-                            {notification.actionText || 'Take Action'}
+                            {notification.type === 'video_call_request' && <FaPhone className="w-4 h-4" />}
+                            {notification.type === 'video_call_request' ? 'Answer Call' : (notification.actionText || 'Take Action')}
                           </button>
                         )}
                         {!notification.isRead && (

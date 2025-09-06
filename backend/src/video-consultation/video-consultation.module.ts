@@ -6,6 +6,9 @@ import { VideoConsultationController } from '../video-consultation/video-consult
 import { VideoConsultationService } from '../video-consultation/video-consultation.service';  
 import { VideoConsultationGateway } from '../video-consultation/video-consultation.gateway';
 
+// Notifications
+import { NotificationsModule } from '../notifications/notifications.module';
+
 // Schemas
 import { Appointment, AppointmentSchema } from '../schemas/appointment.schema';
 
@@ -14,6 +17,7 @@ import { Appointment, AppointmentSchema } from '../schemas/appointment.schema';
     MongooseModule.forFeature([
       { name: Appointment.name, schema: AppointmentSchema },
     ]),
+    NotificationsModule,
   ],
   controllers: [VideoConsultationController],
   providers: [VideoConsultationGateway, VideoConsultationService],

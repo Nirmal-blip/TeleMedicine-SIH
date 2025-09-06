@@ -40,7 +40,11 @@ export class Notification {
       'payment_received',
       'profile_updated',
       'system_maintenance',
-      'emergency_alert'
+      'emergency_alert',
+      'video_call_request',
+      'video_call_accepted',
+      'video_call_rejected',
+      'video_call_ended'
     ],
     required: true
   })

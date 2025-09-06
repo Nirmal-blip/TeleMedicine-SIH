@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { VideoConsultationService } from '../video-consultation/video-consultation.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { UseGuards } from '@nestjs/common';
 
 interface CallData {
@@ -47,7 +48,10 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
   private connectedUsers = new Map<string, UserInfo>();
   private activeCallRooms = new Map<string, Set<string>>();
 
-  constructor(private readonly videoConsultationService: VideoConsultationService) {}
+  constructor(
+    private readonly videoConsultationService: VideoConsultationService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -242,6 +246,30 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
         return;
       }
 
+      // Create database notification for the doctor
+      try {
+        await this.notificationsService.createNotification({
+          recipient: data.doctorId,
+          recipientType: 'Doctor',
+          sender: data.patientId,
+          senderType: 'Patient',
+          title: 'Incoming Video Call Request',
+          message: `${data.patientName} is requesting a video consultation for ${data.specialization}`,
+          type: 'video_call_request',
+          priority: 'High',
+          actionUrl: '/doctor/video-consultation',
+          actionText: 'Join Call',
+          metadata: {
+            callId,
+            patientName: data.patientName,
+            specialization: data.specialization,
+            requestedAt: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        console.error('Failed to create notification:', error);
+      }
+
       // Send incoming call notification to doctor
       doctorSocketIds.forEach(socketId => {
         this.server.to(socketId).emit('incoming-call', {
@@ -252,6 +280,12 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
           patientName: data.patientName,
           specialization: data.specialization,
           initiatedBy: 'patient'
+        });
+
+        // Also emit a notification update event to refresh the notifications page
+        this.server.to(socketId).emit('new-notification', {
+          type: 'video_call_request',
+          message: 'New video call request received'
         });
       });
 
