@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
+import { hasTokenCookie } from '../utils/cookieUtils';
 
 interface User {
   userId: string;
@@ -11,9 +12,11 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasToken: boolean;
   login: (email: string, password: string, userType: 'patient' | 'doctor') => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshTokenState: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,8 +28,14 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [tokenExists, setTokenExists] = useState(hasTokenCookie());
 
   const isAuthenticated = !!user;
+  const hasToken = tokenExists;
+
+  const refreshTokenState = () => {
+    setTokenExists(hasTokenCookie());
+  };
 
   const checkAuth = async () => {
     try {
@@ -45,6 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
     } finally {
       setIsLoading(false);
+      refreshTokenState(); // Refresh token state after auth check
     }
   };
 
@@ -62,6 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email: email,
           userType: response.data.userType,
         });
+        refreshTokenState(); // Refresh token state after successful login
       }
     } catch (error) {
       throw error;
@@ -77,7 +88,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       localStorage.clear();
       sessionStorage.clear();
+      // Clear the token cookie
       document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      refreshTokenState(); // Refresh token state after logout
     }
   };
 
@@ -85,13 +98,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth();
   }, []);
 
+  // Periodic check for token changes (every 5 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshTokenState();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const value: AuthContextType = {
     user,
     isAuthenticated,
     isLoading,
+    hasToken,
     login,
     logout,
     checkAuth,
+    refreshTokenState,
   };
 
   return (

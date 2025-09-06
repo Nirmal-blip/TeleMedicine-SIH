@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, hasToken } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -21,6 +21,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
+  // If user has a token cookie, allow access to any route
+  if (hasToken) {
+    return <>{children}</>;
+  }
+
+  // If no token cookie, apply protected route logic
   if (!isAuthenticated) {
     // Redirect to signin page with the current location as state
     return <Navigate to="/signin" state={{ from: location }} replace />;
