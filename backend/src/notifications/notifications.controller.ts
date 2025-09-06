@@ -1,11 +1,19 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Patient, PatientDocument } from '../schemas/patient.schema';
+import { Doctor, DoctorDocument } from '../schemas/doctor.schema';
 
 @Controller('api/notifications')
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    @InjectModel(Patient.name) private patientModel: Model<PatientDocument>,
+    @InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>,
+  ) {}
 
   @Get()
   async getNotifications(
@@ -16,41 +24,83 @@ export class NotificationsController {
     @Query('priority') priority?: string,
     @Query('search') search?: string
   ) {
-    const userId = req.user.userId;
-    const userType = req.user.userType; // Assuming this is set in JWT payload
+    const mongoUserId = req.user.userId; // MongoDB ObjectId
+    const userType = req.user.userType; // 'doctor' or 'patient'
     const limitNum = limit ? parseInt(limit) : 50;
     const skipNum = skip ? parseInt(skip) : 0;
 
+    // Get the custom ID (patientId or doctorId) based on userType
+    let customUserId = mongoUserId;
+    try {
+      if (userType === 'doctor') {
+        const doctor = await this.doctorModel.findById(mongoUserId).select('doctorId');
+        if (doctor && doctor.doctorId) {
+          customUserId = doctor.doctorId;
+        }
+      } else if (userType === 'patient') {
+        const patient = await this.patientModel.findById(mongoUserId).select('patientId');
+        if (patient && patient.patientId) {
+          customUserId = patient.patientId;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching custom user ID:', error);
+      // Fall back to MongoDB ObjectId if custom ID fetch fails
+    }
+
     // Debug logging
     console.log('🔍 Notifications Request:', {
-      userId,
+      mongoUserId,
+      customUserId,
       userType,
       limit: limitNum,
       skip: skipNum,
       filters: { type, priority, search }
     });
 
+    const capitalizedUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
+
     if (search) {
-      return await this.notificationsService.searchNotifications(userId, userType, search);
+      return await this.notificationsService.searchNotifications(customUserId, capitalizedUserType, search);
     }
     if (type) {
-      return await this.notificationsService.getNotificationsByType(userId, userType, type);
+      return await this.notificationsService.getNotificationsByType(customUserId, capitalizedUserType, type);
     }
     if (priority) {
-      return await this.notificationsService.getNotificationsByPriority(userId, userType, priority);
+      return await this.notificationsService.getNotificationsByPriority(customUserId, capitalizedUserType, priority);
     }
 
-    const notifications = await this.notificationsService.getNotificationsForUser(userId, userType, limitNum, skipNum);
-    console.log(`📋 Found ${notifications.length} notifications for user ${userId} (${userType})`);
+    const notifications = await this.notificationsService.getNotificationsForUser(customUserId, capitalizedUserType, limitNum, skipNum);
+    console.log(`📋 Found ${notifications.length} notifications for user ${customUserId} (${capitalizedUserType})`);
     
     return notifications;
   }
 
   @Get('unread-count')
   async getUnreadCount(@Request() req) {
-    const userId = req.user.userId;
+    const mongoUserId = req.user.userId;
     const userType = req.user.userType;
-    const count = await this.notificationsService.getUnreadNotificationsCount(userId, userType);
+    
+    // Get the custom ID (patientId or doctorId) based on userType
+    let customUserId = mongoUserId;
+    try {
+      if (userType === 'doctor') {
+        const doctor = await this.doctorModel.findById(mongoUserId).select('doctorId');
+        if (doctor && doctor.doctorId) {
+          customUserId = doctor.doctorId;
+        }
+      } else if (userType === 'patient') {
+        const patient = await this.patientModel.findById(mongoUserId).select('patientId');
+        if (patient && patient.patientId) {
+          customUserId = patient.patientId;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching custom user ID for unread count:', error);
+    }
+
+    const capitalizedUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
+    const count = await this.notificationsService.getUnreadNotificationsCount(customUserId, capitalizedUserType);
     return { unreadCount: count };
   }
 

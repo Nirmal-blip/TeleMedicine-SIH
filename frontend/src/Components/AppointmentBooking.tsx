@@ -173,20 +173,35 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
         });
 
         if (callId) {
+          // Fetch doctor's data to get the correct doctorId
+          let doctorData = null;
+          try {
+            const doctorResponse = await axios.get(`http://localhost:3000/api/doctors/${doctor.id}`, {
+              withCredentials: true
+            });
+            doctorData = doctorResponse.data;
+            console.log('Doctor data fetched:', doctorData);
+          } catch (doctorError) {
+            console.error('Failed to fetch doctor data:', doctorError);
+          }
+
           // Create notification for the doctor
           try {
             await axios.post('http://localhost:3000/api/notifications/video-call', {
-              patientId: patientResponse.data.patientId,
-              doctorId: doctor.id,
+              patientId: patientResponse.data.patientId, // Custom patient ID (PAT2025000006)
+              doctorId: doctorData?.doctorId || doctor.id, // Custom doctor ID (DOC2025000001) or fallback
               patientName: patientResponse.data.fullname || 'Patient',
-              doctorName: doctor.name,
+              doctorName: doctorData?.fullname || doctor.name,
               appointmentId: response.data._id,
               callId: callId,
               type: 'video_call_request'
             }, {
               withCredentials: true
             });
-            console.log('Video call notification sent to doctor');
+            console.log('Video call notification sent to doctor with IDs:', {
+              patientId: patientResponse.data.patientId,
+              doctorId: doctorData?.doctorId || doctor.id
+            });
           } catch (notificationError) {
             console.error('Failed to send notification to doctor:', notificationError);
             // Don't stop the video call process if notification fails
@@ -206,9 +221,9 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
             // Create notification for call acceptance
             axios.post('http://localhost:3000/api/notifications/video-call', {
               patientId: patientResponse.data.patientId,
-              doctorId: doctor.id,
+              doctorId: doctorData?.doctorId || doctor.id,
               patientName: patientResponse.data.fullname || 'Patient',
-              doctorName: doctor.name,
+              doctorName: doctorData?.fullname || doctor.name,
               appointmentId: response.data._id,
               callId: callId,
               type: 'video_call_accepted'
@@ -225,9 +240,9 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
             // Create notification for call rejection
             axios.post('http://localhost:3000/api/notifications/video-call', {
               patientId: patientResponse.data.patientId,
-              doctorId: doctor.id,
+              doctorId: doctorData?.doctorId || doctor.id,
               patientName: patientResponse.data.fullname || 'Patient',
-              doctorName: doctor.name,
+              doctorName: doctorData?.fullname || doctor.name,
               appointmentId: response.data._id,
               callId: callId,
               type: 'video_call_rejected'
