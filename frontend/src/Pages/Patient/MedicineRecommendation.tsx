@@ -338,52 +338,6 @@ const MedicineRecommendation: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Search Section */}
-                <div className="card p-8 rounded-2xl mb-8 animate-fade-scale">
-                    <div className="flex items-center gap-3 mb-6">
-                        <FaRobot className="w-6 h-6 text-emerald-600" />
-                        <h2 className="text-xl font-semibold text-gray-800">AI Medicine Assistant</h2>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Enter medicine name (e.g., Paracetamol, Aspirin)"
-                                value={medicine}
-                                onChange={handleInputChange}
-                                className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-300 bg-gray-50 focus:bg-white"
-                                onKeyPress={(e) => e.key === 'Enter' && fetchRecommendations()}
-                            />
-                        </div>
-                        <button
-                            onClick={fetchRecommendations}
-                            disabled={loading}
-                            className="btn-primary flex items-center gap-2 px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {loading ? (
-                                <>
-                                    <FaSpinner className="w-4 h-4 animate-spin" />
-                                    Searching...
-                                </>
-                            ) : (
-                                <>
-                                    <FaSearch className="w-4 h-4" />
-                                    Get Recommendations
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Error Message */}
-                    {error && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 animate-slide-down flex items-center gap-2">
-                            <FaExclamationTriangle className="w-4 h-4" />
-                            {error}
-                        </div>
-                    )}
-                </div>
 
                 {/* Recommendations Section */}
                 {recommendations.length > 0 && (
