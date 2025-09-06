@@ -136,7 +136,7 @@ const DoctorsList: React.FC = () => {
         hospital: doctor.location || "Medical Center",
         image: doctor.profileImage || `https://images.unsplash.com/photo-${getDoctorImageId(index)}?w=150&h=150&fit=crop&crop=face&auto=format`,
         bio: doctor.about || `Experienced ${doctor.specialization} with ${doctor.experience || 0} years of practice.`,
-        isOnline: doctor.isActive && doctor.isVerified
+        isOnline: true
       }));
       
       setDoctors(transformedDoctors);
@@ -257,11 +257,6 @@ const DoctorsList: React.FC = () => {
   };
 
   const startVideoCall = async (doctor: Doctor) => {
-    if (!doctor.isOnline) {
-      alert('Doctor is currently offline. Please book an appointment instead.');
-      return;
-    }
-
     if (!videoCallService) {
       alert('Video call service not initialized. Please refresh the page.');
       return;
@@ -431,15 +426,6 @@ const DoctorsList: React.FC = () => {
                     alt={doctor.name}
                     className="w-full h-64 object-cover"
                   />
-                  <div className="absolute top-4 right-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      doctor.isOnline 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {doctor.isOnline ? 'Online' : 'Offline'}
-                    </span>
-                  </div>
                 </div>
                 
                 <div className="p-6">
@@ -500,7 +486,7 @@ const DoctorsList: React.FC = () => {
                       
                       <button
                         onClick={() => startVideoCall(doctor)}
-                        disabled={!doctor.isOnline || isCallingDoctor === doctor.id}
+                        disabled={isCallingDoctor === doctor.id}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
                       >
                         <FaVideo className="text-xs" />
