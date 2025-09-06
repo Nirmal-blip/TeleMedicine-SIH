@@ -30,11 +30,7 @@ import { AppController } from './app.controller';
     // Database connection
     DatabaseModule,
     
-    // Serve static files
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'dist'),
-      exclude: ['/api*'],
-    }),
+    // Serve static files (removed dist serving as it's causing errors)
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',

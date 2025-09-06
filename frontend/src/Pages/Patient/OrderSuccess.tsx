@@ -55,7 +55,7 @@ const OrderSuccess: React.FC = () => {
 
   const fetchOrder = async () => {
     try {
-      const response = await fetch(`/api/orders/${orderId}`, {
+      const response = await fetch(`http://localhost:3000/api/orders/${orderId}`, {
         credentials: 'include',
       });
       
@@ -69,6 +69,137 @@ const OrderSuccess: React.FC = () => {
       console.error('Error fetching order:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const downloadInvoice = async () => {
+    try {
+      // Open invoice in new window for download/print
+      const invoiceUrl = `http://localhost:3000/api/orders/${orderId}/invoice`;
+      window.open(invoiceUrl, '_blank');
+    } catch (error) {
+      console.error('Error opening invoice:', error);
+      alert('Failed to open invoice');
+    }
+  };
+
+  const generateInvoiceHTML = () => {
+    if (!order) return '';
+    
+    const subtotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const shipping = subtotal < 500 ? 50 : 0;
+    const tax = subtotal * 0.12; // 12% GST
+    const total = subtotal + shipping + tax;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Invoice - ${order.orderNumber}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #059669; padding-bottom: 20px; }
+          .invoice-details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+          .invoice-details div { flex: 1; }
+          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .items-table th, .items-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+          .items-table th { background-color: #f8f9fa; font-weight: bold; }
+          .totals { float: right; width: 300px; }
+          .totals table { width: 100%; border-collapse: collapse; }
+          .totals td { padding: 8px; border-bottom: 1px solid #ddd; }
+          .totals .total-row { font-weight: bold; font-size: 1.1em; border-top: 2px solid #059669; }
+          .footer { margin-top: 50px; text-align: center; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 style="color: #059669; margin: 0;">Telemedicine Pharmacy</h1>
+          <p style="margin: 5px 0;">Quality Healthcare at Your Doorstep</p>
+          <h2 style="margin: 20px 0;">INVOICE</h2>
+        </div>
+
+        <div class="invoice-details">
+          <div>
+            <h3>Invoice Details</h3>
+            <p><strong>Invoice Number:</strong> ${order.orderNumber}</p>
+            <p><strong>Order Date:</strong> ${formatDate(order.createdAt)}</p>
+            <p><strong>Payment Method:</strong> ${getPaymentMethodText(order.paymentDetails.method)}</p>
+            <p><strong>Payment Status:</strong> ${order.paymentDetails.status}</p>
+          </div>
+          <div>
+            <h3>Billing Address</h3>
+            <p><strong>${order.shippingAddress.fullName}</strong></p>
+            <p>${order.shippingAddress.addressLine1}</p>
+            ${order.shippingAddress.addressLine2 ? `<p>${order.shippingAddress.addressLine2}</p>` : ''}
+            <p>${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}</p>
+            <p>Phone: ${order.shippingAddress.phoneNumber}</p>
+          </div>
+        </div>
+
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Medicine</th>
+              <th>Manufacturer</th>
+              <th>Quantity</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${order.items.map(item => `
+              <tr>
+                <td>${item.medicineId?.name || item.medicineName}</td>
+                <td>${item.medicineId?.manufacturer || ''}</td>
+                <td>${item.quantity}</td>
+                <td>₹${item.price.toFixed(2)}</td>
+                <td>₹${item.totalPrice.toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <table>
+            <tr>
+              <td>Subtotal:</td>
+              <td>₹${subtotal.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Shipping:</td>
+              <td>${shipping === 0 ? 'FREE' : '₹' + shipping.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Tax (GST 12%):</td>
+              <td>₹${tax.toFixed(2)}</td>
+            </tr>
+            <tr class="total-row">
+              <td>Total Amount:</td>
+              <td>₹${total.toFixed(2)}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="footer">
+          <p>Thank you for choosing Telemedicine Pharmacy!</p>
+          <p>For any queries, contact us at support@telemedicine.com</p>
+          <p><em>This is a computer-generated invoice.</em></p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const printInvoice = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(generateInvoiceHTML());
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
     }
   };
 
@@ -222,6 +353,25 @@ const OrderSuccess: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Invoice Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+          <button
+            onClick={downloadInvoice}
+            className="flex items-center justify-center bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <FontAwesomeIcon icon={faReceipt} className="mr-2" />
+            Download Invoice
+          </button>
+          
+          <button
+            onClick={printInvoice}
+            className="flex items-center justify-center border border-blue-600 text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors"
+          >
+            <FontAwesomeIcon icon={faReceipt} className="mr-2" />
+            Print Invoice
+          </button>
         </div>
 
         {/* Action Buttons */}

@@ -52,18 +52,50 @@ const Cart: React.FC = () => {
 
   const fetchCart = async () => {
     try {
-      const response = await fetch('/api/cart', {
+      const response = await fetch('http://localhost:3000/api/cart', {
         credentials: 'include',
       });
       
       if (response.ok) {
         const data = await response.json();
         setCart(data);
+        // Sync with localStorage for offline access
+        localStorage.setItem('medicineCart', JSON.stringify(data.items || []));
+      } else if (response.status === 401) {
+        // User not authenticated, redirect to login
+        alert('Please log in to view your cart');
+        window.location.href = '/auth/patient-login';
       } else {
         console.error('Failed to fetch cart');
+        // Fallback to localStorage cart
+        const localCart = localStorage.getItem('medicineCart');
+        if (localCart) {
+          const items = JSON.parse(localCart);
+          setCart({ 
+            _id: 'local', 
+            patientId: 'local', 
+            items: items || [], 
+            totalAmount: 0, 
+            totalItems: items?.length || 0,
+            lastUpdated: new Date()
+          } as Cart);
+        }
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
+      // Fallback to localStorage cart
+      const localCart = localStorage.getItem('medicineCart');
+      if (localCart) {
+        const items = JSON.parse(localCart);
+        setCart({ 
+          _id: 'local', 
+          patientId: 'local', 
+          items: items || [], 
+          totalAmount: 0, 
+          totalItems: items?.length || 0,
+          lastUpdated: new Date()
+        } as Cart);
+      }
     } finally {
       setLoading(false);
     }
@@ -74,7 +106,7 @@ const Cart: React.FC = () => {
     
     setUpdating(medicineId);
     try {
-      const response = await fetch('/api/cart/update', {
+      const response = await fetch('http://localhost:3000/api/cart/update', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +139,7 @@ const Cart: React.FC = () => {
     }
 
     try {
-      const response = await fetch('/api/cart/remove', {
+      const response = await fetch('http://localhost:3000/api/cart/remove', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -137,7 +169,7 @@ const Cart: React.FC = () => {
     }
 
     try {
-      const response = await fetch('/api/cart/clear', {
+      const response = await fetch('http://localhost:3000/api/cart/clear', {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -157,7 +189,7 @@ const Cart: React.FC = () => {
 
   const validateCart = async () => {
     try {
-      const response = await fetch('/api/cart/validate', {
+      const response = await fetch('http://localhost:3000/api/cart/validate', {
         credentials: 'include',
       });
       

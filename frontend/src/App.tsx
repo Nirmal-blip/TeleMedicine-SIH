@@ -16,6 +16,13 @@ import VideoConsultation from './Pages/Patient/VideoConsultation'
 import Settings from './Pages/Patient/Settings'
 import Notifications from './Pages/Patient/Notifications'
 
+// Medicine Shop Pages
+import MedicineShop from './Pages/Patient/MedicineShop'
+import Cart from './Pages/Patient/Cart'
+import Checkout from './Pages/Patient/Checkout'
+import Orders from './Pages/Patient/Orders'
+import OrderSuccess from './Pages/Patient/OrderSuccess'
+
 // Doctor Pages
 import DoctorDashboard from './Pages/Doctor/DoctorDashboard'
 import PatientList from './Pages/Doctor/PatientList'
@@ -52,8 +59,27 @@ const App: React.FC = () => {
             <Route path='/settings' element={<ProtectedRoute><Settings /></ProtectedRoute>}></Route>
             <Route path='/notifications' element={<ProtectedRoute><Notifications /></ProtectedRoute>}></Route>
 
+            {/* Patient routes with proper paths */}
+            <Route path='/patient/dashboard' element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>}></Route>
+            <Route path='/patient/appointments' element={<ProtectedRoute><Appointments /></ProtectedRoute>}></Route>
+            <Route path='/patient/consultation-history' element={<ProtectedRoute><ConsultationHistory /></ProtectedRoute>}></Route>
+            <Route path='/patient/medicine-recommendation' element={<ProtectedRoute><MedicineRecommendation /></ProtectedRoute>}></Route>
+            <Route path='/patient/video-consultation' element={<ProtectedRoute><VideoConsultation /></ProtectedRoute>}></Route>
+            <Route path='/patient/settings' element={<ProtectedRoute><Settings /></ProtectedRoute>}></Route>
+            <Route path='/patient/notifications' element={<ProtectedRoute><Notifications /></ProtectedRoute>}></Route>
+            <Route path='/patient/support' element={<ProtectedRoute><PatientSupport /></ProtectedRoute>}></Route>
+            <Route path='/patient/prescription' element={<ProtectedRoute><Prescription /></ProtectedRoute>}></Route>
+
+            {/* Medicine Shop routes */}
+            <Route path='/patient/medicine-shop' element={<ProtectedRoute><MedicineShop /></ProtectedRoute>}></Route>
+            <Route path='/patient/cart' element={<ProtectedRoute><Cart /></ProtectedRoute>}></Route>
+            <Route path='/patient/checkout' element={<ProtectedRoute><Checkout /></ProtectedRoute>}></Route>
+            <Route path='/patient/orders' element={<ProtectedRoute><Orders /></ProtectedRoute>}></Route>
+            <Route path='/patient/order-success' element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>}></Route>
+
             {/* Doctor routes */}
             <Route path='/doctor-dashboard' element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>}></Route>
+            <Route path='/doctor/dashboard' element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>}></Route>
             <Route path='/doctor/patient-list' element={<ProtectedRoute><PatientList /></ProtectedRoute>}></Route>
             <Route path='/doctor/video-consultation' element={<ProtectedRoute><DoctorVideoConsultation /></ProtectedRoute>}></Route>
             <Route path='/doctor/prescribed-patients' element={<ProtectedRoute><PrescribedPatients /></ProtectedRoute>}></Route>
