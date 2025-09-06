@@ -104,6 +104,58 @@ export class VideoConsultationController {
     }
   }
 
+  @Put('reject-call/:callId')
+  @ApiOperation({ summary: 'Reject an incoming video consultation call' })
+  @ApiResponse({ status: 200, description: 'Call rejected successfully' })
+  async rejectCall(
+    @Param('callId') callId: string, 
+    @Body() body: { reason?: string },
+    @Request() req
+  ) {
+    const userId = req.user.userId;
+
+    try {
+      await this.videoConsultationService.cancelCallSession(callId, 'rejected', userId);
+      
+      return { 
+        success: true, 
+        message: 'Call rejected successfully',
+        reason: body.reason || 'Call was rejected'
+      };
+    } catch (error) {
+      return { 
+        error: error.message, 
+        statusCode: HttpStatus.BAD_REQUEST 
+      };
+    }
+  }
+
+  @Put('cancel-call/:callId')
+  @ApiOperation({ summary: 'Cancel an outgoing video consultation call' })
+  @ApiResponse({ status: 200, description: 'Call cancelled successfully' })
+  async cancelCall(
+    @Param('callId') callId: string, 
+    @Body() body: { reason?: string },
+    @Request() req
+  ) {
+    const userId = req.user.userId;
+
+    try {
+      await this.videoConsultationService.cancelCallSession(callId, 'cancelled', userId);
+      
+      return { 
+        success: true, 
+        message: 'Call cancelled successfully',
+        reason: body.reason || 'Call was cancelled'
+      };
+    } catch (error) {
+      return { 
+        error: error.message, 
+        statusCode: HttpStatus.BAD_REQUEST 
+      };
+    }
+  }
+
   @Put('appointment/:appointmentId/call-status')
   @ApiOperation({ summary: 'Update appointment call status' })
   @ApiResponse({ status: 200, description: 'Appointment call status updated' })

@@ -16,7 +16,7 @@ interface CallData {
   offer?: RTCSessionDescriptionInit;
   answer?: RTCSessionDescriptionInit;
   candidate?: RTCIceCandidateInit;
-  type: 'offer' | 'answer' | 'ice-candidate' | 'end-call' | 'join-call' | 'user-joined' | 'user-left';
+  type: 'offer' | 'answer' | 'ice-candidate' | 'end-call' | 'join-call' | 'user-joined' | 'user-left' | 'call-rejected' | 'call-cancelled';
   from: string;
   to: string;
   fromType: 'doctor' | 'patient';
@@ -213,12 +213,12 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
 
   @SubscribeMessage('start-call')
   async handleStartCall(
-    @MessageBody() data: { appointmentId: string; patientId: string },
+    @MessageBody() data: { appointmentId: string; patientId: string; doctorId?: string },
     @ConnectedSocket() client: Socket,
   ) {
     const userInfo = this.connectedUsers.get(client.id);
-    if (!userInfo || userInfo.userType !== 'doctor') {
-      client.emit('error', 'Only doctors can start calls');
+    if (!userInfo) {
+      client.emit('error', 'User not authenticated');
       return;
     }
 
@@ -244,29 +244,215 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
         return;
       }
 
-      // Notify the patient about the incoming call
-      const patientSocketIds = Array.from(this.connectedUsers.entries())
-        .filter(([_, user]) => user.userId === data.patientId && user.userType === 'patient')
-        .map(([socketId, _]) => socketId);
+      if (userInfo.userType === 'doctor') {
+        // Doctor initiating call to patient
+        const patientSocketIds = Array.from(this.connectedUsers.entries())
+          .filter(([_, user]) => user.userId === data.patientId && user.userType === 'patient')
+          .map(([socketId, _]) => socketId);
 
-      patientSocketIds.forEach(socketId => {
-        this.server.to(socketId).emit('incoming-call', {
+        patientSocketIds.forEach(socketId => {
+          this.server.to(socketId).emit('incoming-call', {
+            callId,
+            appointmentId: data.appointmentId,
+            doctorId: userInfo.userId,
+            doctorName: appointment.doctor?.fullname || `Dr. ${appointment.doctor?.email}` || 'Doctor',
+            patientId: data.patientId,
+            patientName: appointment.patient?.fullname || 'Patient',
+          });
+        });
+
+        // Notify the doctor that call is initiated
+        client.emit('call-started', { 
           callId,
-          appointmentId: data.appointmentId,
-          doctorId: userInfo.userId,
-          doctorName: appointment.doctor?.fullname || `Dr. ${appointment.doctor?.email}` || 'Doctor',
-          patientId: data.patientId,
           patientName: appointment.patient?.fullname || 'Patient',
         });
-      });
 
-      // Also notify the doctor that call is initiated
-      client.emit('call-started', { 
-        callId,
-        patientName: appointment.patient?.fullname || 'Patient',
-      });
+      } else if (userInfo.userType === 'patient') {
+        // Patient initiating call to doctor
+        const doctorId = data.doctorId || appointment.doctor?._id;
+        const doctorSocketIds = Array.from(this.connectedUsers.entries())
+          .filter(([_, user]) => user.userId === doctorId && user.userType === 'doctor')
+          .map(([socketId, _]) => socketId);
+
+        doctorSocketIds.forEach(socketId => {
+          this.server.to(socketId).emit('incoming-call', {
+            callId,
+            appointmentId: data.appointmentId,
+            doctorId: doctorId,
+            doctorName: appointment.doctor?.fullname || 'Doctor',
+            patientId: userInfo.userId,
+            patientName: appointment.patient?.fullname || `Patient ${appointment.patient?.email}` || 'Patient',
+          });
+        });
+
+        // Notify the patient that call request is sent
+        client.emit('call-started', { 
+          callId,
+          doctorName: appointment.doctor?.fullname || 'Doctor',
+        });
+      }
+      
     } catch (error) {
       client.emit('error', error.message);
+    }
+  }
+
+  @SubscribeMessage('reject-call')
+  async handleRejectCall(
+    @MessageBody() data: { callId: string; appointmentId?: string; reason?: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userInfo = this.connectedUsers.get(client.id);
+    if (!userInfo) {
+      client.emit('error', 'User not authenticated');
+      return;
+    }
+
+    try {
+      console.log(`User ${userInfo.userId} rejecting call ${data.callId}`);
+
+      // Cancel the call session
+      await this.videoConsultationService.cancelCallSession(data.callId, 'rejected', userInfo.userId);
+
+      // Get the call session to find other participants
+      const callSession = this.videoConsultationService.getCallSession(data.callId);
+      
+      if (callSession) {
+        // Notify all connected users about the call rejection
+        const allConnectedUsers = Array.from(this.connectedUsers.entries());
+        
+        // Find the other party (if patient rejects, notify doctor and vice versa)
+        allConnectedUsers.forEach(([socketId, user]) => {
+          if (user.userId !== userInfo.userId) {
+            // Check if this user is part of the call (either doctor or patient in the appointment)
+            const isDoctor = user.userType === 'doctor' && user.userId === callSession.doctorId;
+            const isPatient = user.userType === 'patient' && user.userId === callSession.patientId;
+            
+            if (isDoctor || isPatient) {
+              this.server.to(socketId).emit('call-rejected', {
+                callId: data.callId,
+                appointmentId: data.appointmentId,
+                rejectedBy: userInfo.userId,
+                rejectedByType: userInfo.userType,
+                reason: data.reason || 'Call was declined',
+              });
+            }
+          }
+        });
+
+        // Confirm rejection to the rejecting user
+        client.emit('call-rejection-confirmed', {
+          callId: data.callId,
+          message: 'Call rejected successfully',
+        });
+      }
+
+      // Clean up any active call rooms
+      const callRoom = this.activeCallRooms.get(data.callId);
+      if (callRoom) {
+        // Notify all participants in the call room about rejection
+        callRoom.forEach(socketId => {
+          const participantInfo = this.connectedUsers.get(socketId);
+          if (participantInfo && participantInfo.userId !== userInfo.userId) {
+            this.server.to(socketId).emit('call-rejected', {
+              callId: data.callId,
+              appointmentId: data.appointmentId,
+              rejectedBy: userInfo.userId,
+              rejectedByType: userInfo.userType,
+              reason: data.reason || 'Call was declined',
+            });
+          }
+        });
+
+        // Clean up the call room
+        this.activeCallRooms.delete(data.callId);
+      }
+
+    } catch (error) {
+      console.error('Error rejecting call:', error);
+      client.emit('call-error', { 
+        message: 'Failed to reject call',
+        error: error.message 
+      });
+    }
+  }
+
+  @SubscribeMessage('cancel-call')
+  async handleCancelCall(
+    @MessageBody() data: { callId: string; appointmentId?: string; reason?: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userInfo = this.connectedUsers.get(client.id);
+    if (!userInfo) {
+      client.emit('error', 'User not authenticated');
+      return;
+    }
+
+    try {
+      console.log(`User ${userInfo.userId} cancelling call ${data.callId}`);
+
+      // Cancel the call session
+      await this.videoConsultationService.cancelCallSession(data.callId, 'cancelled', userInfo.userId);
+
+      // Get the call session to find other participants
+      const callSession = this.videoConsultationService.getCallSession(data.callId);
+      
+      if (callSession) {
+        // Notify all connected users about the call cancellation
+        const allConnectedUsers = Array.from(this.connectedUsers.entries());
+        
+        allConnectedUsers.forEach(([socketId, user]) => {
+          if (user.userId !== userInfo.userId) {
+            // Check if this user is part of the call
+            const isDoctor = user.userType === 'doctor' && user.userId === callSession.doctorId;
+            const isPatient = user.userType === 'patient' && user.userId === callSession.patientId;
+            
+            if (isDoctor || isPatient) {
+              this.server.to(socketId).emit('call-cancelled', {
+                callId: data.callId,
+                appointmentId: data.appointmentId,
+                cancelledBy: userInfo.userId,
+                cancelledByType: userInfo.userType,
+                reason: data.reason || 'Call was cancelled',
+              });
+            }
+          }
+        });
+
+        // Confirm cancellation to the cancelling user
+        client.emit('call-cancellation-confirmed', {
+          callId: data.callId,
+          message: 'Call cancelled successfully',
+        });
+      }
+
+      // Clean up any active call rooms
+      const callRoom = this.activeCallRooms.get(data.callId);
+      if (callRoom) {
+        // Notify all participants in the call room about cancellation
+        callRoom.forEach(socketId => {
+          const participantInfo = this.connectedUsers.get(socketId);
+          if (participantInfo && participantInfo.userId !== userInfo.userId) {
+            this.server.to(socketId).emit('call-cancelled', {
+              callId: data.callId,
+              appointmentId: data.appointmentId,
+              cancelledBy: userInfo.userId,
+              cancelledByType: userInfo.userType,
+              reason: data.reason || 'Call was cancelled',
+            });
+          }
+        });
+
+        // Clean up the call room
+        this.activeCallRooms.delete(data.callId);
+      }
+
+    } catch (error) {
+      console.error('Error cancelling call:', error);
+      client.emit('call-error', { 
+        message: 'Failed to cancel call',
+        error: error.message 
+      });
     }
   }
 

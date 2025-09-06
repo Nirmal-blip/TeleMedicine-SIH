@@ -14,9 +14,11 @@ export interface CallSession {
   }>;
   startTime: Date;
   endTime?: Date;
-  status: 'waiting' | 'active' | 'ended';
+  status: 'waiting' | 'active' | 'ended' | 'rejected' | 'cancelled';
   doctorId?: string;
   patientId?: string;
+  cancelledBy?: string;
+  cancellationReason?: string;
 }
 
 @Injectable()
@@ -84,6 +86,39 @@ export class VideoConsultationService {
           });
         } catch (error) {
           console.error('Error updating appointment after call end:', error);
+        }
+      }
+
+      this.activeCalls.delete(callId);
+    }
+  }
+
+  async cancelCallSession(callId: string, reason: 'rejected' | 'cancelled', cancelledBy: string): Promise<void> {
+    const callSession = this.activeCalls.get(callId);
+    if (callSession) {
+      callSession.endTime = new Date();
+      callSession.status = reason;
+      callSession.cancelledBy = cancelledBy;
+      callSession.cancellationReason = reason === 'rejected' ? 'Call was rejected' : 'Call was cancelled';
+
+      // Update appointment if exists
+      if (callSession.appointmentId) {
+        try {
+          let appointmentStatus = 'Cancelled';
+          
+          // If call was rejected before anyone joined, keep it as Confirmed so it can be rescheduled
+          if (reason === 'rejected' && callSession.participants.length === 0) {
+            appointmentStatus = 'Confirmed';
+          }
+          
+          await this.appointmentModel.findByIdAndUpdate(callSession.appointmentId, {
+            callEndTime: callSession.endTime,
+            status: appointmentStatus,
+            callRejectionReason: callSession.cancellationReason,
+            rejectedBy: cancelledBy,
+          });
+        } catch (error) {
+          console.error('Error updating appointment after call cancellation:', error);
         }
       }
 
