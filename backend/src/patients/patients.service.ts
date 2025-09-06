@@ -39,6 +39,16 @@ export class PatientsService {
     if (!patient) {
       throw new NotFoundException('Patient not found');
     }
+    
+    // If patient doesn't have patientId, generate and assign one
+    if (!patient.patientId) {
+      console.log(`Patient ${patient._id} doesn't have patientId, generating one...`);
+      const patientId = await this.generatePatientId();
+      await this.patientModel.findByIdAndUpdate(id, { patientId });
+      patient.patientId = patientId;
+      console.log(`Assigned patientId ${patientId} to patient ${patient._id}`);
+    }
+    
     return patient;
   }
 
@@ -47,6 +57,16 @@ export class PatientsService {
     if (!patient) {
       throw new NotFoundException('Patient not found');
     }
+    
+    // If patient doesn't have patientId, generate and assign one
+    if (!patient.patientId) {
+      console.log(`Patient ${patient._id} doesn't have patientId, generating one...`);
+      const patientId = await this.generatePatientId();
+      await this.patientModel.findOneAndUpdate({ email }, { patientId });
+      patient.patientId = patientId;
+      console.log(`Assigned patientId ${patientId} to patient ${patient._id}`);
+    }
+    
     return patient;
   }
 

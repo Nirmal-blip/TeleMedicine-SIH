@@ -268,9 +268,9 @@ export class VideoConsultationGateway implements OnGatewayConnection, OnGatewayD
       // Create database notification for the doctor
       try {
         await this.notificationsService.createNotification({
-          recipient: data.doctorId,
+          doctorId: data.doctorId,
           recipientType: 'Doctor',
-          sender: data.patientId,
+          senderPatientId: data.patientId,
           senderType: 'Patient',
           title: 'Incoming Video Call Request',
           message: `${data.patientName} is requesting a video consultation for ${data.specialization}`,

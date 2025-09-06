@@ -19,12 +19,11 @@ import {
   FaPhone,
   FaTimes
 } from "react-icons/fa";
-import PatientSidebar from "../../Components/Sidebar";
-import { useNavigate } from "react-router-dom";
+import { getVideoCallNotificationService } from "../../utils/video-call-notifications";
 
 interface Notification {
   _id: string;
-  type: 'appointment_booked' | 'appointment_confirmed' | 'appointment_cancelled' | 'appointment_reminder' | 'prescription_ready' | 'message_received' | 'payment_received' | 'profile_updated' | 'system_maintenance' | 'emergency_alert';
+  type: 'appointment_booked' | 'appointment_confirmed' | 'appointment_cancelled' | 'appointment_reminder' | 'prescription_ready' | 'message_received' | 'payment_received' | 'profile_updated' | 'system_maintenance' | 'emergency_alert' | 'video_call_accepted' | 'video_call_rejected';
   title: string;
   message: string;
   createdAt: string;
@@ -41,6 +40,12 @@ interface Notification {
     entityType: 'Appointment' | 'Prescription' | 'Chat' | 'MedicalRecord';
     entityId: string;
   };
+  metadata?: {
+    callId?: string;
+    acceptedAt?: string;
+    rejectedAt?: string;
+    reason?: string;
+  };
 }
 
 const PatientNotifications: React.FC = () => {
@@ -51,10 +56,74 @@ const PatientNotifications: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [videoCallService, setVideoCallService] = useState<any>(null);
 
   useEffect(() => {
     fetchNotifications();
+    initializeVideoCallService();
   }, []);
+
+  const initializeVideoCallService = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/auth/me', {
+        withCredentials: true
+      });
+      
+      const patientId = response.data.user.userId;
+      
+      // Initialize the video call notification service
+      const { initializeVideoCallNotificationService } = await import('../../utils/video-call-notifications');
+      const service = initializeVideoCallNotificationService(patientId, 'patient');
+      setVideoCallService(service);
+      
+      // Set up event listeners
+      setupVideoCallListeners(service);
+    } catch (error) {
+      console.error('Error initializing video call service:', error);
+    }
+  };
+
+  const setupVideoCallListeners = (service: any) => {
+    service.onCallAccepted((data: any) => {
+      console.log('Call accepted:', data);
+      
+      // Show browser notification
+      if (Notification.permission === 'granted') {
+        new Notification('Video Call Accepted', {
+          body: 'Doctor has accepted your video call request. Click to join.',
+          icon: '/favicon.ico'
+        });
+      }
+      
+      // Navigate to video consultation page
+      setTimeout(() => {
+        navigate('/video-consultation');
+      }, 2000);
+      
+      // Refresh notifications
+      fetchNotifications();
+    });
+
+    service.onCallRejected((data: any) => {
+      console.log('Call rejected:', data);
+      
+      // Show browser notification
+      if (Notification.permission === 'granted') {
+        new Notification('Video Call Rejected', {
+          body: data.message || 'Doctor is not available at the moment.',
+          icon: '/favicon.ico'
+        });
+      }
+      
+      // Redirect to dashboard after a delay
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 3000);
+      
+      // Refresh notifications
+      fetchNotifications();
+    });
+  };
 
   useEffect(() => {
     filterNotifications();

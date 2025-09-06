@@ -5,8 +5,11 @@ export type NotificationDocument = Notification & Document;
 
 @Schema({ timestamps: true })
 export class Notification {
-  @Prop({ type: Types.ObjectId, required: true })
-  recipient: Types.ObjectId;
+  @Prop({ type: String })
+  patientId?: string;
+
+  @Prop({ type: String })
+  doctorId?: string;
 
   @Prop({ 
     enum: ['Patient', 'Doctor'], 
@@ -14,8 +17,11 @@ export class Notification {
   })
   recipientType: string;
 
-  @Prop({ type: Types.ObjectId })
-  sender?: Types.ObjectId;
+  @Prop({ type: String })
+  senderPatientId?: string;
+
+  @Prop({ type: String })
+  senderDoctorId?: string;
 
   @Prop({ 
     enum: ['Patient', 'Doctor', 'System'], 
@@ -107,14 +113,19 @@ export class Notification {
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
 
 // Create indexes for better performance
-NotificationSchema.index({ recipient: 1 });
+NotificationSchema.index({ patientId: 1 });
+NotificationSchema.index({ doctorId: 1 });
 NotificationSchema.index({ recipientType: 1 });
+NotificationSchema.index({ senderPatientId: 1 });
+NotificationSchema.index({ senderDoctorId: 1 });
 NotificationSchema.index({ type: 1 });
 NotificationSchema.index({ isRead: 1 });
 NotificationSchema.index({ priority: 1 });
 NotificationSchema.index({ scheduledFor: 1 });
 NotificationSchema.index({ isSent: 1 });
 NotificationSchema.index({ expiresAt: 1 });
-NotificationSchema.index({ recipient: 1, isRead: 1 });
-NotificationSchema.index({ recipient: 1, createdAt: -1 });
+NotificationSchema.index({ patientId: 1, isRead: 1 });
+NotificationSchema.index({ doctorId: 1, isRead: 1 });
+NotificationSchema.index({ patientId: 1, createdAt: -1 });
+NotificationSchema.index({ doctorId: 1, createdAt: -1 });
 NotificationSchema.index({ createdAt: -1 });

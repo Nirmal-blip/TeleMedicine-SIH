@@ -68,6 +68,12 @@ export class PrescriptionsController {
     return this.prescriptionsService.findByPatientId(patientId);
   }
 
+  @Get('patient-id/:patientId')
+  findByPatientCustomId(@Param('patientId') patientId: string) {
+    console.log(`Fetching prescriptions for patientId: ${patientId}`);
+    return this.prescriptionsService.findByPatientId(patientId);
+  }
+
   @Get('patient-object/:patientObjectId')
   findByPatient(@Param('patientObjectId') patientObjectId: string) {
     return this.prescriptionsService.findByPatient(patientObjectId);

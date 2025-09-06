@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaCalendar, FaClock, FaVideo, FaStethoscope, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
-import { getNotificationService } from '../utils/real-time-notifications';
+import { getVideoCallNotificationService } from '../utils/video-call-notifications';
 
 interface Doctor {
   id: string;
@@ -156,37 +156,129 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
       console.log('Immediate consultation booked:', response.data);
       
-      // Start video consultation immediately
-      const callId = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Get notification service and request video call
-      const notificationService = getNotificationService();
-      if (notificationService) {
-        // Request video call with doctor
-        notificationService.requestVideoCall(doctor.id, patientResponse.data._id, response.data._id);
-        
-        // Notify about appointment booking
-        notificationService.notifyAppointmentBooked({
-          appointmentId: response.data._id,
+      // Initialize video call notification service if not already done
+      let videoCallService = getVideoCallNotificationService();
+      if (!videoCallService) {
+        const { initializeVideoCallNotificationService } = await import('../utils/video-call-notifications');
+        videoCallService = initializeVideoCallNotificationService(patientResponse.data._id, 'patient');
+      }
+
+      if (videoCallService) {
+        const callId = videoCallService.requestVideoCall({
           doctorId: doctor.id,
-          patientId: patientResponse.data._id,
           doctorName: doctor.name,
           patientName: patientResponse.data.fullname || 'Patient',
-          date: currentDate,
-          time: currentTime,
+          specialization: doctor.specialization,
+          appointmentId: response.data._id,
         });
-      }
-      
-      // Store appointment data for video consultation
-      localStorage.setItem('activeAppointment', JSON.stringify({
-        appointmentId: response.data._id,
-        doctorId: doctor.id,
-        doctorName: doctor.name,
-        callId: callId
-      }));
 
-      // Navigate to video consultation page
-      window.location.href = '/video-consultation';
+        if (callId) {
+          // Fetch doctor's data to get the correct doctorId
+          let doctorData = null;
+          try {
+            const doctorResponse = await axios.get(`http://localhost:3000/api/doctors/${doctor.id}`, {
+              withCredentials: true
+            });
+            doctorData = doctorResponse.data;
+            console.log('Doctor data fetched:', doctorData);
+          } catch (doctorError) {
+            console.error('Failed to fetch doctor data:', doctorError);
+          }
+
+          // Only create notification if we have the doctor's custom doctorId
+          if (doctorData?.doctorId) {
+            try {
+              await axios.post('http://localhost:3000/api/notifications/video-call', {
+                patientId: patientResponse.data.patientId, // Custom patient ID (PAT2025000006)
+                doctorId: doctorData.doctorId, // Custom doctor ID (DOC2025000001) - ONLY custom ID
+                patientName: patientResponse.data.fullname || 'Patient',
+                doctorName: doctorData.fullname || doctor.name,
+                appointmentId: response.data._id,
+                callId: callId,
+                type: 'video_call_request'
+              }, {
+                withCredentials: true
+              });
+              console.log('Video call notification sent to doctor with IDs:', {
+                patientId: patientResponse.data.patientId,
+                doctorId: doctorData.doctorId
+              });
+            } catch (notificationError) {
+              console.error('Failed to send notification to doctor:', notificationError);
+              // Don't stop the video call process if notification fails
+            }
+          } else {
+            console.error('Could not get doctor custom ID - notification not sent');
+          }
+
+          // Store appointment data for video consultation
+          localStorage.setItem('activeAppointment', JSON.stringify({
+            appointmentId: response.data._id,
+            doctorId: doctor.id,
+            doctorName: doctor.name,
+            callId: callId
+          }));
+
+          // Set up event listeners for call response
+          videoCallService.onCallAccepted((data) => {
+            console.log('Call accepted:', data);
+            // Create notification for call acceptance (only if we have custom doctorId)
+            if (doctorData?.doctorId) {
+              axios.post('http://localhost:3000/api/notifications/video-call', {
+                patientId: patientResponse.data.patientId,
+                doctorId: doctorData.doctorId, // Only use custom doctor ID
+                patientName: patientResponse.data.fullname || 'Patient',
+                doctorName: doctorData.fullname || doctor.name,
+                appointmentId: response.data._id,
+                callId: callId,
+                type: 'video_call_accepted'
+              }, {
+                withCredentials: true
+              }).catch(error => console.error('Failed to send acceptance notification:', error));
+            }
+            
+            // Navigate to video consultation page
+            window.location.href = '/video-consultation';
+          });
+
+          videoCallService.onCallRejected((data) => {
+            console.log('Call rejected:', data);
+            // Create notification for call rejection (only if we have custom doctorId)
+            if (doctorData?.doctorId) {
+              axios.post('http://localhost:3000/api/notifications/video-call', {
+                patientId: patientResponse.data.patientId,
+                doctorId: doctorData.doctorId, // Only use custom doctor ID
+                patientName: patientResponse.data.fullname || 'Patient',
+                doctorName: doctorData.fullname || doctor.name,
+                appointmentId: response.data._id,
+                callId: callId,
+                type: 'video_call_rejected'
+              }, {
+                withCredentials: true
+              }).catch(error => console.error('Failed to send rejection notification:', error));
+            }
+            
+            setBookingError(data.message || 'Doctor is not available at the moment.');
+            setIsBooking(false);
+            // Redirect to dashboard after a delay
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 3000);
+          });
+
+          videoCallService.onCallRequestSent((data) => {
+            console.log('Call request sent:', data);
+            // Show success message
+            setBookingError('');
+          });
+
+          videoCallService.onCallError((data) => {
+            console.error('Call error:', data);
+            setBookingError(data.message);
+            setIsBooking(false);
+          });
+        }
+      }
       
       onClose();
     } catch (error: any) {
