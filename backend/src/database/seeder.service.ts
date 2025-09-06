@@ -20,6 +20,100 @@ export class SeederService {
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
   ) {}
 
+  // Migration: Add patientId to existing patients
+  async migratePatientIds() {
+    console.log('🔄 Starting patientId migration...');
+    
+    const patientsWithoutId = await this.patientModel.find({ 
+      $or: [
+        { patientId: { $exists: false } },
+        { patientId: null },
+        { patientId: "" }
+      ]
+    });
+
+    if (patientsWithoutId.length === 0) {
+      console.log('✅ All patients already have patientId');
+      return;
+    }
+
+    console.log(`📝 Found ${patientsWithoutId.length} patients without patientId`);
+
+    for (const patient of patientsWithoutId) {
+      const patientId = await this.generatePatientId();
+      await this.patientModel.findByIdAndUpdate(patient._id, { patientId });
+      console.log(`✅ Assigned patientId ${patientId} to patient ${patient.fullname}`);
+    }
+
+    console.log('🎉 PatientId migration completed!');
+  }
+
+  // Migration: Add doctorId to existing doctors  
+  async migrateDoctorIds() {
+    console.log('🔄 Starting doctorId migration...');
+    
+    const doctorsWithoutId = await this.doctorModel.find({ 
+      $or: [
+        { doctorId: { $exists: false } },
+        { doctorId: null },
+        { doctorId: "" }
+      ]
+    });
+
+    if (doctorsWithoutId.length === 0) {
+      console.log('✅ All doctors already have doctorId');
+      return;
+    }
+
+    console.log(`📝 Found ${doctorsWithoutId.length} doctors without doctorId`);
+
+    for (const doctor of doctorsWithoutId) {
+      const doctorId = await this.generateDoctorId();
+      await this.doctorModel.findByIdAndUpdate(doctor._id, { doctorId });
+      console.log(`✅ Assigned doctorId ${doctorId} to doctor ${doctor.fullname}`);
+    }
+
+    console.log('🎉 DoctorId migration completed!');
+  }
+
+  private async generatePatientId(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+    const prefix = `PAT${currentYear}`;
+    
+    const latestPatient = await this.patientModel
+      .findOne({ patientId: { $regex: `^${prefix}` } })
+      .sort({ patientId: -1 })
+      .exec();
+    
+    let nextNumber = 1;
+    if (latestPatient && latestPatient.patientId) {
+      const lastNumber = parseInt(latestPatient.patientId.substring(prefix.length));
+      nextNumber = lastNumber + 1;
+    }
+    
+    const paddedNumber = nextNumber.toString().padStart(6, '0');
+    return `${prefix}${paddedNumber}`;
+  }
+
+  private async generateDoctorId(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+    const prefix = `DOC${currentYear}`;
+    
+    const latestDoctor = await this.doctorModel
+      .findOne({ doctorId: { $regex: `^${prefix}` } })
+      .sort({ doctorId: -1 })
+      .exec();
+    
+    let nextNumber = 1;
+    if (latestDoctor && latestDoctor.doctorId) {
+      const lastNumber = parseInt(latestDoctor.doctorId.substring(prefix.length));
+      nextNumber = lastNumber + 1;
+    }
+    
+    const paddedNumber = nextNumber.toString().padStart(6, '0');
+    return `${prefix}${paddedNumber}`;
+  }
+
   async seedDatabase() {
     console.log('🌱 Starting database seeding...');
 
