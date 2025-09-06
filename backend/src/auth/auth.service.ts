@@ -36,6 +36,27 @@ export class AuthService {
     return `${prefix}${paddedNumber}`;
   }
 
+  private async generateDoctorId(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+    const prefix = `DOC${currentYear}`;
+    
+    // Find the latest doctor with current year prefix
+    const latestDoctor = await this.doctorModel
+      .findOne({ doctorId: { $regex: `^${prefix}` } })
+      .sort({ doctorId: -1 })
+      .exec();
+    
+    let nextNumber = 1;
+    if (latestDoctor && latestDoctor.doctorId) {
+      const lastNumber = parseInt(latestDoctor.doctorId.substring(prefix.length));
+      nextNumber = lastNumber + 1;
+    }
+    
+    // Pad with zeros to make it 6 digits
+    const paddedNumber = nextNumber.toString().padStart(6, '0');
+    return `${prefix}${paddedNumber}`;
+  }
+
   async register(registerDto: RegisterDto) {
     const { fullname, email, phone, password, dateOfBirth, gender, location, userType, medicalRegNo, specialization } = registerDto;
 
@@ -75,7 +96,9 @@ export class AuthService {
       if (!medicalRegNo || !specialization) {
         throw new BadRequestException('Medical Registration Number and Specialization are required for doctors');
       }
+      const doctorId = await this.generateDoctorId();
       user = await this.doctorModel.create({
+        doctorId,
         fullname,
         email,
         phone,

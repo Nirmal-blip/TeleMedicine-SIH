@@ -202,6 +202,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
       patient: patientData?._id || patientData?.id, // MongoDB ObjectId for patient reference
       patientId: patientData?.patientId || `TEMP-${patientData?._id || patientData?.id}`, // Custom patient ID or temporary one
       doctor: doctorData?._id || doctorData?.id, // MongoDB ObjectId for doctor reference
+      doctorId: doctorData?.doctorId || `TEMP-${doctorData?._id || doctorData?.id}`, // Custom doctor ID or temporary one
       appointment: appointmentId || undefined,
       prescriptionNumber,
       medications: formData.medications.filter(med => med.name.trim() !== ''),
@@ -272,7 +273,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
                 </div>
                 <div>
                   <label className="font-medium text-emerald-700">Doctor ID:</label>
-                  <p className="text-emerald-600">{doctorData?._id || 'Not available'}</p>
+                  <p className="text-emerald-600">{doctorData?.doctorId || `TEMP-${doctorData?._id}` || 'Not available'}</p>
                 </div>
                 <div>
                   <label className="font-medium text-emerald-700">Appointment ID:</label>

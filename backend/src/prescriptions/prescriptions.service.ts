@@ -57,6 +57,13 @@ export class PrescriptionsService {
       .exec();
   }
 
+  async findByDoctorId(doctorId: string): Promise<Prescription[]> {
+    return this.prescriptionModel
+      .find({ doctorId })
+      .sort({ issueDate: -1 })
+      .exec();
+  }
+
   async findByStatus(status: string): Promise<Prescription[]> {
     return this.prescriptionModel
       .find({ status })

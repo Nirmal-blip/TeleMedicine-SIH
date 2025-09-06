@@ -37,6 +37,9 @@ export class PrescriptionsController {
       if (!prescriptionData.patientId) {
         throw new Error('Patient custom ID is required');
       }
+      if (!prescriptionData.doctorId) {
+        throw new Error('Doctor custom ID is required');
+      }
       if (!prescriptionData.medications || prescriptionData.medications.length === 0) {
         throw new Error('At least one medication is required');
       }
@@ -73,6 +76,11 @@ export class PrescriptionsController {
   @Get('doctor/:doctorId')
   findByDoctor(@Param('doctorId') doctorId: string) {
     return this.prescriptionsService.findByDoctor(doctorId);
+  }
+
+  @Get('doctor-id/:doctorId')
+  findByDoctorId(@Param('doctorId') doctorId: string) {
+    return this.prescriptionsService.findByDoctorId(doctorId);
   }
 
   @Get('status/:status')
