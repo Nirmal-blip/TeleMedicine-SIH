@@ -101,7 +101,7 @@ const DoctorsList: React.FC = () => {
       
       service.onCallError((data) => {
         console.error('Call error:', data);
-        alert(data.message);
+        // Don't show alert for minor errors, just log them
         setCallStatus('idle');
         setShowVideoCallModal(false);
         setIsCallingDoctor(null);

@@ -106,10 +106,17 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
       console.log(`🔌 BACKEND: Found ${doctorSockets.length} doctor socket(s) for ID ${data.doctorId}`);
 
       if (doctorSockets.length === 0) {
-        console.log(`❌ BACKEND: Doctor not available online`);
-        client.emit('call-error', { message: 'Doctor is not available online' });
-        this.activeCalls.delete(callId);
-        return;
+        console.log(`📝 BACKEND: Doctor not connected via socket, creating notification only`);
+        // Don't emit error, just continue with notification creation
+        // The doctor will see the notification when they check their notifications page
+      } else {
+        // Send real-time notification to doctor sockets
+        doctorSockets.forEach(socketId => {
+          this.server.to(socketId).emit('incoming-video-call', {
+            ...videoCallRequest,
+            requestedAt: new Date().toISOString()
+          });
+        });
       }
 
       // Create database notification for the doctor
@@ -137,19 +144,13 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
         console.error('Failed to create notification:', error);
       }
 
-      // Send call request notification to doctor
-      doctorSockets.forEach(socketId => {
-        this.server.to(socketId).emit('incoming-video-call', {
-          ...videoCallRequest,
-          requestedAt: new Date().toISOString()
-        });
-      });
-
       // Confirm to patient that call request was sent
       client.emit('call-request-sent', {
         callId,
         doctorName: data.doctorName,
-        message: 'Call request sent to doctor. Waiting for response...'
+        message: doctorSockets.length > 0 
+          ? 'Call request sent to doctor. Waiting for response...'
+          : 'Call request saved. Doctor will be notified when they come online.'
       });
 
     } catch (error) {
