@@ -2,11 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Notification, NotificationDocument } from '../schemas/notification.schema';
+import { Patient, PatientDocument } from '../schemas/patient.schema';
+import { Doctor, DoctorDocument } from '../schemas/doctor.schema';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
+    @InjectModel(Patient.name) private patientModel: Model<PatientDocument>,
+    @InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>,
   ) {}
 
   async createNotification(notificationData: {
@@ -32,15 +36,46 @@ export class NotificationsService {
     return await notification.save();
   }
 
-  async getNotificationsForUser(userId: string, userType: 'Patient' | 'Doctor', limit: number = 50, skip: number = 0) {
+  async getNotificationsForUser(userId: string, userType: string, limit: number = 50, skip: number = 0) {
+    // Get custom ID from MongoDB ObjectId
+    let customUserId = userId;
+    try {
+      if (userType === 'doctor') {
+        const doctor = await this.doctorModel.findById(userId).select('doctorId');
+        if (doctor && doctor.doctorId) {
+          customUserId = doctor.doctorId;
+        }
+      } else if (userType === 'patient') {
+        const patient = await this.patientModel.findById(userId).select('patientId');
+        if (patient && patient.patientId) {
+          customUserId = patient.patientId;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching custom user ID:', error);
+    }
+
+    const capitalizedUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
+    
     // Debug logging
-    console.log(`🔍 Searching notifications for: ${userId} (${userType})`);
+    console.log(`🔍 Searching notifications for: ${customUserId} (${capitalizedUserType})`);
     
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType }
-      : { patientId: userId, recipientType: userType };
+    // Query for BOTH custom ID and MongoDB ObjectId to catch all notifications
+    const query = userType === 'doctor' 
+      ? { 
+          $or: [
+            { doctorId: customUserId, recipientType: capitalizedUserType },
+            { doctorId: userId, recipientType: capitalizedUserType }
+          ]
+        }
+      : { 
+          $or: [
+            { patientId: customUserId, recipientType: capitalizedUserType },
+            { patientId: userId, recipientType: capitalizedUserType }
+          ]
+        };
     
-    console.log('📊 Query:', query);
+    console.log('📊 Query with both IDs:', query);
     
     const notifications = await this.notificationModel
       .find(query)
@@ -54,10 +89,41 @@ export class NotificationsService {
     return notifications;
   }
 
-  async getUnreadNotificationsCount(userId: string, userType: 'Patient' | 'Doctor') {
-    const query = userType === 'Doctor' 
-      ? { doctorId: userId, recipientType: userType, isRead: false }
-      : { patientId: userId, recipientType: userType, isRead: false };
+  async getUnreadNotificationsCount(userId: string, userType: string) {
+    // Get custom ID from MongoDB ObjectId
+    let customUserId = userId;
+    try {
+      if (userType === 'doctor') {
+        const doctor = await this.doctorModel.findById(userId).select('doctorId');
+        if (doctor && doctor.doctorId) {
+          customUserId = doctor.doctorId;
+        }
+      } else if (userType === 'patient') {
+        const patient = await this.patientModel.findById(userId).select('patientId');
+        if (patient && patient.patientId) {
+          customUserId = patient.patientId;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching custom user ID for unread count:', error);
+    }
+
+    const capitalizedUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
+    
+    // Query for BOTH custom ID and MongoDB ObjectId to catch all unread notifications
+    const query = userType === 'doctor' 
+      ? { 
+          $or: [
+            { doctorId: customUserId, recipientType: capitalizedUserType, isRead: false },
+            { doctorId: userId, recipientType: capitalizedUserType, isRead: false }
+          ]
+        }
+      : { 
+          $or: [
+            { patientId: customUserId, recipientType: capitalizedUserType, isRead: false },
+            { patientId: userId, recipientType: capitalizedUserType, isRead: false }
+          ]
+        };
     
     return await this.notificationModel.countDocuments(query);
   }
@@ -78,6 +144,85 @@ export class NotificationsService {
       : { patientId: userId, recipientType: userType, isRead: false, type: { $nin: excludeTypes } };
     
     console.log('🚫 Excluding video call unread count query:', query);
+    
+    return await this.notificationModel.countDocuments(query);
+  }
+
+  async getNotificationsWithBothIds(userId: string, userType: string, limit: number = 50, skip: number = 0) {
+    // Get custom ID from MongoDB ObjectId
+    let customUserId = userId;
+    try {
+      if (userType === 'doctor') {
+        const doctor = await this.doctorModel.findById(userId).select('doctorId');
+        if (doctor && doctor.doctorId) {
+          customUserId = doctor.doctorId;
+        }
+      } else if (userType === 'patient') {
+        const patient = await this.patientModel.findById(userId).select('patientId');
+        if (patient && patient.patientId) {
+          customUserId = patient.patientId;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching custom user ID:', error);
+    }
+
+    const capitalizedUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
+
+    // Query for notifications that have BOTH patientId AND doctorId (not null/undefined)
+    const baseQuery = userType === 'doctor' 
+      ? { doctorId: customUserId, recipientType: capitalizedUserType }
+      : { patientId: customUserId, recipientType: capitalizedUserType };
+    
+    const query = {
+      ...baseQuery,
+      patientId: { $exists: true, $ne: null, $ne: '' },
+      doctorId: { $exists: true, $ne: null, $ne: '' }
+    };
+    
+    console.log('🔗 Notifications with both IDs query:', query);
+    
+    return await this.notificationModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .exec();
+  }
+
+  async getUnreadNotificationsCountWithBothIds(userId: string, userType: string) {
+    // Get custom ID from MongoDB ObjectId
+    let customUserId = userId;
+    try {
+      if (userType === 'doctor') {
+        const doctor = await this.doctorModel.findById(userId).select('doctorId');
+        if (doctor && doctor.doctorId) {
+          customUserId = doctor.doctorId;
+        }
+      } else if (userType === 'patient') {
+        const patient = await this.patientModel.findById(userId).select('patientId');
+        if (patient && patient.patientId) {
+          customUserId = patient.patientId;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching custom user ID for unread count:', error);
+    }
+
+    const capitalizedUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
+
+    // Count unread notifications that have BOTH patientId AND doctorId
+    const baseQuery = userType === 'doctor' 
+      ? { doctorId: customUserId, recipientType: capitalizedUserType, isRead: false }
+      : { patientId: customUserId, recipientType: capitalizedUserType, isRead: false };
+    
+    const query = {
+      ...baseQuery,
+      patientId: { $exists: true, $ne: null, $ne: '' },
+      doctorId: { $exists: true, $ne: null, $ne: '' }
+    };
+    
+    console.log('🔢 Unread count with both IDs query:', query);
     
     return await this.notificationModel.countDocuments(query);
   }
