@@ -72,7 +72,7 @@ const Notifications: React.FC = () => {
         withCredentials: true
       });
       
-      const doctorId = response.data.id;
+      const doctorId = response.data.user.userId;
       const service = getNotificationService();
       
       if (service) {

@@ -21,6 +21,15 @@ export class NotificationsController {
     const limitNum = limit ? parseInt(limit) : 50;
     const skipNum = skip ? parseInt(skip) : 0;
 
+    // Debug logging
+    console.log('🔍 Notifications Request:', {
+      userId,
+      userType,
+      limit: limitNum,
+      skip: skipNum,
+      filters: { type, priority, search }
+    });
+
     if (search) {
       return await this.notificationsService.searchNotifications(userId, userType, search);
     }
@@ -31,7 +40,10 @@ export class NotificationsController {
       return await this.notificationsService.getNotificationsByPriority(userId, userType, priority);
     }
 
-    return await this.notificationsService.getNotificationsForUser(userId, userType, limitNum, skipNum);
+    const notifications = await this.notificationsService.getNotificationsForUser(userId, userType, limitNum, skipNum);
+    console.log(`📋 Found ${notifications.length} notifications for user ${userId} (${userType})`);
+    
+    return notifications;
   }
 
   @Get('unread-count')

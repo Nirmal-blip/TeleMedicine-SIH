@@ -31,16 +31,27 @@ export class NotificationsService {
   }
 
   async getNotificationsForUser(userId: string, userType: 'Patient' | 'Doctor', limit: number = 50, skip: number = 0) {
-    return await this.notificationModel
-      .find({ 
-        recipient: userId, 
-        recipientType: userType 
-      })
+    // Debug logging
+    console.log(`🔍 Searching notifications for: ${userId} (${userType})`);
+    
+    const query = { 
+      recipient: userId, 
+      recipientType: userType 
+    };
+    
+    console.log('📊 Query:', query);
+    
+    const notifications = await this.notificationModel
+      .find(query)
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(skip)
       .populate('sender', 'name email')
       .exec();
+      
+    console.log(`📋 Query result: ${notifications.length} notifications found`);
+    
+    return notifications;
   }
 
   async getUnreadNotificationsCount(userId: string, userType: 'Patient' | 'Doctor') {
