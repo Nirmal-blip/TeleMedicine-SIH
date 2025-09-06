@@ -1,8 +1,8 @@
 import React, { useState, FormEvent, ChangeEvent } from "react";
 import { FaEnvelope, FaLock, FaUserMd, FaUser, FaArrowRight, FaArrowLeft, FaGoogle } from "react-icons/fa";
-import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import GrpImg from '../assets/AuthImg.png';
+import { useAuth } from '../contexts/AuthContext';
 
 const SigninPage: React.FC = () => {
     const [userType, setUserType] = useState<string>("patient");
@@ -11,6 +11,7 @@ const SigninPage: React.FC = () => {
     const [error, setError] = useState<string>("");
     const [success, setSuccess] = useState<string>("");
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -18,12 +19,7 @@ const SigninPage: React.FC = () => {
         setSuccess("");
 
         try {
-            const response = await axios.post("http://localhost:3000/api/auth/login", {
-                email,
-                password,
-                userType,
-            }, { withCredentials: true });
-            console.log(response)
+            await login(email, password, userType as 'patient' | 'doctor');
             setSuccess(`Login successful as ${userType}`);
             navigate(userType === "patient" ? "/patient-dashboard" : "/doctor-dashboard");
         } catch (err: any) {

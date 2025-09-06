@@ -16,27 +16,30 @@ import SignupPage from './Pages/SignupPage'
 import SigninPage from './Pages/SigninPage'
 
 import DoctorDashboard from './Pages/DoctorDashboard'
+import ProtectedRoute from './Components/ProtectedRoute'
 
 const App: React.FC = () => {
   return (
     <>
         <Routes>
+            {/* Public routes */}
             <Route path='/' element={<LandingPage />}></Route>
             <Route path='/signup' element={<SignupPage />}></Route>
             <Route path='/signin' element={<SigninPage />}></Route>
 
-            <Route path='/appointments' element={<Appointments />}></Route>
-            <Route path='/consultation-history' element={<ConsultationHistory />}></Route>
-            <Route path='/doctors-list' element={<DoctorsList />}></Route>
-            <Route path='/medicine-recommendation' element={<MedicineRecommendation />}></Route>
-            <Route path='/patient-dashboard' element={<PatientDashboard />}></Route>
-            <Route path='/patient-support' element={<PatientSupport />}></Route>
-            <Route path='/prescription' element={<Prescription />}></Route>
-            <Route path='/video-consultation' element={<VideoConsultation />}></Route>
-            <Route path='/settings' element={<Settings />}></Route>
-            <Route path='/notifications' element={<Notifications />}></Route>
+            {/* Protected routes */}
+            <Route path='/appointments' element={<ProtectedRoute><Appointments /></ProtectedRoute>}></Route>
+            <Route path='/consultation-history' element={<ProtectedRoute><ConsultationHistory /></ProtectedRoute>}></Route>
+            <Route path='/doctors-list' element={<ProtectedRoute><DoctorsList /></ProtectedRoute>}></Route>
+            <Route path='/medicine-recommendation' element={<ProtectedRoute><MedicineRecommendation /></ProtectedRoute>}></Route>
+            <Route path='/patient-dashboard' element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>}></Route>
+            <Route path='/patient-support' element={<ProtectedRoute><PatientSupport /></ProtectedRoute>}></Route>
+            <Route path='/prescription' element={<ProtectedRoute><Prescription /></ProtectedRoute>}></Route>
+            <Route path='/video-consultation' element={<ProtectedRoute><VideoConsultation /></ProtectedRoute>}></Route>
+            <Route path='/settings' element={<ProtectedRoute><Settings /></ProtectedRoute>}></Route>
+            <Route path='/notifications' element={<ProtectedRoute><Notifications /></ProtectedRoute>}></Route>
 
-            <Route path='/doctor-dashboard' element={<DoctorDashboard />}></Route>
+            <Route path='/doctor-dashboard' element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>}></Route>
         </Routes>
     </>
   )

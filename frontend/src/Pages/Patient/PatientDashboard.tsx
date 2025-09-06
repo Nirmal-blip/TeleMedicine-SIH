@@ -4,7 +4,6 @@ import { FaVideo, FaMapPin, FaCalendar, FaUsers, FaStar, FaHeart, FaClock, FaSte
 import { FaShield } from "react-icons/fa6";
 import Chatbot from "../../Components/Chatbot";
 import Sidebar from "../../Components/Sidebar";
-import PatientHeader from "../../Components/PatientHeader";
 import girlImage from "../../assets/girl.png";
 
 interface Specialty {
@@ -46,8 +45,6 @@ const PatientDashboard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <Sidebar />
       <main className="lg:ml-80 px-4 lg:px-8 xl:px-10 overflow-y-auto min-h-screen">
-        <PatientHeader />
-
         {/* Welcome Hero Section */}
         <section className="relative overflow-hidden gradient-bg-primary rounded-3xl p-4 px-8 mt-6 shadow-xl animate-fade-scale">
           <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>

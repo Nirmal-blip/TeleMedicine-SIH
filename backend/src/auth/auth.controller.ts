@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Res, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Controller, Post, Body, Res, Get, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from '../dto/auth.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('api/auth')
@@ -60,5 +61,21 @@ export class AuthController {
 
     res.cookie('token', '', cookieOptions);
     return res.status(200).json({ message: 'Logged out successfully' });
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current user information' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'User information retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getCurrentUser(@Request() req) {
+    return {
+      user: {
+        userId: req.user.userId,
+        email: req.user.email,
+        userType: req.user.userType,
+      },
+    };
   }
 }
