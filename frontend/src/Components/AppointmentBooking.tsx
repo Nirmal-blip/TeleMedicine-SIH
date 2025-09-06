@@ -16,7 +16,6 @@ interface Doctor {
   hospital: string;
   image: string;
   bio: string;
-  isOnline: boolean;
 }
 
 interface AppointmentBookingProps {

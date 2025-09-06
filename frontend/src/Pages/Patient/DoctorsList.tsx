@@ -20,7 +20,6 @@ interface Doctor {
   hospital: string;
   image: string;
   bio: string;
-  isOnline: boolean;
 }
 
 const DoctorsList: React.FC = () => {
@@ -131,8 +130,7 @@ const DoctorsList: React.FC = () => {
         education: doctor.qualification || "Medical Degree",
         hospital: doctor.location || "Medical Center",
         image: doctor.profileImage || `https://images.unsplash.com/photo-${getDoctorImageId(index)}?w=150&h=150&fit=crop&crop=face&auto=format`,
-        bio: doctor.about || `Experienced ${doctor.specialization} with ${doctor.experience || 0} years of practice.`,
-        isOnline: true
+        bio: doctor.about || `Experienced ${doctor.specialization} with ${doctor.experience || 0} years of practice.`
       }));
       
       setDoctors(transformedDoctors);
@@ -442,15 +440,6 @@ const DoctorsList: React.FC = () => {
                       <div>
                         <span className="text-2xl font-bold text-emerald-600">₹{doctor.consultationFee}</span>
                         <span className="text-sm text-gray-500"> /consultation</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          doctor.isOnline 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {doctor.isOnline ? '🟢 Online' : '🔴 Offline'}
-                        </span>
                       </div>
                     </div>
                     
