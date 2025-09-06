@@ -19,12 +19,91 @@ const Chatbot: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isListening, setIsListening] = useState<boolean>(false);
     const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+    const [speechStatus, setSpeechStatus] = useState<string>('');
+    const [speechSupported, setSpeechSupported] = useState<boolean>(false);
+    const [currentLanguage, setCurrentLanguage] = useState<string>('hi-IN'); // Default to Hindi for India
+    const [detectedLanguage, setDetectedLanguage] = useState<string>('hi'); // Default to Hindi
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const [chatSessions, setChatSessions] = useState<any[]>([]);
     const [showChatHistory, setShowChatHistory] = useState<boolean>(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
     const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
+
+    // Supported languages focused on Indian languages and auto-detection
+    const supportedLanguages = [
+        { code: 'hi-IN', name: 'हिंदी (Hindi)', aiCode: 'hi' },
+        { code: 'en-IN', name: 'English (India)', aiCode: 'en' },
+        { code: 'ta-IN', name: 'தமிழ் (Tamil)', aiCode: 'ta' },
+        { code: 'te-IN', name: 'తెలుగు (Telugu)', aiCode: 'te' },
+        { code: 'bn-IN', name: 'বাংলা (Bengali)', aiCode: 'bn' },
+        { code: 'mr-IN', name: 'मराठी (Marathi)', aiCode: 'mr' },
+        { code: 'gu-IN', name: 'ગુજરાતી (Gujarati)', aiCode: 'gu' },
+        { code: 'kn-IN', name: 'ಕನ್ನಡ (Kannada)', aiCode: 'kn' },
+        { code: 'ml-IN', name: 'മലയാളം (Malayalam)', aiCode: 'ml' },
+        { code: 'pa-IN', name: 'ਪੰਜਾਬੀ (Punjabi)', aiCode: 'pa' },
+    ];
+
+    // Enhanced Indian language detection based on scripts and common words
+    const detectLanguage = (text: string): string => {
+        const lowerText = text.toLowerCase();
+        
+        // Script-based detection for Indian languages
+        // Hindi/Marathi (Devanagari script)
+        if (/[\u0900-\u097F]/.test(text)) {
+            // Check for specific Marathi words
+            if (/मी|तू|तो|ती|हे|काय|कसे/.test(text)) return 'mr';
+            return 'hi'; // Default to Hindi for Devanagari
+        }
+        
+        // Tamil script
+        if (/[\u0B80-\u0BFF]/.test(text)) return 'ta';
+        
+        // Telugu script  
+        if (/[\u0C00-\u0C7F]/.test(text)) return 'te';
+        
+        // Bengali script
+        if (/[\u0980-\u09FF]/.test(text)) return 'bn';
+        
+        // Gujarati script
+        if (/[\u0A80-\u0AFF]/.test(text)) return 'gu';
+        
+        // Kannada script
+        if (/[\u0C80-\u0CFF]/.test(text)) return 'kn';
+        
+        // Malayalam script
+        if (/[\u0D00-\u0D7F]/.test(text)) return 'ml';
+        
+        // Punjabi script (Gurmukhi)
+        if (/[\u0A00-\u0A7F]/.test(text)) return 'pa';
+        
+        // Romanized Indian language detection
+        // Hindi words in Roman script
+        const hindiWords = ['kya', 'hai', 'mera', 'main', 'aap', 'hum', 'tum', 'ye', 'wo', 'kaise', 'kahan', 'kyun', 'acha', 'bura', 'samay', 'paani', 'khana', 'dard', 'sar', 'pet', 'bukhar', 'dawai', 'mujhe', 'aur', 'karun', 'hoon', 'nahin', 'theek', 'accha'];
+        const hindiWordCount = hindiWords.filter(word => lowerText.includes(word)).length;
+        if (hindiWordCount >= 1) return 'hi';
+        
+        // Tamil words in Roman script
+        const tamilWords = ['naan', 'neenga', 'enna', 'epdi', 'enga', 'enna', 'vandhuruken', 'sollunga', 'sari'];
+        const tamilWordCount = tamilWords.filter(word => lowerText.includes(word)).length;
+        if (tamilWordCount >= 1) return 'ta';
+        
+        // Telugu words in Roman script
+        const teluguWords = ['nenu', 'miru', 'ela', 'emi', 'ekkada', 'enduku', 'cheppandi', 'telusu'];
+        const teluguWordCount = teluguWords.filter(word => lowerText.includes(word)).length;
+        if (teluguWordCount >= 1) return 'te';
+        
+        // Bengali words in Roman script
+        const bengaliWords = ['ami', 'tumi', 'ki', 'kemon', 'kothay', 'keno', 'bolo', 'jani'];
+        const bengaliWordCount = bengaliWords.filter(word => lowerText.includes(word)).length;
+        if (bengaliWordCount >= 1) return 'bn';
+        
+        // English detection (basic check) - this should be last
+        if (/^[a-zA-Z\s.,!?'"()-]+$/.test(text)) return 'en';
+        
+        // Default to Hindi for Indian context
+        return 'hi';
+    };
 
     const toggleChat = async () => {
         const wasOpen = isOpen;
@@ -64,28 +143,151 @@ const Chatbot: React.FC = () => {
         scrollToBottom();
     }, [messages]);
 
+    // Add keyboard shortcuts for speech recognition
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Press Space to start/stop listening when input is focused and empty
+            if (event.code === 'Space' && isOpen && speechSupported && !userInput.trim()) {
+                const target = event.target as HTMLElement;
+                if (target.tagName === 'INPUT') {
+                    event.preventDefault();
+                    if (isListening) {
+                        stopListening();
+                    } else {
+                        startListening();
+                    }
+                }
+            }
+            
+            // Press Escape to stop listening
+            if (event.key === 'Escape' && isListening) {
+                event.preventDefault();
+                stopListening();
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('keydown', handleKeyDown);
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, isListening, userInput, speechSupported]);
+
     // Initialize speech recognition
     useEffect(() => {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            setSpeechSupported(true);
             const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
             recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = false;
-            recognitionRef.current.interimResults = false;
-            recognitionRef.current.lang = 'en-US';
-
+            
+            // Enhanced configuration for better accuracy
+            recognitionRef.current.continuous = true; // Allow continuous listening
+            recognitionRef.current.interimResults = true; // Show interim results for better UX
+            recognitionRef.current.lang = currentLanguage;
+            recognitionRef.current.maxAlternatives = 3; // Get multiple alternatives
+            
+            // Enhanced result handling
             recognitionRef.current.onresult = (event: any) => {
-                const transcript = event.results[0][0].transcript;
-                setUserInput(transcript);
-                setIsListening(false);
+                let interimTranscript = '';
+                let finalTranscript = '';
+                
+                // Process all results
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                // Handle final transcript
+                if (finalTranscript) {
+                    setUserInput(prev => {
+                        // Remove any interim results and add final transcript
+                        const baseText = prev.replace(/\[Listening...\].*/, '').trim();
+                        return baseText ? baseText + ' ' + finalTranscript.trim() : finalTranscript.trim();
+                    });
+                    // Don't stop immediately, let the onend event handle it
+                } else if (interimTranscript && isListening) {
+                    // Show interim results without overwriting existing text
+                    setUserInput(prev => {
+                        const baseText = prev.replace(/\[Listening...\].*/, '').trim();
+                        return baseText + (baseText ? ' ' : '') + `[🎤 ${interimTranscript}]`;
+                    });
+                }
             };
 
-            recognitionRef.current.onerror = () => {
+            // Enhanced error handling
+            recognitionRef.current.onerror = (event: any) => {
+                console.error('Speech recognition error:', event.error);
                 setIsListening(false);
+                
+                // Provide user feedback based on error type
+                switch (event.error) {
+                    case 'network':
+                        setSpeechStatus('🌐 Network error. Check your connection.');
+                        setTimeout(() => setSpeechStatus(''), 3000);
+                        break;
+                    case 'not-allowed':
+                        setSpeechStatus('🚫 Microphone access denied');
+                        alert('Microphone access denied. Please allow microphone access and try again.');
+                        setTimeout(() => setSpeechStatus(''), 5000);
+                        break;
+                    case 'no-speech':
+                        setSpeechStatus('🔇 No speech detected. Try speaking louder.');
+                        setTimeout(() => setSpeechStatus(''), 3000);
+                        break;
+                    case 'audio-capture':
+                        setSpeechStatus('🎤 No microphone found');
+                        alert('No microphone was found. Please check your microphone setup.');
+                        setTimeout(() => setSpeechStatus(''), 5000);
+                        break;
+                    case 'aborted':
+                        setSpeechStatus('⏹️ Speech recognition stopped');
+                        setTimeout(() => setSpeechStatus(''), 2000);
+                        break;
+                    default:
+                        setSpeechStatus(`❌ Error: ${event.error}`);
+                        setTimeout(() => setSpeechStatus(''), 3000);
+                }
             };
 
+            // Enhanced end handling
             recognitionRef.current.onend = () => {
                 setIsListening(false);
+                setSpeechStatus('');
+                // Clean up interim results only (keep final results)
+                setUserInput(prev => prev.replace(/\[🎤.*?\]/g, '').trim());
             };
+
+            // Additional event handlers for better UX
+            recognitionRef.current.onstart = () => {
+                console.log('Speech recognition started');
+                setIsListening(true);
+                setSpeechStatus('🎤 Listening... Please speak clearly');
+            };
+
+            recognitionRef.current.onspeechstart = () => {
+                console.log('Speech detected');
+                setSpeechStatus('🗣️ Speech detected... Keep talking');
+            };
+
+            recognitionRef.current.onspeechend = () => {
+                console.log('Speech ended');
+                setSpeechStatus('✅ Processing speech...');
+            };
+
+            recognitionRef.current.onnomatch = () => {
+                console.warn('No speech match found');
+                setSpeechStatus('❌ No clear speech detected. Try again.');
+                setTimeout(() => setSpeechStatus(''), 3000);
+            };
+        } else {
+            console.warn('Speech recognition not supported in this browser');
         }
 
         // Initialize speech synthesis
@@ -99,7 +301,7 @@ const Chatbot: React.FC = () => {
                 speechSynthesisRef.current.cancel();
             }
         };
-    }, []);
+    }, [currentLanguage]); // Reinitialize when language changes
 
     const handleInputFocus = () => {
         // No need to check token here since HTTP-only cookies are handled automatically
@@ -111,16 +313,39 @@ const Chatbot: React.FC = () => {
     };
 
     const startListening = () => {
-        if (recognitionRef.current) {
-            setIsListening(true);
-            recognitionRef.current.start();
+        if (recognitionRef.current && !isListening) {
+            try {
+                // Clear any interim results
+                setUserInput(prev => prev.replace(/\[Listening...\].*/, ''));
+                
+                // Request microphone permissions first
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(() => {
+                        recognitionRef.current.start();
+                        setIsListening(true);
+                    })
+                    .catch((error) => {
+                        console.error('Microphone access denied:', error);
+                        alert('Please allow microphone access to use voice input.');
+                    });
+            } catch (error) {
+                console.error('Error starting speech recognition:', error);
+                setIsListening(false);
+            }
         }
     };
 
     const stopListening = () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-            setIsListening(false);
+        if (recognitionRef.current && isListening) {
+            try {
+                recognitionRef.current.stop();
+                setIsListening(false);
+                // Clean up any interim results
+                setUserInput(prev => prev.replace(/\[Listening...\].*/, ''));
+            } catch (error) {
+                console.error('Error stopping speech recognition:', error);
+                setIsListening(false);
+            }
         }
     };
 
@@ -133,6 +358,22 @@ const Chatbot: React.FC = () => {
             utterance.rate = 0.9;
             utterance.pitch = 1;
             utterance.volume = 0.8;
+            
+            // Set language for text-to-speech based on detected language or current language
+            const speechLang = detectedLanguage || supportedLanguages.find(l => l.code === currentLanguage)?.aiCode || 'en';
+            
+            // Map language codes to speech synthesis languages
+            const speechLanguageMap: { [key: string]: string } = {
+                'hi': 'hi-IN',
+                'en': 'en-US',
+                'es': 'es-ES',
+                'fr': 'fr-FR',
+                'de': 'de-DE',
+                'ja': 'ja-JP',
+                'ko': 'ko-KR'
+            };
+            
+            utterance.lang = speechLanguageMap[speechLang] || 'en-US';
             
             utterance.onstart = () => setIsSpeaking(true);
             utterance.onend = () => setIsSpeaking(false);
@@ -211,9 +452,21 @@ const Chatbot: React.FC = () => {
             if (response.ok) {
                 const session = await response.json();
                 setCurrentSessionId(session.sessionId);
+                // Multilingual welcome message
+                const welcomeMessages: { [key: string]: string } = {
+                    'hi': "**नमस्ते! मैं आपका AI चिकित्सा सहायक हूं।**\n\nमैं आपकी सहायता कर सकता हूं:\n• **स्वास्थ्य प्रश्न** और लक्षण विश्लेषण\n• **दवा की सिफारिशें**\n• **सामान्य चिकित्सा मार्गदर्शन**\n\nआज मैं आपकी कैसे सहायता कर सकता हूं?",
+                    'en': "**Hello! I'm your AI medical assistant.**\n\nI can help you with:\n• **Health questions** and symptom analysis\n• **Medicine recommendations**\n• **General medical guidance**\n\nHow can I help you today?",
+                    'ta': "**வணக்கம்! நான் உங்கள் AI மருத்துவ உதவியாளர்.**\n\nநான் உங்களுக்கு உதவ முடியும்:\n• **உடல்நலக் கேள்விகள்** மற்றும் அறிகுறி பகுப்பாய்வு\n• **மருந்து பரிந்துரைகள்**\n• **பொது மருத்துவ வழிகாட்டுதல்**\n\nஇன்று நான் உங்களுக்கு எப்படி உதவ முடியும்?",
+                    'te': "**నమస్కారం! నేను మీ AI వైద్య సహాయకుడిని.**\n\nనేను మీకు సహాయం చేయగలను:\n• **ఆరోగ్య ప్రశ్నలు** మరియు లక్షణ విశ్లేషణ\n• **ఔషధ సిఫార్సులు**\n• **సాధారణ వైద్య మార్గదర్శకత్వం**\n\nఈరోజు నేను మీకు ఎలా సహాయం చేయగలను?",
+                    'bn': "**নমস্কার! আমি আপনার AI চিকিৎসা সহায়ক।**\n\nআমি আপনাকে সাহায্য করতে পারি:\n• **স্বাস্থ্য প্রশ্ন** এবং লক্ষণ বিশ্লেষণ\n• **ওষুধের সুপারিশ**\n• **সাধারণ চিকিৎসা নির্দেশনা**\n\nআজ আমি আপনাকে কীভাবে সাহায্য করতে পারি?",
+                    'mr': "**नमस्कार! मी तुमचा AI वैद्यकीय सहाय्यक आहे।**\n\nमी तुम्हाला मदत करू शकतो:\n• **आरोग्य प्रश्न** आणि लक्षण विश्लेषण\n• **औषध शिफारसी**\n• **सामान्य वैद्यकीय मार्गदर्शन**\n\nआज मी तुम्हाला कशी मदत करू शकतो?"
+                };
+                
+                const welcomeText = welcomeMessages[detectedLanguage] || welcomeMessages['hi'];
+                
                 setMessages([{
                     id: 1,
-                    text: "**Hello! I'm your AI medical assistant.**\n\nI can help you with:\n• **Health questions** and symptom analysis\n• **Medicine recommendations**\n• **General medical guidance**\n\nHow can I help you today?",
+                    text: welcomeText,
                     sender: 'bot',
                     timestamp: new Date()
                 }]);
@@ -287,6 +540,19 @@ const Chatbot: React.FC = () => {
         const currentInput = userInput.trim();
         setUserInput(''); // Clear input immediately
         
+        // Detect language of the input
+        const inputLanguage = detectLanguage(currentInput);
+        setDetectedLanguage(inputLanguage);
+        
+        // Auto-switch speech recognition language based on detected language
+        const newSpeechLang = supportedLanguages.find(l => l.aiCode === inputLanguage)?.code || 'hi-IN';
+        if (newSpeechLang !== currentLanguage) {
+            setCurrentLanguage(newSpeechLang);
+            if (recognitionRef.current) {
+                recognitionRef.current.lang = newSpeechLang;
+            }
+        }
+        
         // Add user message
         addMessage(currentInput, 'user');
         setIsLoading(true);
@@ -306,7 +572,9 @@ const Chatbot: React.FC = () => {
                 },
                 body: JSON.stringify({ 
                     input: currentInput,
-                    sessionId: sessionId 
+                    sessionId: sessionId,
+                    language: inputLanguage,
+                    responseLanguage: inputLanguage
                 }),
             });
 
@@ -402,7 +670,9 @@ const Chatbot: React.FC = () => {
                     credentials: 'include',
                     body: JSON.stringify({ 
                         input: currentInput,
-                        sessionId: fallbackSessionId 
+                        sessionId: fallbackSessionId,
+                        language: inputLanguage,
+                        responseLanguage: inputLanguage
                     }),
                 });
 
@@ -519,6 +789,11 @@ const Chatbot: React.FC = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
+                                {detectedLanguage && (
+                                    <div className="text-xs bg-white/20 text-white border border-white/30 rounded px-2 py-1" title="Auto-detected language">
+                                        🌐 {supportedLanguages.find(l => l.aiCode === detectedLanguage)?.name?.split('(')[0].trim() || detectedLanguage.toUpperCase()}
+                                    </div>
+                                )}
                                 <button 
                                     onClick={() => createNewChatSession()}
                                     className="text-white hover:text-gray-200 p-2"
@@ -669,23 +944,26 @@ const Chatbot: React.FC = () => {
                                         onFocus={handleInputFocus}
                                         placeholder="Type your health question..."
                                         disabled={isLoading}
-                                        className="w-full p-3 pr-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-800 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className={`w-full p-3 ${speechSupported ? 'pr-12' : 'pr-4'} border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-800 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed`}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={isListening ? stopListening : startListening}
-                                        className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-colors ${
-                                            isListening 
-                                                ? 'text-red-500 hover:text-red-600 animate-pulse' 
-                                                : 'text-gray-400 hover:text-emerald-500'
-                                        }`}
-                                        title={isListening ? 'Stop recording' : 'Start voice input'}
-                                    >
-                                        <FontAwesomeIcon 
-                                            icon={isListening ? faMicrophoneSlash : faMicrophone} 
-                                            className="text-lg" 
-                                        />
-                                    </button>
+                                    {speechSupported && (
+                                        <button
+                                            type="button"
+                                            onClick={isListening ? stopListening : startListening}
+                                            disabled={isLoading}
+                                            className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                                                isListening 
+                                                    ? 'text-red-500 hover:text-red-600 animate-pulse' 
+                                                    : 'text-gray-400 hover:text-emerald-500'
+                                            }`}
+                                            title={isListening ? 'Stop recording (Click or press Escape)' : 'Start voice input (Click to speak)'}
+                                        >
+                                            <FontAwesomeIcon 
+                                                icon={isListening ? faMicrophoneSlash : faMicrophone} 
+                                                className="text-lg" 
+                                            />
+                                        </button>
+                                    )}
                                 </div>
                                 <button
                                     type="submit"
@@ -696,11 +974,31 @@ const Chatbot: React.FC = () => {
                                 </button>
                             </div>
                             <div className="mt-2 text-xs text-gray-500 text-center">
-                                {isListening && (
-                                    <span className="text-red-500 font-medium">🎤 Listening... Speak now</span>
+                                {speechStatus && (
+                                    <span className={`font-medium ${
+                                        speechStatus.includes('❌') || speechStatus.includes('🚫') || speechStatus.includes('🔇') || speechStatus.includes('🎤') ? 'text-red-500' :
+                                        speechStatus.includes('✅') || speechStatus.includes('🗣️') ? 'text-green-500' :
+                                        'text-blue-500'
+                                    }`}>
+                                        {speechStatus}
+                                    </span>
                                 )}
-                                {!isListening && !isLoading && (
-                                    <span>Press the microphone to speak or type your question</span>
+                                {!speechStatus && !isLoading && (
+                                    <span>
+                                        {isListening ? 
+                                            <span className="text-red-500 font-medium">🎤 Listening in {supportedLanguages.find(l => l.code === currentLanguage)?.name}... (Press Escape to stop)</span> :
+                                            speechSupported ? 
+                                                <>
+                                                    Press the microphone, click in empty input + Space, or type your question
+                                                    {detectedLanguage && (
+                                                        <span className="block text-emerald-600 text-xs mt-1">
+                                                            🌐 Last detected: {supportedLanguages.find(l => l.aiCode === detectedLanguage)?.name || detectedLanguage}
+                                                        </span>
+                                                    )}
+                                                </> :
+                                                'Type your health question'
+                                        }
+                                    </span>
                                 )}
                                 </div>
                                 </form>

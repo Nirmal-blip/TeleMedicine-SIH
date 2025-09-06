@@ -52,21 +52,80 @@ if not GEMINI_API_KEY:
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
 # Function to get a response from Gemini API
-def gemini_response(prompt):
-    # Enhanced prompt for better medical formatting
-    enhanced_prompt = f"""You are a professional medical AI assistant. Please provide a well-structured, professional response in English only.
+def gemini_response(prompt, language='en', response_language='en'):
+    # Language-specific prompts for Indian languages
+    language_prompts = {
+        'hi': {
+            'system': 'आप एक पेशेवर मेडिकल AI सहायक हैं। कृपया हिंदी में एक अच्छी तरह से संरचित, पेशेवर उत्तर प्रदान करें।',
+            'instructions': '''कृपया अपना उत्तर इस तरह से प्रारूपित करें:
+- स्पष्ट चिकित्सा जानकारी
+- पेशेवर शब्दावली
+- सूची के लिए बुलेट पॉइंट्स
+- स्वास्थ्य पेशेवरों से परामर्श लेने की अस्वीकरण शामिल करें
+- उत्तर संक्षिप्त और जानकारीपूर्ण रखें
+- केवल हिंदी में उत्तर दें
 
-User Question: {prompt}
+पेशेवर चिकित्सा परामर्श की आवश्यकता पर जोर देते हुए व्यावहारिक चिकित्सा मार्गदर्शन प्रदान करें।'''
+        },
+        'ta': {
+            'system': 'நீங்கள் ஒரு தொழில்முறை மருத்துவ AI உதவியாளர். தயவுசெய்து தமிழில் நல்ல முறையில் கட்டமைக்கப்பட்ட, தொழில்முறை பதிலை வழங்கவும்.',
+            'instructions': '''தயவுசெய்து உங்கள் பதிலை இப்படி வடிவமைக்கவும்:
+- தெளிவான மருத்துவ தகவல்கள்
+- தொழில்முறை சொற்கள்
+- பட்டியலுக்கு புள்ளிகள்
+- சுகாதார நிபுணர்களிடம் ஆலோசனை பெறுவது பற்றிய மறுப்பு அறிக்கை
+- பதிலை சுருக்கமாகவும் தகவல் நிறைந்ததாகவும் வைக்கவும்
+- தமிழில் மட்டுமே பதிலளிக்கவும்
 
-Please format your response with:
+தொழில்முறை மருத்துவ ஆலோசனையின் தேவையை வலியுறுத்தும் போது நடைமுறை மருத்துவ வழிகாட்டுதலை வழங்கவும்.'''
+        },
+        'te': {
+            'system': 'మీరు ఒక వృత్తిపరమైన వైద్య AI సహాయకుడు. దయచేసి తెలుగులో బాగా నిర్మాణాత్మకమైన, వృత్తిపరమైన సమాధానం అందించండి.',
+            'instructions': '''దయచేసి మీ సమాధానాన్ని ఈ విధంగా ఫార్మాట్ చేయండి:
+- స్పష్టమైన వైద్య సమాచారం
+- వృత్తిపరమైన పరిభాష
+- జాబితాల కోసం బుల్లెట్ పాయింట్లు
+- ఆరోగ్య నిపుణులను సంప్రదించడం గురించి నిరాకరణ చేర్చండి
+- సమాధానాన్ని సంక్షిప్తంగా మరియు సమాచారంతో ఉంచండి
+- తెలుగులో మాత్రమే సమాధానం ఇవ్వండి
+
+వృత్తిపరమైన వైద్య సలహా అవసరాన్ని నొక్కిచెప్పేటప్పుడు ఆచరణాత్మక వైద్య మార్గదర్శకత్వం అందించండి.'''
+        },
+        'bn': {
+            'system': 'আপনি একজন পেশাদার চিকিৎসা AI সহায়ক। দয়া করে বাংলায় একটি সুগঠিত, পেশাদার উত্তর প্রদান করুন।',
+            'instructions': '''দয়া করে আপনার উত্তরটি এভাবে ফরম্যাট করুন:
+- স্পষ্ট চিকিৎসা তথ্য
+- পেশাদার পরিভাষা
+- তালিকার জন্য বুলেট পয়েন্ট
+- স্বাস্থ্য পেশাদারদের সাথে পরামর্শ নেওয়ার বিষয়ে দাবিত্যাগ অন্তর্ভুক্ত করুন
+- উত্তর সংক্ষিপ্ত এবং তথ্যপূর্ণ রাখুন
+- শুধুমাত্র বাংলায় উত্তর দিন
+
+পেশাদার চিকিৎসা পরামর্শের প্রয়োজনীয়তার উপর জোর দিয়ে ব্যবহারিক চিকিৎসা নির্দেশনা প্রদান করুন।'''
+        },
+        'en': {
+            'system': 'You are a professional medical AI assistant. Please provide a well-structured, professional response in English.',
+            'instructions': '''Please format your response with:
 - Clear medical information
 - Professional terminology
 - Bullet points for lists
 - Include disclaimer about consulting healthcare professionals
 - Keep response concise and informative
-- NO mixed languages - English only
+- Respond ONLY in English
 
-Provide practical medical guidance while emphasizing the need for professional medical consultation."""
+Provide practical medical guidance while emphasizing the need for professional medical consultation.'''
+        }
+    }
+    
+    # Get language-specific prompt or default to English
+    lang_config = language_prompts.get(response_language, language_prompts['en'])
+    
+    # Enhanced prompt for better medical formatting with language support
+    enhanced_prompt = f"""{lang_config['system']}
+
+User Question: {prompt}
+
+{lang_config['instructions']}"""
     
     headers = {"Content-Type": "application/json"}
     payload = {"contents": [{"parts": [{"text": enhanced_prompt}]}]}
@@ -339,6 +398,9 @@ def chat():
     """Chat endpoint with Gemini AI integration"""
     try:
         user_input = request.json.get('input')
+        language = request.json.get('language', 'en')  # Input language
+        response_language = request.json.get('responseLanguage', language)  # Response language
+        
         if not user_input:
             return jsonify({"error": "No input provided"}), 400
 
@@ -346,8 +408,8 @@ def chat():
         if not GEMINI_API_KEY:
             return jsonify({"error": "Gemini API key not configured. Please add GEMINI_API_KEY to backend/.env file"}), 503
 
-        # Get response from Gemini API
-        response = gemini_response(user_input)
+        # Get response from Gemini API with language support
+        response = gemini_response(user_input, language, response_language)
 
         # Extract disease from response
         detected_disease = None
@@ -378,12 +440,28 @@ def chat():
             
             response = formatted_response
         
-        # Add professional disclaimer
-        response += "\n**⚠️ Medical Disclaimer:**\nThis information is for educational purposes only. Please consult with a healthcare professional for proper medical diagnosis and treatment.\n\n"
+        # Add professional disclaimer in appropriate language
+        disclaimers = {
+            'hi': "\n**⚠️ चिकित्सा अस्वीकरण:**\nयह जानकारी केवल शैक्षिक उद्देश्यों के लिए है। उचित चिकित्सा निदान और उपचार के लिए कृपया किसी स्वास्थ्य पेशेवर से सलाह लें।\n\n",
+            'ta': "\n**⚠️ மருத்துவ மறுப்பு:**\nஇந்த தகவல் கல்வி நோக்கங்களுக்காக மட்டுமே. சரியான மருத்துவ கண்டறிதல் மற்றும் சிகிச்சைக்கு தயவுசெய்து ஒரு சுகாதார நிபுணரை ஆலோசிக்கவும்।\n\n",
+            'te': "\n**⚠️ వైద్య నిరాకరణ:**\nఈ సమాచారం కేవలం విద్యా ప్రయోజనాల కోసం మాత్రమే. సరైన వైద్య నిర్ధారణ మరియు చికిత్స కోసం దయచేసి ఆరోగ్య నిపుణుడిని సంప్రదించండి।\n\n",
+            'bn': "\n**⚠️ চিকিৎসা দাবিত্যাগ:**\nএই তথ্য শুধুমাত্র শিক্ষাগত উদ্দেশ্যে। যথাযথ চিকিৎসা নির্ণয় এবং চিকিৎসার জন্য দয়া করে একজন স্বাস্থ্য পেশাদারের সাথে পরামর্শ করুন।\n\n",
+            'en': "\n**⚠️ Medical Disclaimer:**\nThis information is for educational purposes only. Please consult with a healthcare professional for proper medical diagnosis and treatment.\n\n"
+        }
+        
+        appointment_labels = {
+            'hi': "**📅 अपॉइंटमेंट की जानकारी:**\n",
+            'ta': "**📅 நியமன தகவல்:**\n",
+            'te': "**📅 అపాయింట్మెంట్ సమాచారం:**\n",
+            'bn': "**📅 অ্যাপয়েন্টমেন্ট তথ্য:**\n",
+            'en': "**📅 Appointment Information:**\n"
+        }
+        
+        response += disclaimers.get(response_language, disclaimers['en'])
 
         # Automatically book an appointment with better formatting
         appointment_info = book_appointment()
-        response += f"**📅 Appointment Information:**\n{appointment_info}"
+        response += appointment_labels.get(response_language, appointment_labels['en']) + appointment_info
 
         # Convert response to speech if engine is available
         if engine:
@@ -402,6 +480,9 @@ def chat_stream():
     """Streaming chat endpoint with Gemini AI integration"""
     try:
         user_input = request.json.get('input')
+        language = request.json.get('language', 'en')  # Input language
+        response_language = request.json.get('responseLanguage', language)  # Response language
+        
         if not user_input:
             return jsonify({"error": "No input provided"}), 400
 
@@ -411,8 +492,8 @@ def chat_stream():
 
         def generate():
             try:
-                # Get response from Gemini API
-                response = gemini_response(user_input)
+                # Get response from Gemini API with language support
+                response = gemini_response(user_input, language, response_language)
 
                 # Extract disease from response
                 detected_disease = None
@@ -443,12 +524,28 @@ def chat_stream():
                     
                     response = formatted_response
                 
-                # Add professional disclaimer
-                response += "\n**⚠️ Medical Disclaimer:**\nThis information is for educational purposes only. Please consult with a healthcare professional for proper medical diagnosis and treatment.\n\n"
+                # Add professional disclaimer in appropriate language
+                disclaimers = {
+                    'hi': "\n**⚠️ चिकित्सा अस्वीकरण:**\nयह जानकारी केवल शैक्षिक उद्देश्यों के लिए है। उचित चिकित्सा निदान और उपचार के लिए कृपया किसी स्वास्थ्य पेशेवर से सलाह लें।\n\n",
+                    'ta': "\n**⚠️ மருத்துவ மறுப்பு:**\nஇந்த தகவல் கல்வி நோக்கங்களுக்காக மட்டுமே. சரியான மருத்துவ கண்டறிதல் மற்றும் சிகிச்சைக்கு தயவுசெய்து ஒரு சுகாதார நிபுணரை ஆலோசிக்கவும்।\n\n",
+                    'te': "\n**⚠️ వైద్య నిరాకరణ:**\nఈ సమాచారం కేవలం విద్యా ప్రయోజనాల కోసం మాత్రమే. సరైన వైద్య నిర్ధారణ మరియు చికిత్స కోసం దయచేసి ఆరోగ్య నిపుణుడిని సంప్రదించండి।\n\n",
+                    'bn': "\n**⚠️ চিকিৎসা দাবিত্যাগ:**\nএই তথ্য শুধুমাত্র শিক্ষাগত উদ্দেশ্যে। যথাযথ চিকিৎসা নির্ণয় এবং চিকিৎসার জন্য দয়া করে একজন স্বাস্থ্য পেশাদারের সাথে পরামর্শ করুন।\n\n",
+                    'en': "\n**⚠️ Medical Disclaimer:**\nThis information is for educational purposes only. Please consult with a healthcare professional for proper medical diagnosis and treatment.\n\n"
+                }
+                
+                appointment_labels = {
+                    'hi': "**📅 अपॉइंटमेंट की जानकारी:**\n",
+                    'ta': "**📅 நியமன தகவல்:**\n",
+                    'te': "**📅 అపాయింట్మెంట్ సమాచారం:**\n",
+                    'bn': "**📅 অ্যাপয়েন্টমেন্ট তথ্য:**\n",
+                    'en': "**📅 Appointment Information:**\n"
+                }
+                
+                response += disclaimers.get(response_language, disclaimers['en'])
 
                 # Automatically book an appointment with better formatting
                 appointment_info = book_appointment()
-                response += f"**📅 Appointment Information:**\n{appointment_info}"
+                response += appointment_labels.get(response_language, appointment_labels['en']) + appointment_info
 
                 # Stream the response
                 for chunk in stream_response(response):

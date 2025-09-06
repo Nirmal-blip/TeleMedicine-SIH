@@ -23,24 +23,24 @@ export class DoctorsController {
     return this.doctorsService.getAvailableDoctors();
   }
 
-  @Get(':id/stats')
-  getDoctorStats(@Param('id') id: string) {
-    return this.doctorsService.getDoctorStats(id);
-  }
-
   @Get('me')
   getCurrentDoctor(@Request() req) {
     return this.doctorsService.findOne(req.user.userId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.doctorsService.findOne(id);
-  }
-
   @Patch('me')
   updateCurrentDoctor(@Request() req, @Body() updateData: any) {
     return this.doctorsService.update(req.user.userId, updateData);
+  }
+
+  @Get(':id/stats')
+  getDoctorStats(@Param('id') id: string) {
+    return this.doctorsService.getDoctorStats(id);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.doctorsService.findOne(id);
   }
 
   @Patch(':id')
