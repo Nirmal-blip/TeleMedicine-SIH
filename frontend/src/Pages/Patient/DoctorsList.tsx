@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Sidebar from '../../Components/Sidebar'
 import { FaSearch, FaFilter, FaStar, FaClock, FaVideo, FaMapPin, FaCalendar, FaUser, FaStethoscope, FaHeart, FaPhone, FaEnvelope, FaUserMd } from 'react-icons/fa'
 
@@ -21,10 +22,25 @@ interface Doctor {
 }
 
 const DoctorsList: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialization, setSelectedSpecialization] = useState('all');
   const [sortBy, setSortBy] = useState('rating');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Initialize search from URL parameters
+  useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    const urlSpecialization = searchParams.get('specialization');
+    
+    if (urlSearch) {
+      setSearchTerm(urlSearch);
+    }
+    
+    if (urlSpecialization) {
+      setSelectedSpecialization(urlSpecialization);
+    }
+  }, [searchParams]);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -174,75 +190,104 @@ const DoctorsList: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <Sidebar />
       <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
-              <FaStethoscope className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 font-secondary">Find a Doctor</h1>
-              <p className="text-gray-600">Connect with certified healthcare professionals</p>
-            </div>
-          </div>
-
-          {/* Search and Filter Controls */}
-          <div className="flex flex-col lg:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search doctors by name, specialization, or hospital..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-300 bg-gray-50 focus:bg-white"
-              />
-            </div>
+        {/* Find a Doctor Header Card */}
+        <section className="mb-8">
+          <div className="relative overflow-hidden gradient-bg-primary rounded-3xl p-6 shadow-xl">
+            <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
             
-            <div className="flex gap-4">
-              <select
-                value={selectedSpecialization}
-                onChange={(e) => setSelectedSpecialization(e.target.value)}
-                className="px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-300 bg-gray-50 focus:bg-white"
-              >
-                {specializations.map(spec => (
-                  <option key={spec} value={spec}>
-                    {spec === 'all' ? 'All Specializations' : spec}
-                  </option>
-                ))}
-              </select>
-              
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-300 bg-gray-50 focus:bg-white"
-              >
-                <option value="rating">Sort by Rating</option>
-                <option value="experience">Sort by Experience</option>
-                <option value="fee">Sort by Fee</option>
-              </select>
-              
-              <div className="flex bg-gray-100 rounded-xl p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`px-3 py-2 rounded-lg transition-all duration-300 ${
-                    viewMode === 'grid' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-600'
-                  }`}
-                >
-                  Grid
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-2 rounded-lg transition-all duration-300 ${
-                    viewMode === 'list' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-600'
-                  }`}
-                >
-                  List
-                </button>
+            <div className="relative z-10">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <FaStethoscope className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white mb-1 font-secondary">Find a Doctor</h1>
+                  <p className="text-emerald-100">Search and connect with certified healthcare professionals</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col lg:flex-row gap-4 mb-6">
+                {/* Search Bar */}
+                <div className="flex-1 relative">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                    <FaSearch className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search by doctor name, specialization, or hospital..."
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 bg-white/90 backdrop-blur-sm text-gray-800 placeholder-gray-500 focus:ring-4 focus:ring-white/30 focus:bg-white transition-all duration-300 text-lg shadow-lg"
+                  />
+                </div>
+                
+                {/* Filter Controls */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <select
+                    value={selectedSpecialization}
+                    onChange={(e) => setSelectedSpecialization(e.target.value)}
+                    className="px-4 py-4 rounded-2xl border-0 bg-white/90 backdrop-blur-sm text-gray-800 focus:ring-4 focus:ring-white/30 focus:bg-white transition-all duration-300 shadow-lg"
+                  >
+                    {specializations.map(spec => (
+                      <option key={spec} value={spec}>
+                        {spec === 'all' ? 'All Specializations' : spec}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="px-4 py-4 rounded-2xl border-0 bg-white/90 backdrop-blur-sm text-gray-800 focus:ring-4 focus:ring-white/30 focus:bg-white transition-all duration-300 shadow-lg"
+                  >
+                    <option value="rating">Sort by Rating</option>
+                    <option value="experience">Sort by Experience</option>
+                    <option value="fee">Sort by Fee</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* View Mode and Quick Specializations */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                {/* Quick Specializations */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-white/80 text-sm font-medium">Quick:</span>
+                  {['Cardiologist', 'Dermatologist', 'Pediatrician'].map((specialty) => (
+                    <button
+                      key={specialty}
+                      onClick={() => setSelectedSpecialization(specialty)}
+                      className="bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/30 hover:scale-105 border border-white/20"
+                    >
+                      {specialty}
+                    </button>
+                  ))}
+                </div>
+
+                {/* View Mode Toggle */}
+                <div className="flex bg-white/20 backdrop-blur-sm rounded-xl p-1 border border-white/20">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`px-4 py-2 rounded-lg transition-all duration-300 text-sm font-medium ${
+                      viewMode === 'grid' ? 'bg-white text-emerald-600 shadow-sm' : 'text-white hover:bg-white/20'
+                    }`}
+                  >
+                    Grid
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`px-4 py-2 rounded-lg transition-all duration-300 text-sm font-medium ${
+                      viewMode === 'list' ? 'bg-white text-emerald-600 shadow-sm' : 'text-white hover:bg-white/20'
+                    }`}
+                  >
+                    List
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Doctors Grid/List */}
         <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6' : 'space-y-6'}>

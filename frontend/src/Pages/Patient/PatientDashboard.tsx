@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaVideo, FaMapPin, FaCalendar, FaUsers, FaStar, FaHeart, FaClock, FaStethoscope, FaPills, FaHospital } from "react-icons/fa";
+import axios from "axios";
+import { FaVideo, FaMapPin, FaCalendar, FaUsers, FaStar, FaHeart, FaClock, FaStethoscope, FaPills, FaHospital, FaSearch } from "react-icons/fa";
 import { FaShield } from "react-icons/fa6";
 import Chatbot from "../../Components/Chatbot";
 import Sidebar from "../../Components/Sidebar";
@@ -16,6 +17,75 @@ interface Specialty {
 
 const PatientDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [patientName, setPatientName] = useState<string>("John");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  useEffect(() => {
+    const fetchPatientData = async () => {
+      try {
+        // Fetch authenticated patient data from the backend
+          const response = await axios.get('http://localhost:3000/api/patients/me', {
+          withCredentials: true, // Include auth cookies
+        });
+        
+        if (response.data && response.data.fullname) {
+          setPatientName(response.data.fullname);
+          setIsAuthenticated(true);
+        } else if (response.data && response.data.name) {
+          // Fallback for different name field variations
+          setPatientName(response.data.name);
+          setIsAuthenticated(true);
+        }
+      } catch (error: any) {
+        console.error('Failed to fetch patient data:', error);
+        console.log('Error response:', error.response?.data);
+        console.log('Error status:', error.response?.status);
+        
+        if (error.response?.status === 401) {
+          console.log('User not authenticated - checking for stored name');
+          setIsAuthenticated(false);
+          // Check if user has set a temporary name
+          const tempName = localStorage.getItem('tempPatientName');
+          setPatientName(tempName || "Patient");
+        } else {
+          // Other errors - fallback to default name
+          setIsAuthenticated(false);
+          setPatientName("Patient");
+        }
+      }
+    };
+
+    fetchPatientData();
+  }, []);
+
+  const handleNameClick = async () => {
+    const newName = prompt("Enter your name:", patientName);
+    if (newName && newName.trim()) {
+      try {
+        // Update name in database
+          await axios.patch('http://localhost:3000/api/patients/me', {
+          fullname: newName.trim()
+        }, {
+          withCredentials: true,
+        });
+        
+        // Update local state
+        setPatientName(newName.trim());
+        alert('Name updated successfully!');
+      } catch (error: any) {
+        console.error('Failed to update name:', error);
+        if (error.response?.status === 401) {
+          // User not authenticated - save name temporarily
+          setPatientName(newName.trim());
+          localStorage.setItem('tempPatientName', newName.trim());
+          alert('Name saved temporarily! Please log in to save permanently.');
+        } else {
+          alert('Failed to update name. Please try again.');
+        }
+      }
+    }
+  };
 
   const specialties: Specialty[] = [
     { 
@@ -60,7 +130,15 @@ const PatientDashboard: React.FC = () => {
                     <FaHeart className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-white mb-1 font-secondary">Hello Patient! 👋</h1>
+                    <h1 className="text-3xl font-bold text-white mb-1 font-secondary">
+                      Hello <span 
+                        className="cursor-pointer hover:underline" 
+                        onClick={handleNameClick}
+                        title="Click to change name"
+                      >
+                        {patientName}
+                      </span>! 👋
+                    </h1>
                     <p className="text-emerald-100">How can we help you stay healthy today?</p>
                   </div>
                 </div>
