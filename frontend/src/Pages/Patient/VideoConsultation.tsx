@@ -44,7 +44,67 @@ const VideoConsultation: React.FC = () => {
   useEffect(() => {
     fetchConsultations();
     getCurrentUser();
+    checkForActiveAppointment();
   }, []);
+
+  const checkForActiveAppointment = () => {
+    // Check if user came from appointment booking
+    const activeAppointmentData = localStorage.getItem('activeAppointment');
+    if (activeAppointmentData) {
+      try {
+        const appointmentData = JSON.parse(activeAppointmentData);
+        console.log('Found active appointment:', appointmentData);
+        
+        // Set up for immediate video consultation
+        setCallId(appointmentData.callId);
+        setCurrentConsultation({
+          id: appointmentData.appointmentId,
+          doctorName: appointmentData.doctorName,
+          specialization: 'General Medicine',
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+          duration: '30 minutes',
+          status: 'Scheduled',
+          meetingId: appointmentData.callId,
+          reason: 'Immediate consultation',
+          appointmentId: appointmentData.appointmentId,
+          doctorId: appointmentData.doctorId
+        });
+        
+        // Clear the stored data
+        localStorage.removeItem('activeAppointment');
+        
+        // Show notification that doctor will be notified
+        setWaitingForDoctor(true);
+        
+        // Notify the doctor about the consultation request
+        notifyDoctorForConsultation(appointmentData);
+        
+      } catch (error) {
+        console.error('Error parsing active appointment data:', error);
+        localStorage.removeItem('activeAppointment');
+      }
+    }
+  };
+
+  const notifyDoctorForConsultation = async (appointmentData: any) => {
+    try {
+      // Notify the doctor through the backend
+      await axios.post('http://localhost:3000/api/video-consultation/start-call', {
+        appointmentId: appointmentData.appointmentId,
+        patientId: currentUserId,
+        callId: appointmentData.callId
+      }, {
+        withCredentials: true
+      });
+      
+      console.log('Doctor notified for consultation');
+    } catch (error) {
+      console.error('Failed to notify doctor:', error);
+      setError('Failed to connect with doctor. Please try again.');
+      setWaitingForDoctor(false);
+    }
+  };
 
   useEffect(() => {
     if (currentUserId) {
@@ -505,8 +565,15 @@ const VideoConsultation: React.FC = () => {
                   <FaVideo className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-blue-800 mb-2">Doctor is calling!</h3>
-                  <p className="text-blue-600">A doctor has started a video consultation. Click to join.</p>
+                  <h3 className="text-xl font-bold text-blue-800 mb-2">
+                    {currentConsultation ? 'Calling Doctor...' : 'Doctor is calling!'}
+                  </h3>
+                  <p className="text-blue-600">
+                    {currentConsultation 
+                      ? `Connecting with ${currentConsultation.doctorName}. Please wait...`
+                      : 'A doctor has started a video consultation. Click to join.'
+                    }
+                  </p>
                   <p className="text-sm text-blue-500 mt-1">Call ID: {callId}</p>
                 </div>
               </div>
@@ -516,15 +583,50 @@ const VideoConsultation: React.FC = () => {
                   className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-colors duration-300 flex items-center gap-2"
                 >
                   <FaVideo className="w-5 h-5" />
-                  Join Call
+                  {currentConsultation ? 'Join When Ready' : 'Join Call'}
                 </button>
                 <button
-                  onClick={() => setWaitingForDoctor(false)}
+                  onClick={() => {
+                    setWaitingForDoctor(false);
+                    setCurrentConsultation(null);
+                  }}
                   className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-colors duration-300"
                 >
-                  Decline
+                  Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Request Immediate Consultation */}
+        {!waitingForDoctor && !upcomingConsultation && !loading && consultations.length === 0 && (
+          <div className="card p-8 rounded-2xl mb-8 animate-fade-scale bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
+                <FaStethoscope className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">No Upcoming Consultations</h2>
+                <p className="text-gray-600">Book a video consultation with our available doctors</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <button
+                onClick={() => window.location.href = '/patient/doctors'}
+                className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors duration-300 font-medium"
+              >
+                <FaVideo className="w-5 h-5" />
+                Find Available Doctors
+              </button>
+              <button
+                onClick={() => window.location.href = '/patient/appointments'}
+                className="flex items-center gap-2 px-6 py-3 border border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-colors duration-300 font-medium"
+              >
+                <FaCalendar className="w-5 h-5" />
+                View My Appointments
+              </button>
             </div>
           </div>
         )}

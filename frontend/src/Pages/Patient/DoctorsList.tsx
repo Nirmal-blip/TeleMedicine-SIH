@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Sidebar from '../../Components/Sidebar'
+import AppointmentBooking from '../../Components/AppointmentBooking'
 import { FaSearch, FaFilter, FaStar, FaClock, FaVideo, FaMapPin, FaCalendar, FaUser, FaStethoscope, FaHeart, FaPhone, FaEnvelope, FaUserMd } from 'react-icons/fa'
 import axios from 'axios'
 
 interface Doctor {
-  id: number;
+  id: string;
   name: string;
   specialization: string;
   experience: number;
@@ -39,6 +40,7 @@ const DoctorsList: React.FC = () => {
 
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -173,6 +175,21 @@ const DoctorsList: React.FC = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedDoctor(null);
+  };
+
+  const openBookingModal = (doctor: Doctor) => {
+    setSelectedDoctor(doctor);
+    setIsBookingModalOpen(true);
+  };
+
+  const closeBookingModal = () => {
+    setIsBookingModalOpen(false);
+    setSelectedDoctor(null);
+  };
+
+  const handleBookingSuccess = (appointmentId: string) => {
+    alert(`Appointment booked successfully! Appointment ID: ${appointmentId}`);
+    // You could navigate to appointments page or show a success message
   };
 
   return (
@@ -312,7 +329,7 @@ const DoctorsList: React.FC = () => {
                     </div>
                     
                     <button
-                      onClick={() => openModal(doctor)}
+                      onClick={() => openBookingModal(doctor)}
                       className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300"
                     >
                       <FaVideo />
@@ -396,7 +413,13 @@ const DoctorsList: React.FC = () => {
                 </div>
                 
                 <div className="flex gap-4">
-                  <button className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300">
+                  <button 
+                    onClick={() => {
+                      closeModal();
+                      openBookingModal(selectedDoctor);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300"
+                  >
                     <FaVideo />
                     Book Video Consultation
                   </button>
@@ -408,6 +431,16 @@ const DoctorsList: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Appointment Booking Modal */}
+        {isBookingModalOpen && selectedDoctor && (
+          <AppointmentBooking
+            doctor={selectedDoctor}
+            isOpen={isBookingModalOpen}
+            onClose={closeBookingModal}
+            onBookingSuccess={handleBookingSuccess}
+          />
         )}
       </main>
     </div>

@@ -425,7 +425,7 @@ const Chatbot: React.FC = () => {
 
     return (
         <>
-            <div className="fixed bottom-4 right-4 poppins z-50 flex flex-col items-end">
+            <div className="fixed bottom-4 right-4 poppins z-50">
                 <style>
                     {`
                         @keyframes slideIn {
