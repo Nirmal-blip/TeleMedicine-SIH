@@ -185,26 +185,30 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
             console.error('Failed to fetch doctor data:', doctorError);
           }
 
-          // Create notification for the doctor
-          try {
-            await axios.post('http://localhost:3000/api/notifications/video-call', {
-              patientId: patientResponse.data.patientId, // Custom patient ID (PAT2025000006)
-              doctorId: doctorData?.doctorId || doctor.id, // Custom doctor ID (DOC2025000001) or fallback
-              patientName: patientResponse.data.fullname || 'Patient',
-              doctorName: doctorData?.fullname || doctor.name,
-              appointmentId: response.data._id,
-              callId: callId,
-              type: 'video_call_request'
-            }, {
-              withCredentials: true
-            });
-            console.log('Video call notification sent to doctor with IDs:', {
-              patientId: patientResponse.data.patientId,
-              doctorId: doctorData?.doctorId || doctor.id
-            });
-          } catch (notificationError) {
-            console.error('Failed to send notification to doctor:', notificationError);
-            // Don't stop the video call process if notification fails
+          // Only create notification if we have the doctor's custom doctorId
+          if (doctorData?.doctorId) {
+            try {
+              await axios.post('http://localhost:3000/api/notifications/video-call', {
+                patientId: patientResponse.data.patientId, // Custom patient ID (PAT2025000006)
+                doctorId: doctorData.doctorId, // Custom doctor ID (DOC2025000001) - ONLY custom ID
+                patientName: patientResponse.data.fullname || 'Patient',
+                doctorName: doctorData.fullname || doctor.name,
+                appointmentId: response.data._id,
+                callId: callId,
+                type: 'video_call_request'
+              }, {
+                withCredentials: true
+              });
+              console.log('Video call notification sent to doctor with IDs:', {
+                patientId: patientResponse.data.patientId,
+                doctorId: doctorData.doctorId
+              });
+            } catch (notificationError) {
+              console.error('Failed to send notification to doctor:', notificationError);
+              // Don't stop the video call process if notification fails
+            }
+          } else {
+            console.error('Could not get doctor custom ID - notification not sent');
           }
 
           // Store appointment data for video consultation
@@ -218,18 +222,20 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           // Set up event listeners for call response
           videoCallService.onCallAccepted((data) => {
             console.log('Call accepted:', data);
-            // Create notification for call acceptance
-            axios.post('http://localhost:3000/api/notifications/video-call', {
-              patientId: patientResponse.data.patientId,
-              doctorId: doctorData?.doctorId || doctor.id,
-              patientName: patientResponse.data.fullname || 'Patient',
-              doctorName: doctorData?.fullname || doctor.name,
-              appointmentId: response.data._id,
-              callId: callId,
-              type: 'video_call_accepted'
-            }, {
-              withCredentials: true
-            }).catch(error => console.error('Failed to send acceptance notification:', error));
+            // Create notification for call acceptance (only if we have custom doctorId)
+            if (doctorData?.doctorId) {
+              axios.post('http://localhost:3000/api/notifications/video-call', {
+                patientId: patientResponse.data.patientId,
+                doctorId: doctorData.doctorId, // Only use custom doctor ID
+                patientName: patientResponse.data.fullname || 'Patient',
+                doctorName: doctorData.fullname || doctor.name,
+                appointmentId: response.data._id,
+                callId: callId,
+                type: 'video_call_accepted'
+              }, {
+                withCredentials: true
+              }).catch(error => console.error('Failed to send acceptance notification:', error));
+            }
             
             // Navigate to video consultation page
             window.location.href = '/video-consultation';
@@ -237,18 +243,20 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
           videoCallService.onCallRejected((data) => {
             console.log('Call rejected:', data);
-            // Create notification for call rejection
-            axios.post('http://localhost:3000/api/notifications/video-call', {
-              patientId: patientResponse.data.patientId,
-              doctorId: doctorData?.doctorId || doctor.id,
-              patientName: patientResponse.data.fullname || 'Patient',
-              doctorName: doctorData?.fullname || doctor.name,
-              appointmentId: response.data._id,
-              callId: callId,
-              type: 'video_call_rejected'
-            }, {
-              withCredentials: true
-            }).catch(error => console.error('Failed to send rejection notification:', error));
+            // Create notification for call rejection (only if we have custom doctorId)
+            if (doctorData?.doctorId) {
+              axios.post('http://localhost:3000/api/notifications/video-call', {
+                patientId: patientResponse.data.patientId,
+                doctorId: doctorData.doctorId, // Only use custom doctor ID
+                patientName: patientResponse.data.fullname || 'Patient',
+                doctorName: doctorData.fullname || doctor.name,
+                appointmentId: response.data._id,
+                callId: callId,
+                type: 'video_call_rejected'
+              }, {
+                withCredentials: true
+              }).catch(error => console.error('Failed to send rejection notification:', error));
+            }
             
             setBookingError(data.message || 'Doctor is not available at the moment.');
             setIsBooking(false);
