@@ -173,6 +173,25 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
         });
 
         if (callId) {
+          // Create notification for the doctor
+          try {
+            await axios.post('http://localhost:3000/api/notifications/video-call', {
+              patientId: patientResponse.data.patientId,
+              doctorId: doctor.id,
+              patientName: patientResponse.data.fullname || 'Patient',
+              doctorName: doctor.name,
+              appointmentId: response.data._id,
+              callId: callId,
+              type: 'video_call_request'
+            }, {
+              withCredentials: true
+            });
+            console.log('Video call notification sent to doctor');
+          } catch (notificationError) {
+            console.error('Failed to send notification to doctor:', notificationError);
+            // Don't stop the video call process if notification fails
+          }
+
           // Store appointment data for video consultation
           localStorage.setItem('activeAppointment', JSON.stringify({
             appointmentId: response.data._id,
@@ -184,12 +203,38 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           // Set up event listeners for call response
           videoCallService.onCallAccepted((data) => {
             console.log('Call accepted:', data);
+            // Create notification for call acceptance
+            axios.post('http://localhost:3000/api/notifications/video-call', {
+              patientId: patientResponse.data.patientId,
+              doctorId: doctor.id,
+              patientName: patientResponse.data.fullname || 'Patient',
+              doctorName: doctor.name,
+              appointmentId: response.data._id,
+              callId: callId,
+              type: 'video_call_accepted'
+            }, {
+              withCredentials: true
+            }).catch(error => console.error('Failed to send acceptance notification:', error));
+            
             // Navigate to video consultation page
             window.location.href = '/video-consultation';
           });
 
           videoCallService.onCallRejected((data) => {
             console.log('Call rejected:', data);
+            // Create notification for call rejection
+            axios.post('http://localhost:3000/api/notifications/video-call', {
+              patientId: patientResponse.data.patientId,
+              doctorId: doctor.id,
+              patientName: patientResponse.data.fullname || 'Patient',
+              doctorName: doctor.name,
+              appointmentId: response.data._id,
+              callId: callId,
+              type: 'video_call_rejected'
+            }, {
+              withCredentials: true
+            }).catch(error => console.error('Failed to send rejection notification:', error));
+            
             setBookingError(data.message || 'Doctor is not available at the moment.');
             setIsBooking(false);
             // Redirect to dashboard after a delay
