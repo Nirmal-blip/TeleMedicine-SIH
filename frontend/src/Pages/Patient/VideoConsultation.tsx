@@ -360,8 +360,8 @@ const VideoConsultation: React.FC = () => {
     }
 
     try {
-      setCurrentConsultation(consultation);
-      setIsCallActive(true);
+    setCurrentConsultation(consultation);
+    setIsCallActive(true);
       setConnectionStatus('connecting');
       setCallId(consultation.meetingId);
 
@@ -568,7 +568,7 @@ const VideoConsultation: React.FC = () => {
             <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
               <div className="p-4 border-b border-gray-700">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-white font-semibold">Chat</h3>
+                <h3 className="text-white font-semibold">Chat</h3>
                   <button
                     onClick={openPrescriptionForm}
                     className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-300 text-sm"

@@ -62,6 +62,16 @@ export class NotificationsService {
     return await this.notificationModel.countDocuments(query);
   }
 
+  async getUnreadNotificationsCountByTypes(userId: string, userType: 'Patient' | 'Doctor', types: string[]) {
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType, isRead: false, type: { $in: types } }
+      : { patientId: userId, recipientType: userType, isRead: false, type: { $in: types } };
+    
+    console.log('🔢 Video call unread count query:', query);
+    
+    return await this.notificationModel.countDocuments(query);
+  }
+
   async markAsRead(notificationId: string, userId: string) {
     return await this.notificationModel.findOneAndUpdate(
       { 
@@ -113,6 +123,21 @@ export class NotificationsService {
     return await this.notificationModel
       .find(query)
       .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async getNotificationsByTypes(userId: string, userType: 'Patient' | 'Doctor', types: string[], limit: number = 50, skip: number = 0) {
+    const query = userType === 'Doctor' 
+      ? { doctorId: userId, recipientType: userType, type: { $in: types } }
+      : { patientId: userId, recipientType: userType, type: { $in: types } };
+    
+    console.log('🎯 Video call notifications query:', query);
+    
+    return await this.notificationModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
       .exec();
   }
 

@@ -70,8 +70,10 @@ export class NotificationsController {
       return await this.notificationsService.getNotificationsByPriority(customUserId, capitalizedUserType, priority);
     }
 
-    const notifications = await this.notificationsService.getNotificationsForUser(customUserId, capitalizedUserType, limitNum, skipNum);
-    console.log(`📋 Found ${notifications.length} notifications for user ${customUserId} (${capitalizedUserType})`);
+    // Filter only video call related notifications
+    const videoCallTypes = ['video_call_request', 'video_call_accepted', 'video_call_rejected', 'video_call_ended'];
+    const notifications = await this.notificationsService.getNotificationsByTypes(customUserId, capitalizedUserType, videoCallTypes, limitNum, skipNum);
+    console.log(`📋 Found ${notifications.length} video call notifications for user ${customUserId} (${capitalizedUserType})`);
     
     return notifications;
   }
@@ -100,7 +102,9 @@ export class NotificationsController {
     }
 
     const capitalizedUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
-    const count = await this.notificationsService.getUnreadNotificationsCount(customUserId, capitalizedUserType);
+    // Filter unread count to only video call notifications
+    const videoCallTypes = ['video_call_request', 'video_call_accepted', 'video_call_rejected', 'video_call_ended'];
+    const count = await this.notificationsService.getUnreadNotificationsCountByTypes(customUserId, capitalizedUserType, videoCallTypes);
     return { unreadCount: count };
   }
 
