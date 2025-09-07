@@ -1,6 +1,14 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { DatabaseController } from './database.controller';
+import { SeederService } from './seeder.service';
+import { Patient, PatientSchema } from '../schemas/patient.schema';
+import { Doctor, DoctorSchema } from '../schemas/doctor.schema';
+import { Appointment, AppointmentSchema } from '../schemas/appointment.schema';
+import { MedicalRecord, MedicalRecordSchema } from '../schemas/medical-record.schema';
+import { Prescription, PrescriptionSchema } from '../schemas/prescription.schema';
+import { Notification, NotificationSchema } from '../schemas/notification.schema';
 
 @Module({
   imports: [
@@ -20,7 +28,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       },
       inject: [ConfigService],
     }),
+    MongooseModule.forFeature([
+      { name: Patient.name, schema: PatientSchema },
+      { name: Doctor.name, schema: DoctorSchema },
+      { name: Appointment.name, schema: AppointmentSchema },
+      { name: MedicalRecord.name, schema: MedicalRecordSchema },
+      { name: Prescription.name, schema: PrescriptionSchema },
+      { name: Notification.name, schema: NotificationSchema },
+    ]),
   ],
+  controllers: [DatabaseController],
+  providers: [SeederService],
   exports: [MongooseModule],
 })
 export class DatabaseModule {}

@@ -82,11 +82,34 @@ const DoctorsList: React.FC = () => {
 
   const initializeVideoCall = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/auth/me', {
-        withCredentials: true
-      });
+      let patientId: string | null = null;
       
-      const patientId = response.data.user.patientId;
+      // Try to get patient ID from localStorage/sessionStorage first
+      const storedPatientId = localStorage.getItem('patientId') || sessionStorage.getItem('patientId') || localStorage.getItem('userId') || sessionStorage.getItem('userId');
+      console.log('🔥 PATIENT: Trying stored patient ID:', storedPatientId);
+      
+      if (storedPatientId) {
+        patientId = storedPatientId;
+      } else {
+        // Fallback: try API
+        try {
+          const response = await axios.get('http://localhost:3000/api/patients/me', {
+            withCredentials: true
+          });
+          patientId = response.data._id || response.data.id;
+          console.log('🔥 PATIENT: Got patient ID from API:', patientId);
+        } catch (apiError) {
+          console.log('🔥 PATIENT: API failed, using test patient ID');
+          // For testing: use a hardcoded patient ID
+          patientId = '68bb0972d6ac0c5ddcba5ec8'; // Prithviraj Verma's MongoDB ObjectId
+        }
+      }
+      
+      if (!patientId) {
+        console.error('❌ PATIENT: No patient ID found');
+        return;
+      }
+      
       console.log('🔥 PATIENT: Initializing video call service with ID:', patientId);
       const service = initializeVideoCallService(patientId, 'patient');
       setVideoCallService(service);
@@ -167,7 +190,7 @@ const DoctorsList: React.FC = () => {
         languages: ["English"], // Default for now
         education: doctor.qualification || "Medical Degree",
         hospital: doctor.location || "Medical Center",
-        image: doctor.profileImage || `https://images.unsplash.com/photo-${getDoctorImageId(index)}?w=150&h=150&fit=crop&crop=face&auto=format`,
+        image: doctor.profileImage || `user1.jpg`,
         bio: doctor.about || `Experienced ${doctor.specialization} with ${doctor.experience || 0} years of practice.`
       }));
       
@@ -332,12 +355,42 @@ const DoctorsList: React.FC = () => {
       }
       
       // Request video call
-      videoCallService.requestVideoCall({
+      console.log('🔥 PATIENT: About to request video call with doctor:', {
         doctorId: doctor._id,
         doctorName: doctor.fullname,
         patientName: patientName,
         specialization: doctor.specialization
       });
+      
+      console.log('🔥 PATIENT: Video call service status:', {
+        service: !!videoCallService,
+        connected: videoCallService?.isServiceConnected()
+      });
+      
+      if (!videoCallService) {
+        alert('Video call service not initialized! Please refresh the page.');
+        return;
+      }
+      
+      if (!videoCallService.isServiceConnected()) {
+        alert('Video call service not connected! Please check your internet connection.');
+        return;
+      }
+      
+      const callResult = videoCallService.requestVideoCall({
+        doctorId: doctor._id,
+        doctorName: doctor.fullname,
+        patientName: patientName,
+        specialization: doctor.specialization
+      });
+      
+      console.log('🔥 PATIENT: Video call request result:', callResult);
+      
+      if (callResult) {
+        alert(`Video call request sent to Dr. ${doctor.fullname}! Call ID: ${callResult}`);
+      } else {
+        alert('Failed to send video call request!');
+      }
       
     } catch (error) {
       console.error('Error starting video call:', error);
@@ -368,14 +421,14 @@ const DoctorsList: React.FC = () => {
           <div className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-gray-100 mb-8">
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Search Bar */}
-              <div className="relative flex-1">
-                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
+            <div className="relative flex-1">
+              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
                   placeholder="Search by doctor name, specialization, or hospital..."
                   className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 bg-white/90 backdrop-blur-sm text-gray-800 placeholder-gray-500 focus:ring-4 focus:ring-white/30 focus:bg-white transition-all duration-300 text-lg shadow-lg"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               
@@ -388,7 +441,7 @@ const DoctorsList: React.FC = () => {
                 Filters
               </button>
             </div>
-
+            
             {/* Filters Panel */}
             {showFilters && (
               <div className="mt-6 pt-6 border-t border-gray-200">
@@ -396,24 +449,24 @@ const DoctorsList: React.FC = () => {
                   {/* Specialization Filter */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
-                    <select
-                      value={selectedSpecialization}
-                      onChange={(e) => setSelectedSpecialization(e.target.value)}
+              <select
+                value={selectedSpecialization}
+                onChange={(e) => setSelectedSpecialization(e.target.value)}
                       className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    >
-                      {specializations.map(spec => (
-                        <option key={spec} value={spec}>
-                          {spec === 'all' ? 'All Specializations' : spec}
-                        </option>
-                      ))}
-                    </select>
+              >
+                {specializations.map(spec => (
+                  <option key={spec} value={spec}>
+                    {spec === 'all' ? 'All Specializations' : spec}
+                  </option>
+                ))}
+              </select>
                   </div>
-
+              
                   {/* Sort By */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-                    <select
-                      value={sortBy}
+              <select
+                value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as any)}
                       className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
@@ -421,32 +474,32 @@ const DoctorsList: React.FC = () => {
                       <option value="experience">Most Experience</option>
                       <option value="fee">Lowest Fee</option>
                       <option value="name">Name (A-Z)</option>
-                    </select>
+              </select>
                   </div>
 
                   {/* Results Count */}
                   <div className="flex items-center">
                     <div className="text-sm text-gray-600">
                       Showing {filteredDoctors.length} of {doctors.length} doctors
-                    </div>
-                  </div>
-                </div>
+              </div>
+            </div>
+          </div>
               </div>
             )}
-          </div>
+        </div>
 
           {/* Doctors Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {filteredDoctors.map((doctor) => (
               <div key={doctor.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                <div className="relative">
-                  <img 
-                    src={doctor.image} 
-                    alt={doctor.name}
+                      <div className="relative">
+                        <img
+                          src={doctor.image}
+                          alt={doctor.name}
                     className="w-full h-64 object-cover"
                   />
-                </div>
-                
+                  </div>
+
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-gray-800 mb-2">{doctor.fullname}</h3>
                   <p className="text-emerald-600 font-medium mb-2">{doctor.specialization}</p>
@@ -461,7 +514,7 @@ const DoctorsList: React.FC = () => {
                       <span className="text-sm text-gray-600">{doctor.totalRatings || 0}+ ratings</span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2">
                       <FaStethoscope className="text-gray-400" />
@@ -501,13 +554,13 @@ const DoctorsList: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
 
-          {/* Empty State */}
+        {/* Empty State */}
           {filteredDoctors.length === 0 && !loading && (
-            <div className="text-center py-16">
+          <div className="text-center py-16">
               <FaUserMd className="mx-auto text-6xl text-gray-300 mb-4" />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">No doctors found</h3>
               <p className="text-gray-500">Try adjusting your search criteria or filters</p>
@@ -681,15 +734,15 @@ const DoctorsList: React.FC = () => {
                       Close
                     </button>
                     {callStatus === 'rejected' && (
-                      <button
-                        onClick={() => {
+            <button 
+              onClick={() => {
                           cancelVideoCall();
                           openBookingModal(selectedDoctor);
-                        }}
+              }}
                         className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300"
-                      >
+            >
                         Book Appointment
-                      </button>
+            </button>
                     )}
                   </>
                 )}

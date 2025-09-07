@@ -42,17 +42,21 @@ export class VideoCallService {
       });
 
       this.socket.on('connect', () => {
-        console.log('Video call service connected');
+        console.log(`✅ FRONTEND: Video call service connected for ${this.userType} ${this.userId}`);
         this.isConnected = true;
       });
 
       this.socket.on('disconnect', () => {
-        console.log('Video call service disconnected');
+        console.log(`❌ FRONTEND: Video call service disconnected for ${this.userType} ${this.userId}`);
         this.isConnected = false;
       });
 
       this.socket.on('error', (error: any) => {
-        console.error('Video call service error:', error);
+        console.error(`🚨 FRONTEND: Video call service error for ${this.userType} ${this.userId}:`, error);
+      });
+
+      this.socket.on('connect_error', (error: any) => {
+        console.error(`🚨 FRONTEND: Video call connection error for ${this.userType} ${this.userId}:`, error);
       });
 
     } catch (error) {
