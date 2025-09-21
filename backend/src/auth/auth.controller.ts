@@ -132,6 +132,7 @@ export class AuthController {
       user: {
         userId: req.user.userId,
         email: req.user.email,
+        fullname: req.user.fullname,
         userType: req.user.userType,
       },
     };

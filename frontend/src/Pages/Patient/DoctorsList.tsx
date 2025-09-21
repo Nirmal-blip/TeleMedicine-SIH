@@ -86,9 +86,9 @@ const DoctorsList: React.FC = () => {
         withCredentials: true
       });
       
-      const patientId = response.data.user.patientId;
-      console.log('🔥 PATIENT: Initializing video call service with ID:', patientId);
-      const service = initializeVideoCallService(patientId, 'patient');
+      const userId = response.data.user.userId;
+      console.log('🔥 PATIENT: Initializing video call service with ID:', userId);
+      const service = initializeVideoCallService(userId, 'patient');
       setVideoCallService(service);
       
       // Set up event listeners
@@ -282,7 +282,7 @@ const DoctorsList: React.FC = () => {
     }
 
     try {
-      setIsCallingDoctor(doctor._id);
+      setIsCallingDoctor(doctor.doctorId);
       setSelectedDoctor(doctor);
       setCallStatus('requesting');
       setShowVideoCallModal(true);
@@ -291,9 +291,10 @@ const DoctorsList: React.FC = () => {
       const response = await axios.get('http://localhost:3000/api/auth/me', {
         withCredentials: true
       });
+      console.log(response)
       
       const patientName = response.data.user.fullname || 'Patient';
-      console.log('🔥 PATIENT: Starting video call with doctor:', doctor.name);
+      console.log('🔥 PATIENT: Starting video call with doctor:', doctor.fullname);
       console.log('🔥 PATIENT: Patient name:', patientName);
 
       // First, create an immediate consultation appointment
@@ -307,8 +308,8 @@ const DoctorsList: React.FC = () => {
         const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
 
         const appointmentResponse = await axios.post('http://localhost:3000/api/appointments', {
-          doctor: doctor._id,
-          patient: patientResponse.data._id,
+          doctor: doctor.doctorId,
+          patient: patientResponse.data.patientId,
           date: currentDate,
           time: currentTime,
           reason: 'Immediate Video Consultation',
@@ -322,7 +323,7 @@ const DoctorsList: React.FC = () => {
         // Store appointment data for reference
         localStorage.setItem('activeAppointment', JSON.stringify({
           appointmentId: appointmentResponse.data._id,
-          doctorId: doctor._id,
+          doctorId: doctor.doctorId,
           doctorName: doctor.fullname,
         }));
         
@@ -333,7 +334,7 @@ const DoctorsList: React.FC = () => {
       
       // Request video call
       videoCallService.requestVideoCall({
-        doctorId: doctor._id,
+        doctorId: doctor.doctorId,
         doctorName: doctor.fullname,
         patientName: patientName,
         specialization: doctor.specialization
@@ -492,11 +493,11 @@ const DoctorsList: React.FC = () => {
                       
                       <button
                         onClick={() => startVideoCall(doctor)}
-                        disabled={isCallingDoctor === doctor._id}
+                        disabled={isCallingDoctor === doctor.doctorId}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
                       >
                         <FaVideo className="text-xs" />
-                        {isCallingDoctor === doctor._id ? 'Calling...' : 'Start Video Call'}
+                        {isCallingDoctor === doctor.doctorId ? 'Calling...' : 'Start Video Call'}
                       </button>
                     </div>
                   </div>
