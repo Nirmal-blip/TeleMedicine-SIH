@@ -26,11 +26,10 @@ import OrderSuccess from './Pages/Patient/OrderSuccess'
 // Doctor Pages
 import DoctorDashboard from './Pages/Doctor/DoctorDashboard'
 import PatientList from './Pages/Doctor/PatientList'
-// import DoctorVideoConsultation from './Pages/Doctor/VideoConsultation' // Removed
+import DoctorVideoConsultation from './Pages/Doctor/VideoConsultation'
 import PrescribedPatients from './Pages/Doctor/PrescribedPatients'
 import DoctorConsultationHistory from './Pages/Doctor/ConsultationHistory'
 import DoctorNotifications from './Pages/Doctor/Notifications'
-// import DoctorVideoCallNotifications from './Pages/Doctor/VideoCallNotifications' // Removed
 
 // Auth Pages
 import SignupPage from './Pages/SignupPage'
@@ -82,7 +81,8 @@ const App: React.FC = () => {
             <Route path='/doctor-dashboard' element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>}></Route>
             <Route path='/doctor/dashboard' element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>}></Route>
             <Route path='/doctor/patient-list' element={<ProtectedRoute><PatientList /></ProtectedRoute>}></Route>
-            {/* <Route path='/doctor/video-consultation' element={<ProtectedRoute><DoctorVideoConsultation /></ProtectedRoute>}></Route> */}
+            <Route path='/doctor/video-consultation' element={<ProtectedRoute><DoctorVideoConsultation /></ProtectedRoute>}></Route>
+            <Route path='/doctor/video-consultation/:callId' element={<ProtectedRoute><DoctorVideoConsultation /></ProtectedRoute>}></Route>
             <Route path='/doctor/prescribed-patients' element={<ProtectedRoute><PrescribedPatients /></ProtectedRoute>}></Route>
             <Route path='/doctor/consultation-history' element={<ProtectedRoute><DoctorConsultationHistory /></ProtectedRoute>}></Route>
             <Route path='/doctor/notifications' element={<ProtectedRoute><DoctorNotifications /></ProtectedRoute>}></Route>

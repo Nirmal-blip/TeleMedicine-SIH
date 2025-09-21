@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { initializeVideoCallService, VideoCallNotification } from "../../utils/video-call";
+import { useAuth } from "../../contexts/AuthContext";
 import { 
   FaVideo, 
   FaUsers, 
@@ -12,7 +14,8 @@ import {
   FaClock,
   FaHeart,
   FaStar,
-  FaUserMd
+  FaUserMd,
+  FaTimes
 } from "react-icons/fa";
 import { FaShield } from "react-icons/fa6";
 import Chatbot from "../../Components/Chatbot";
@@ -29,6 +32,7 @@ interface QuickAction {
 
 const DoctorDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [doctorName, setDoctorName] = useState<string>("Dr. Smith");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [dashboardStats, setDashboardStats] = useState({
@@ -38,6 +42,8 @@ const DoctorDashboard: React.FC = () => {
     rating: 0
   });
   const [loading, setLoading] = useState(true);
+  const [incomingCall, setIncomingCall] = useState<VideoCallNotification | null>(null);
+  const [showCallNotification, setShowCallNotification] = useState(false);
 
   useEffect(() => {
     const fetchDoctorData = async () => {
@@ -74,6 +80,127 @@ const DoctorDashboard: React.FC = () => {
 
     fetchDoctorData();
   }, []);
+
+  // Initialize video call service for receiving calls
+  useEffect(() => {
+    const initVideoCallService = async () => {
+      try {
+        console.log('🔥 DOCTOR DASHBOARD: Starting video call service initialization...');
+        
+        // Try to get user ID from multiple sources
+        let userId: string | null = null;
+        
+        if (user && user.userId) {
+          console.log('🔥 DOCTOR DASHBOARD: Using user ID from AuthContext:', user.userId);
+          userId = user.userId;
+        } else {
+          // Try to get user ID from localStorage/sessionStorage
+          const storedUserId = localStorage.getItem('userId') || sessionStorage.getItem('userId') || localStorage.getItem('doctorId') || sessionStorage.getItem('doctorId');
+          console.log('🔥 DOCTOR DASHBOARD: Trying stored user ID:', storedUserId);
+          
+          if (storedUserId) {
+            userId = storedUserId;
+          }
+        }
+        
+        // For testing: use a hardcoded doctor ID if no user ID found
+        if (!userId) {
+          // Use one of the doctor IDs we know exists in the database
+          userId = '68bc042c1db03b0fc1d091a5'; // Nirmal's MongoDB ObjectId
+          console.log('🔥 DOCTOR DASHBOARD: Using test doctor ID:', userId);
+        }
+        
+        if (userId) {
+          console.log('🔥 DOCTOR DASHBOARD: Using user ID:', userId);
+          
+          // Add a small delay to ensure backend is ready
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const service = initializeVideoCallService(userId, 'doctor');
+          
+          console.log('🔥 DOCTOR DASHBOARD: Video call service created:', !!service);
+          
+          // Wait a bit for connection to establish
+          setTimeout(() => {
+            console.log('🔥 DOCTOR DASHBOARD: Service connected after delay:', service?.isServiceConnected());
+          }, 3000);
+          
+          // Set up event listeners for incoming calls
+          service.onIncomingVideoCall((callData) => {
+            console.log('🔔 DOCTOR DASHBOARD: *** INCOMING VIDEO CALL RECEIVED ***:', callData);
+            alert(`INCOMING CALL FROM: ${callData.patientName}`);
+            setIncomingCall(callData);
+            setShowCallNotification(true);
+          });
+          
+          // Add error listener
+          service.onCallError((error) => {
+            console.error('🚨 DOCTOR DASHBOARD: Video call error:', error);
+            alert(`Video call error: ${error.message}`);
+          });
+          
+          console.log('🔥 DOCTOR DASHBOARD: Event listeners set up successfully');
+          return;
+        }
+        
+        // Fallback: try to get user ID from API
+        console.log('🔥 DOCTOR DASHBOARD: AuthContext user not available, trying API...');
+        const response = await axios.get('http://localhost:3000/api/doctors/me', {
+          withCredentials: true
+        });
+        
+        console.log('🔥 DOCTOR DASHBOARD: Full doctor response:', response.data);
+        
+        userId = response.data._id || response.data.id;
+        console.log('🔥 DOCTOR DASHBOARD: Extracted doctor ID:', userId);
+        
+        if (!userId) {
+          console.error('❌ DOCTOR DASHBOARD: No user ID found in auth response!');
+          alert('Failed to get user ID from authentication');
+          return;
+        }
+        
+        // Add a small delay to ensure backend is ready
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const service = initializeVideoCallService(userId, 'doctor');
+        
+        console.log('🔥 DOCTOR DASHBOARD: Video call service created:', !!service);
+        
+        // Wait a bit for connection to establish
+        setTimeout(() => {
+          console.log('🔥 DOCTOR DASHBOARD: Service connected after delay:', service?.isServiceConnected());
+        }, 3000);
+        
+        // Set up event listeners for incoming calls
+        service.onIncomingVideoCall((callData) => {
+          console.log('🔔 DOCTOR DASHBOARD: *** INCOMING VIDEO CALL RECEIVED ***:', callData);
+          alert(`INCOMING CALL FROM: ${callData.patientName}`);
+          setIncomingCall(callData);
+          setShowCallNotification(true);
+        });
+        
+        // Add error listener
+        service.onCallError((error) => {
+          console.error('🚨 DOCTOR DASHBOARD: Video call error:', error);
+          alert(`Video call error: ${error.message}`);
+        });
+        
+        console.log('🔥 DOCTOR DASHBOARD: Event listeners set up successfully');
+        
+      } catch (error) {
+        console.error('❌ DOCTOR DASHBOARD: Failed to initialize video call service:', error);
+        alert(`Failed to initialize video call service: ${error}`);
+      }
+    };
+
+    // Only initialize if we have user data or after a delay
+    if (user) {
+      initVideoCallService();
+    } else {
+      setTimeout(initVideoCallService, 3000);
+    }
+  }, [user]);
 
   const fetchDashboardStats = async () => {
     try {
@@ -337,8 +464,67 @@ const DoctorDashboard: React.FC = () => {
           </div>
         </section>
         
+        {/* Debug Test Button */}
+        <div className="fixed bottom-4 right-4 z-40">
+          <button
+            onClick={() => {
+              console.log('🧪 TESTING: Manual video call test triggered');
+              setIncomingCall({
+                callId: 'test-call-123',
+                doctorId: 'test-doctor',
+                doctorName: 'Test Doctor',
+                patientId: 'test-patient',
+                patientName: 'Test Patient',
+                specialization: 'General Medicine',
+                requestedAt: new Date().toISOString()
+              });
+              setShowCallNotification(true);
+            }}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-red-700"
+          >
+            🧪 Test Call
+          </button>
+        </div>
+
         <Chatbot />
       </main>
+
+      {/* Video Call Notification Modal */}
+      {showCallNotification && incomingCall && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="animate-bounce text-6xl mb-4">📞</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Incoming Video Call</h2>
+              <p className="text-lg text-emerald-600 font-medium mb-2">{incomingCall.patientName}</p>
+              <p className="text-gray-600 mb-6">{incomingCall.specialization}</p>
+              
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setShowCallNotification(false);
+                    setIncomingCall(null);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-200"
+                >
+                  <FaTimes />
+                  Decline
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCallNotification(false);
+                    navigate('/doctor/video-consultation');
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors duration-200"
+                >
+                  <FaVideo />
+                  Accept
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

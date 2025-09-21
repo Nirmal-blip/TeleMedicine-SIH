@@ -9,7 +9,11 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { NotificationsService } from '../notifications/notifications.service';
+import { Doctor, DoctorDocument } from '../schemas/doctor.schema';
+import { Patient, PatientDocument } from '../schemas/patient.schema';
 
 interface UserConnection {
   userId: string;
@@ -44,25 +48,62 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   constructor(
     private readonly notificationsService: NotificationsService,
+    @InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>,
+    @InjectModel(Patient.name) private patientModel: Model<PatientDocument>,
   ) {}
 
   async handleConnection(client: Socket) {
-    console.log(`Video call client connected: ${client.id}`);
+    console.log(`🔌 BACKEND: Video call client connected: ${client.id}`);
+    console.log(`🔍 BACKEND: Connection query:`, client.handshake.query);
     
     const userId = client.handshake.query.userId as string;
     const userType = client.handshake.query.userType as string;
     
-    if (userId && userType) {
-      this.connectedUsers.set(client.id, {
-        userId,
-        userType: userType as 'doctor' | 'patient',
-        socketId: client.id,
-      });
+    if (userId && userType && userId !== 'undefined') {
+      // If it's a doctor, get their custom doctorId and store that instead
+      if (userType === 'doctor') {
+        try {
+          const doctor = await this.doctorModel.findById(userId);
+          if (doctor && doctor.doctorId) {
+            this.connectedUsers.set(client.id, {
+              userId: doctor.doctorId, // Store custom doctorId instead of MongoDB ObjectId
+              userType: userType as 'doctor' | 'patient',
+              socketId: client.id,
+            });
+            console.log(`✅ BACKEND: Doctor ${doctor.fullname} connected with custom ID ${doctor.doctorId} (MongoDB: ${userId})`);
+          } else {
+            console.log(`❌ BACKEND: Doctor ${userId} not found or missing doctorId`);
+            return;
+          }
+        } catch (error) {
+          console.error('❌ BACKEND: Error fetching doctor:', error);
+          return;
+        }
+      } else if (userType === 'patient') {
+        // If it's a patient, get their custom patientId and store that instead
+        try {
+          const patient = await this.patientModel.findById(userId);
+          if (patient && patient.patientId) {
+            this.connectedUsers.set(client.id, {
+              userId: patient.patientId, // Store custom patientId instead of MongoDB ObjectId
+              userType: userType as 'doctor' | 'patient',
+              socketId: client.id,
+            });
+            console.log(`✅ BACKEND: Patient ${patient.fullname} connected with custom ID ${patient.patientId} (MongoDB: ${userId})`);
+          } else {
+            console.log(`❌ BACKEND: Patient ${userId} not found or missing patientId`);
+            return;
+          }
+        } catch (error) {
+          console.error('❌ BACKEND: Error fetching patient:', error);
+          return;
+        }
+      }
       
-      console.log(`🔥 BACKEND: User ${userId} (${userType}) connected for video calls`);
       console.log(`📊 BACKEND: Total connected users: ${this.connectedUsers.size}`);
+      console.log(`👥 BACKEND: All connected users:`, Array.from(this.connectedUsers.values()));
     } else {
-      console.log(`❌ BACKEND: Invalid connection - missing userId or userType`);
+      console.log(`❌ BACKEND: Invalid connection - missing userId (${userId}) or userType (${userType}), or userId is undefined`);
     }
   }
 
@@ -95,15 +136,29 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
       this.activeCalls.set(callId, videoCallRequest);
 
       console.log(`🔥 BACKEND: Patient ${data.patientName} requesting video call with doctor ${data.doctorName}`);
-      console.log(`🔍 BACKEND: Looking for doctor with ID: ${data.doctorId}`);
+      console.log(`🔍 BACKEND: Looking for doctor with MongoDB ID: ${data.doctorId}`);
       console.log(`👥 BACKEND: Connected users:`, Array.from(this.connectedUsers.values()));
 
-      // Find doctor's socket connections
+      // First, get the doctor's custom doctorId from MongoDB ObjectId
+      let targetDoctorId = data.doctorId;
+      try {
+        const doctor = await this.doctorModel.findById(data.doctorId).select('doctorId');
+        if (doctor && doctor.doctorId) {
+          targetDoctorId = doctor.doctorId;
+          console.log(`🆔 BACKEND: Converted MongoDB ID ${data.doctorId} to custom doctorId ${targetDoctorId}`);
+        } else {
+          console.log(`❌ BACKEND: Could not find custom doctorId for MongoDB ID ${data.doctorId}`);
+        }
+      } catch (error) {
+        console.error('❌ BACKEND: Error fetching doctor for ID conversion:', error);
+      }
+
+      // Find doctor's socket connections using custom doctorId
       const doctorSockets = Array.from(this.connectedUsers.entries())
-        .filter(([_, user]) => user.userId === data.doctorId && user.userType === 'doctor')
+        .filter(([_, user]) => user.userId === targetDoctorId && user.userType === 'doctor')
         .map(([socketId, _]) => socketId);
 
-      console.log(`🔌 BACKEND: Found ${doctorSockets.length} doctor socket(s) for ID ${data.doctorId}`);
+      console.log(`🔌 BACKEND: Found ${doctorSockets.length} doctor socket(s) for custom ID ${targetDoctorId}`);
 
       if (doctorSockets.length === 0) {
         console.log(`📝 BACKEND: Doctor not connected via socket, creating notification only`);
@@ -119,27 +174,50 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
         });
       }
 
+      // Get custom IDs for notification
+      let customDoctorId = data.doctorId;
+      let customPatientId = data.patientId;
+      
+      try {
+        // Get doctor's custom ID
+        const doctor = await this.doctorModel.findById(data.doctorId).select('doctorId');
+        if (doctor && doctor.doctorId) {
+          customDoctorId = doctor.doctorId;
+        }
+        
+        // Get patient's custom ID  
+        const patient = await this.patientModel.findById(data.patientId).select('patientId');
+        if (patient && patient.patientId) {
+          customPatientId = patient.patientId;
+        }
+        
+        console.log(`🆔 ID Conversion: Doctor ${data.doctorId} -> ${customDoctorId}, Patient ${data.patientId} -> ${customPatientId}`);
+      } catch (idError) {
+        console.error('Error fetching custom IDs:', idError);
+      }
+
       // Create database notification for the doctor
       try {
         await this.notificationsService.createNotification({
-          doctorId: data.doctorId,
+          doctorId: customDoctorId,
           recipientType: 'Doctor',
-          senderPatientId: data.patientId,
+          senderPatientId: customPatientId,
           senderType: 'Patient',
-          title: 'Incoming Video Call Request',
+          title: '📹 Video Call Request',
           message: `${data.patientName} is requesting a video consultation for ${data.specialization}`,
           type: 'video_call_request',
           priority: 'High',
-          actionUrl: `/doctor/dashboard`,
+          actionUrl: `/doctor/video-consultation`,
           actionText: 'Answer Call',
           metadata: {
             callId,
             patientName: data.patientName,
+            doctorName: data.doctorName,
             specialization: data.specialization,
             requestedAt: new Date().toISOString()
           }
         });
-        console.log(`✅ Notification created for doctor ${data.doctorId}`);
+        console.log(`✅ Notification created for doctor ${customDoctorId} (MongoDB: ${data.doctorId})`);
       } catch (error) {
         console.error('Failed to create notification:', error);
       }

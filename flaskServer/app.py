@@ -44,7 +44,7 @@ except:
 # =============================================================================
 
 # Google Gemini API Key (loaded from backend .env file or fallback)
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyDlpNK9Csn0h-B5YHWM3LU2W3o6wJGlda0')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyBjQmMBZT7eBD6oos14CJLbPvC-e22mDFw')
 if not GEMINI_API_KEY:
     print("Warning: GEMINI_API_KEY not found in environment variables and no fallback available.")
     GEMINI_API_KEY = ""
