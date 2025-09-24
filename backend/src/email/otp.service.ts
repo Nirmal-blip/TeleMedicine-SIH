@@ -38,7 +38,7 @@ export class OtpService {
 
       // Generate new OTP
       const otp = this.generateOTP();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const expiresAt = new Date(Date.now() + 1 * 60 * 1000); // 1 minutes
 
       // Store OTP
       this.otpStorage.set(email, {
