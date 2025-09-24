@@ -68,8 +68,11 @@ async function bootstrap() {
     `,
   });
 
-  await app.listen(3000);
-  console.log('Server started on port 3000');
-  console.log('API Documentation available at: http://localhost:3000/api/docs');
+  // await app.listen(3000);
+  // console.log('Server started on port 3000');
+  // console.log('API Documentation available at: http://localhost:3000/api/docs');
+const port = process.env.PORT || 3000;  // fallback to 3000 locally
+await app.listen(port);
+console.log(`Server started on port ${port}`);
 }
 bootstrap();
