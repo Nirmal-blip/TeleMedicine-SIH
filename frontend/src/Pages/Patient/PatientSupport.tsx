@@ -152,7 +152,7 @@ const PatientSupport: React.FC = () => {
                     <div className="bg-white/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20">
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
                             <div>
-                                <h1 className="text-4xl font-bold text-gray-800 mb-3 bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                                <h1 className="text-4xl font-bold text-gray-800 mb-3 bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text">
                                     🏥 Nearby Hospitals
                                 </h1>
                                 <p className="text-gray-600 text-lg">Find healthcare facilities near your location</p>

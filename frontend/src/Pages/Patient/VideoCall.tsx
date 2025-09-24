@@ -27,9 +27,13 @@ const PatientVideoCall: React.FC = () => {
   const callStartTimeRef = useRef<Date | null>(null);
 
   useEffect(() => {
+    console.log('🔥 PATIENT: VideoCall component mounted with callId:', callId);
     initializeVideoCallServiceForPatient();
     if (callId) {
-      initializeWebRTCForCall();
+      // Add a small delay to ensure video call service is initialized
+      setTimeout(() => {
+        initializeWebRTCForCall();
+      }, 1000);
     }
     return () => {
       cleanup();
@@ -132,9 +136,16 @@ const PatientVideoCall: React.FC = () => {
       const webrtc = initializeWebRTCManager();
       setWebrtcManager(webrtc);
 
+      // Get socket from video call service
+      const socket = videoCallService.getSocket();
+      if (!socket) {
+        console.error('❌ PATIENT: No socket available from video call service');
+        throw new Error('No socket available');
+      }
+
       // Initialize WebRTC with socket and callId
       const success = await webrtc.initialize(
-        videoCallService.getSocket()!, // Use public method to get socket
+        socket,
         callId,
         false // Patient is not the initiator
       );

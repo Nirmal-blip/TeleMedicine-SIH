@@ -320,40 +320,9 @@ const DoctorsList: React.FC = () => {
       console.log('🔥 PATIENT: Starting video call with doctor:', doctor.fullname);
       console.log('🔥 PATIENT: Patient name:', patientName);
 
-      // First, create an immediate consultation appointment
-      try {
-        const patientResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients/me`, {
-          withCredentials: true
-        });
-        
-        const now = new Date();
-        const currentDate = now.toISOString().split('T')[0];
-        const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
-
-        const appointmentResponse = await axios.post(`${(import.meta as any).env.VITE_BACKEND_URL}/api/appointments`, {
-          doctor: doctor.doctorId,
-          patient: patientResponse.data.patientId,
-          date: currentDate,
-          time: currentTime,
-          reason: 'Immediate Video Consultation',
-          status: 'Confirmed'
-        }, {
-          withCredentials: true
-        });
-
-        console.log('🔥 PATIENT: Immediate consultation booked:', appointmentResponse.data);
-        
-        // Store appointment data for reference
-        localStorage.setItem('activeAppointment', JSON.stringify({
-          appointmentId: appointmentResponse.data._id,
-          doctorId: doctor.doctorId,
-          doctorName: doctor.fullname,
-        }));
-        
-      } catch (appointmentError) {
-        console.error('Failed to create appointment:', appointmentError);
-        // Continue with video call even if appointment creation fails
-      }
+      // For immediate video calls, we don't need to create an appointment upfront
+      // The appointment can be created after the call if needed
+      console.log('🔥 PATIENT: Starting immediate video call - no appointment needed upfront');
       
       // Request video call
       console.log('🔥 PATIENT: About to request video call with doctor:', {

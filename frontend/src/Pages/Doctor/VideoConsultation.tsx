@@ -193,9 +193,16 @@ const DoctorVideoConsultation: React.FC = () => {
       const webrtc = initializeWebRTCManager();
       setWebrtcManager(webrtc);
 
+      // Get socket from video call service
+      const socket = videoCallService.getSocket();
+      if (!socket) {
+        console.error('❌ DOCTOR: No socket available from video call service');
+        throw new Error('No socket available');
+      }
+
       // Initialize WebRTC with socket and callId
       const success = await webrtc.initialize(
-        videoCallService.getSocket()!, // Use public method to get socket
+        socket,
         callId,
         true // Doctor is the initiator
       );
