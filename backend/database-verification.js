@@ -1,6 +1,5 @@
 const { MongoClient } = require('mongodb');
 const axios = require('axios');
-
 // MongoDB connection string
 const MONGODB_URI = 'mongodb+srv://prithraj120_db_user:b9zzQBKCNJP7PZ76@cluster1.zuncx72.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1';
 const DATABASE_NAME = 'TeleMedicine';
@@ -139,10 +138,10 @@ async function verifyDatabaseAndAPIs() {
     console.log('-' .repeat(40));
 
     const apiTests = [
-        { name: 'Medicine Catalog', url: 'http://localhost:3000/api/medicines?limit=5' },
-        { name: 'Medicine Categories', url: 'http://localhost:3000/api/medicines/categories' },
-        { name: 'Featured Medicines', url: 'http://localhost:3000/api/medicines/featured' },
-        { name: 'Doctors List', url: 'http://localhost:3000/api/doctors' },
+        { name: 'Medicine Catalog', url: 'https://telemedicine-sih-8i5h.onrender.com/api/medicines?limit=5' },
+        { name: 'Medicine Categories', url: 'https://telemedicine-sih-8i5h.onrender.com/api/medicines/categories' },
+        { name: 'Featured Medicines', url: 'https://telemedicine-sih-8i5h.onrender.com/api/medicines/featured' },
+        { name: 'Doctors List', url: 'https://telemedicine-sih-8i5h.onrender.com/api/doctors' },
     ];
 
     for (const test of apiTests) {
