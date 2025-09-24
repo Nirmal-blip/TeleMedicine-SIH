@@ -17,6 +17,7 @@ import { CreateMedicineDto, UpdateMedicineDto, SearchMedicinesDto } from '../dto
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Express } from 'express';
 
 @Controller('api/medicines')
 export class MedicinesController {
