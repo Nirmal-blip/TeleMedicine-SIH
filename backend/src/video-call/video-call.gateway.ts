@@ -160,18 +160,18 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
 
       console.log(`🔌 BACKEND: Found ${doctorSockets.length} doctor socket(s) for custom ID ${targetDoctorId}`);
 
-      if (doctorSockets.length === 0) {
-        console.log(`📝 BACKEND: Doctor not connected via socket, creating notification only`);
-        // Don't emit error, just continue with notification creation
-        // The doctor will see the notification when they check their notifications page
-      } else {
-        // Send real-time notification to doctor sockets
+      // Always send real-time notification to all connected doctor sockets
+      if (doctorSockets.length > 0) {
+        console.log(`📡 BACKEND: Sending real-time notification to ${doctorSockets.length} doctor socket(s)`);
         doctorSockets.forEach(socketId => {
           this.server.to(socketId).emit('doctor:incoming-call', {
             ...videoCallRequest,
             requestedAt: new Date().toISOString()
           });
         });
+      } else {
+        console.log(`📝 BACKEND: Doctor not connected via socket, creating notification only`);
+        // The doctor will see the notification when they check their notifications page
       }
 
       // Get custom IDs for notification

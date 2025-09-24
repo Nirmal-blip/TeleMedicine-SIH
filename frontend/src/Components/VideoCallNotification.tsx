@@ -30,7 +30,7 @@ const VideoCallNotificationComponent: React.FC<VideoCallNotificationProps> = ({ 
         withCredentials: true
       });
       
-      const userId = response.data.id;
+      const userId = response.data.user.userId;
       const service = initializeVideoCallService(userId, 'doctor');
       setVideoCallService(service);
       setIsInitialized(true);

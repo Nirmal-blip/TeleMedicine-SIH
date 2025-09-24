@@ -98,9 +98,13 @@ const PatientNotifications: React.FC = () => {
         });
       }
       
-      // Navigate to video consultation page
+      // Navigate to video consultation page with call ID
       setTimeout(() => {
-        navigate('/video-consultation');
+        if (data.callId) {
+          navigate(`/patient/video-call/${data.callId}`);
+        } else {
+          navigate('/patient/video-consultation');
+        }
       }, 2000);
       
       // Refresh notifications

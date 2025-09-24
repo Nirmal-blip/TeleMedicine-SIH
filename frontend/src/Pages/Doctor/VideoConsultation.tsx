@@ -154,6 +154,13 @@ const DoctorVideoConsultation: React.FC = () => {
       console.log('✅ DOCTOR: Accepting call:', incomingCall.callId);
       
       try {
+        // Check if service is connected
+        if (!videoCallService.isServiceConnected()) {
+          console.error('❌ Video call service not connected');
+          alert('Video call service not connected. Please refresh the page.');
+          return;
+        }
+
         // Accept the call through video call service first
         videoCallService.acceptVideoCall(incomingCall.callId);
         
@@ -163,10 +170,13 @@ const DoctorVideoConsultation: React.FC = () => {
         console.log('✅ Call accepted and video started');
       } catch (error) {
         console.error('❌ Error accepting call:', error);
-        alert('Failed to start video call');
+        alert('Failed to start video call: ' + (error instanceof Error ? error.message : String(error)));
         setCallStatus('idle');
         setIncomingCall(null);
       }
+    } else {
+      console.error('❌ Missing videoCallService or incomingCall');
+      alert('Video call service not initialized or no incoming call');
     }
   };
 

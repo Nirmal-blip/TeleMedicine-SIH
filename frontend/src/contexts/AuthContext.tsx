@@ -5,6 +5,7 @@ import { hasTokenCookie } from '../utils/cookieUtils';
 interface User {
   userId: string;
   email: string;
+  fullname: string;
   userType: 'patient' | 'doctor';
 }
 
@@ -48,7 +49,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       
       if (response.data.user) {
-        setUser(response.data.user);
+        setUser({
+          userId: response.data.user.userId,
+          email: response.data.user.email,
+          fullname: response.data.user.fullname,
+          userType: response.data.user.userType
+        });
       } else {
         setUser(null);
       }
@@ -91,6 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser({
           userId: '', // Will be set after login
           email: formData.email,
+          fullname: formData.fullname || '',
           userType: formData.userType,
         });
         refreshTokenState();
@@ -115,6 +122,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser({
           userId: response.data.userId || '',
           email: email,
+          fullname: '',
           userType: response.data.userType,
         });
         refreshTokenState(); // Refresh token state after successful login
@@ -138,6 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser({
           userId: response.data.userId || '',
           email: email,
+          fullname: '',
           userType: response.data.userType,
         });
         refreshTokenState();

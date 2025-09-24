@@ -99,13 +99,21 @@ export class VideoCallService {
   // Doctor methods
   public acceptVideoCall(callId: string) {
     if (this.socket && this.isConnected && this.userType === 'doctor') {
+      console.log(`🔥 DOCTOR: Accepting video call ${callId}`);
       this.socket.emit('doctor:accept-call', { callId });
+    } else {
+      console.error('❌ DOCTOR: Cannot accept call - socket not connected or not a doctor');
+      console.error('Socket connected:', this.isConnected, 'User type:', this.userType);
     }
   }
 
   public rejectVideoCall(callId: string, reason?: string) {
     if (this.socket && this.isConnected && this.userType === 'doctor') {
+      console.log(`❌ DOCTOR: Rejecting video call ${callId} with reason: ${reason}`);
       this.socket.emit('doctor:reject-call', { callId, reason });
+    } else {
+      console.error('❌ DOCTOR: Cannot reject call - socket not connected or not a doctor');
+      console.error('Socket connected:', this.isConnected, 'User type:', this.userType);
     }
   }
 
@@ -206,6 +214,7 @@ export class VideoCallService {
     }
   }
 
+  // Debug method to get socket for WebRTC
   public getSocket(): Socket | null {
     return this.socket;
   }
