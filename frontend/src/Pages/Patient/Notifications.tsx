@@ -67,7 +67,7 @@ const PatientNotifications: React.FC = () => {
 
   const initializeVideoCallService = async () => {
     try {
-      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/auth/me', {
+      const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/me`, {
         withCredentials: true
       });
       
@@ -139,7 +139,7 @@ const PatientNotifications: React.FC = () => {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/notifications', {
+      const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/notifications`, {
         withCredentials: true,
       });
       
@@ -276,7 +276,7 @@ const PatientNotifications: React.FC = () => {
 
   const markAsRead = async (id: string) => {
     try {
-      await axios.patch(`https://telemedicine-sih-8i5h.onrender.com/api/notifications/${id}/read`, {}, {
+      await axios.patch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/notifications/${id}/read`, {}, {
         withCredentials: true,
       });
       
@@ -290,7 +290,7 @@ const PatientNotifications: React.FC = () => {
 
   const deleteNotification = async (id: string) => {
     try {
-      await axios.delete(`https://telemedicine-sih-8i5h.onrender.com/api/notifications/${id}`, {
+      await axios.delete(`${(import.meta as any).env.VITE_BACKEND_URL}/api/notifications/${id}`, {
         withCredentials: true,
       });
       
@@ -302,7 +302,7 @@ const PatientNotifications: React.FC = () => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.patch('https://telemedicine-sih-8i5h.onrender.com/api/notifications/mark-all-read', {}, {
+      await axios.patch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/notifications/mark-all-read`, {}, {
         withCredentials: true,
       });
       

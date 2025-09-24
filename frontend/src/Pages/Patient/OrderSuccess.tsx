@@ -55,7 +55,7 @@ const OrderSuccess: React.FC = () => {
 
   const fetchOrder = async () => {
     try {
-      const response = await fetch(`https://telemedicine-sih-8i5h.onrender.com/api/orders/${orderId}`, {
+      const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/orders/${orderId}`, {
         credentials: 'include',
       });
       
@@ -75,7 +75,7 @@ const OrderSuccess: React.FC = () => {
   const downloadInvoice = async () => {
     try {
       // Open invoice in new window for download/print
-      const invoiceUrl = `https://telemedicine-sih-8i5h.onrender.com/api/orders/${orderId}/invoice`;
+      const invoiceUrl = `${(import.meta as any).env.VITE_BACKEND_URL}/api/orders/${orderId}/invoice`;
       window.open(invoiceUrl, '_blank');
     } catch (error) {
       console.error('Error opening invoice:', error);

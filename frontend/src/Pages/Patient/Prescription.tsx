@@ -68,7 +68,7 @@ const Prescription: React.FC = () => {
       setLoading(true);
       
       // Get current patient data
-      const patientResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/patients/me', {
+      const patientResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients/me`, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ const Prescription: React.FC = () => {
   const fetchPrescriptions = async (patientId: string) => {
     try {
       console.log(`Fetching prescriptions for patientId: ${patientId}`);
-      const response = await axios.get(`https://telemedicine-sih-8i5h.onrender.com/api/prescriptions/patient-id/${patientId}`, {
+      const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/prescriptions/patient-id/${patientId}`, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json',

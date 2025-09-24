@@ -1,4 +1,3 @@
-import { BACKEND_BASE_URL } from '../utils/env';
 import React, { useState, useEffect, ChangeEvent, FormEvent, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faXmark, faPaperPlane, faMicrophone, faMicrophoneSlash, faVolumeUp, faHistory, faPlus, faTrash, faClock } from '@fortawesome/free-solid-svg-icons';
@@ -128,7 +127,7 @@ const Chatbot: React.FC = () => {
     };
 
     useEffect(() => {
-        let timer: number | undefined;
+        let timer: ReturnType<typeof setTimeout> | undefined;
         if (!isOpen) {
             timer = setTimeout(() => {
                 setShowWelcome(true);
@@ -449,7 +448,7 @@ const Chatbot: React.FC = () => {
     // Chat History Functions
     const createNewChatSession = async () => {
         try {
-            const response = await fetch(`${BACKEND_BASE_URL}/api/chat-history/session`, {
+            const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/chat-history/session`, {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -485,7 +484,7 @@ const Chatbot: React.FC = () => {
 
     const loadChatSessions = async () => {
         try {
-            const response = await fetch(`${BACKEND_BASE_URL}/api/chat-history/sessions`, {
+            const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/chat-history/sessions`, {
                 credentials: 'include',
             });
             
@@ -500,7 +499,7 @@ const Chatbot: React.FC = () => {
 
     const loadChatSession = async (sessionId: string) => {
         try {
-            const response = await fetch(`${BACKEND_BASE_URL}/api/chat-history/session/${sessionId}`, {
+            const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/chat-history/session/${sessionId}`, {
                 credentials: 'include',
             });
             
@@ -522,7 +521,7 @@ const Chatbot: React.FC = () => {
 
     const deleteChatSession = async (sessionId: string) => {
         try {
-            const response = await fetch(`${BACKEND_BASE_URL}/api/chat-history/session/${sessionId}`, {
+            const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/chat-history/session/${sessionId}`, {
                 method: 'DELETE',
                 credentials: 'include',
             });
@@ -570,7 +569,7 @@ const Chatbot: React.FC = () => {
             }
 
             // Use streaming endpoint
-            const response = await fetch('https://telemedicine-sih.onrender.com/api/chat/stream', {
+            const response = await fetch(`${(import.meta as any).env.VITE_FLASK_URL}/api/chat/stream`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -640,7 +639,7 @@ const Chatbot: React.FC = () => {
                 // Save bot response to chat history
                 if (sessionId) {
                     try {
-                        await fetch(`${BACKEND_BASE_URL}/api/ai/chat/save-response`, {
+                        await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/ai/chat/save-response`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -667,7 +666,7 @@ const Chatbot: React.FC = () => {
                     fallbackSessionId = await createNewChatSession();
                 }
                 
-                const fallbackResponse = await fetch(`${BACKEND_BASE_URL}/api/ai/chat`, {
+                const fallbackResponse = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/ai/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

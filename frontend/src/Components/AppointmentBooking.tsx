@@ -113,11 +113,11 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
     try {
       // Get current patient ID
-      const patientResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/patients/me', {
+      const patientResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients/me`, {
         withCredentials: true
       });
       
-      const response = await axios.post('https://telemedicine-sih-8i5h.onrender.com/api/appointments', {
+      const response = await axios.post(`${(import.meta as any).env.VITE_BACKEND_URL}/api/appointments`, {
         doctor: doctor._id,
         patient: patientResponse.data._id,
         date: selectedDate,

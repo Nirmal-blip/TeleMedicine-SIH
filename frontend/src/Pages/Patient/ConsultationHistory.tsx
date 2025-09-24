@@ -40,7 +40,7 @@ const ConsultationHistory: React.FC = () => {
     try {
       setLoading(true);
       // Fetch completed appointments which represent consultation history
-      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/appointments/my/completed', {
+      const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/appointments/my/completed`, {
         withCredentials: true
       });
       

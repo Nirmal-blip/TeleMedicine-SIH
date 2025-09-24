@@ -52,7 +52,7 @@ const Cart: React.FC = () => {
 
   const fetchCart = async () => {
     try {
-      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/cart', {
+      const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/cart`, {
         credentials: 'include',
       });
       
@@ -106,7 +106,7 @@ const Cart: React.FC = () => {
     
     setUpdating(medicineId);
     try {
-      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/cart/update', {
+      const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/cart/update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ const Cart: React.FC = () => {
     }
 
     try {
-      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/cart/remove', {
+      const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/cart/remove`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ const Cart: React.FC = () => {
     }
 
     try {
-      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/cart/clear', {
+      const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/cart/clear`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -189,7 +189,7 @@ const Cart: React.FC = () => {
 
   const validateCart = async () => {
     try {
-      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/cart/validate', {
+      const response = await fetch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/cart/validate`, {
         credentials: 'include',
       });
       

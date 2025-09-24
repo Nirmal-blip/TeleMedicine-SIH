@@ -1,4 +1,3 @@
-import { BACKEND_BASE_URL } from './env';
 import { io, Socket } from 'socket.io-client';
 import { NotificationManager, NotificationData } from './notifications';
 
@@ -17,7 +16,7 @@ export class RealTimeNotificationService {
   private connect() {
     try {
       // Connect to the video-call namespace
-      this.socket = io(`${BACKEND_BASE_URL}/video-call`, {
+      this.socket = io(`${(import.meta as any).env.VITE_BACKEND_URL}/video-call`, {
         query: {
           userId: this.userId,
           userType: this.userType,

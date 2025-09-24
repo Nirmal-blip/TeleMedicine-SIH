@@ -6,73 +6,79 @@ import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  
-  // Configure Socket.IO adapter with proper CORS settings
-  const ioAdapter = new IoAdapter(app);
-  app.useWebSocketAdapter(ioAdapter);
+  try {
+    const app = await NestFactory.create(AppModule);
+    
+    // Define the allowed origin for your frontend
+    // Use an environment variable for production and a fallback for development
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    console.log(`✅ Allowing CORS for origin: ${frontendUrl}`);
+    console.log(`✅ Environment: ${process.env.NODE_ENV}`);
 
-  // Enable CORS
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
-
-  // Global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
-
-  // Cookie parser middleware
-  app.use(cookieParser());
-
-  // Swagger documentation setup
-  const config = new DocumentBuilder()
-    .setTitle('Telemedicine API')
-    .setDescription('Comprehensive Telemedicine Backend API with AI/ML Integration')
-    .setVersion('1.0')
-    .addTag('Authentication', 'User authentication endpoints')
-    .addTag('Patients', 'Patient management endpoints')
-    .addTag('Doctors', 'Doctor management endpoints')
-    .addTag('Appointments', 'Appointment management endpoints')
-    .addTag('AI/ML', 'AI and Machine Learning services (via Flask server)')
-    .addTag('Uploads', 'File upload endpoints')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
+    // Configure Socket.IO adapter with proper CORS settings
+    // The main app.enableCors does not apply to WebSockets
+    app.useWebSocketAdapter(new IoAdapter({
+      app,
+      cors: {
+        origin: frontendUrl,
+        methods: ['GET', 'POST'],
+        credentials: true,
       },
-      'JWT-auth',
-    )
-    .addCookieAuth('token', {
-      type: 'apiKey',
-      in: 'cookie',
-      name: 'token',
-      description: 'JWT token stored in HTTP-only cookie',
-    })
+    }));
+
+    // Enable CORS with a specific origin
+    app.enableCors({
+      origin: frontendUrl,
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    });
+
+    // Global validation pipe
+    app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }));
+
+    // Cookie parser middleware
+    app.use(cookieParser());
+
+  // Swagger API documentation setup
+  const config = new DocumentBuilder()
+    .setTitle('TeleMedicine API')
+    .setDescription('API documentation for TeleMedicine platform')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .addTag('Authentication', 'User authentication endpoints')
+    .addTag('Doctors', 'Doctor management endpoints')
+    .addTag('Patients', 'Patient management endpoints')
+    .addTag('Appointments', 'Appointment scheduling endpoints')
+    .addTag('Prescriptions', 'Prescription management endpoints')
+    .addTag('Video Calls', 'Video consultation endpoints')
+    .addTag('Notifications', 'Real-time notification endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document, {
-    customSiteTitle: 'Telemedicine API Documentation',
-    customfavIcon: '/favicon.ico',
-    customCss: `
-      .topbar-wrapper img {content:url('/logo.png'); width:120px; height:auto;}
-      .swagger-ui .topbar { background-color: #1976d2; }
-    `,
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
   });
 
-  // await app.listen(3000);
-  // console.log('Server started on port 3000');
-  // console.log('API Documentation available at: http://localhost:3000/api/docs');
-const port = process.env.PORT || 3000;  // fallback to 3000 locally
-await app.listen(port);
-console.log(`Server started on port ${port}`);
+    const port = process.env.PORT || 3000;
+    await app.listen(port);
+    console.log(`🚀 TeleMedicine API server started successfully on port ${port}`);
+    console.log(`📚 API Documentation available at: http://localhost:${port}/api/docs`);
+    console.log(`🌐 CORS enabled for: ${frontendUrl}`);
+    
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
 }
-bootstrap();
+
+bootstrap().catch((error) => {
+  console.error('❌ Bootstrap failed:', error);
+  process.exit(1);
+});

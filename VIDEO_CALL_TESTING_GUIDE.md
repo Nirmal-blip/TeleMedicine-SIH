@@ -1,166 +1,189 @@
-# Video Call Testing Guide - Patient to Doctor
+# Video Call System Testing Guide
 
-## 🚀 Quick Start Testing
+## Overview
+This guide will help you test the video call functionality from patient to doctor, including all the fixes we've implemented.
 
-### Prerequisites
-✅ Backend server running on `http://localhost:3000`
-✅ Frontend server running on `http://localhost:5173`
-✅ Two browser windows/tabs (one for patient, one for doctor)
+## Prerequisites
+1. **Two separate browser tabs/windows** (or different devices)
+2. **Valid patient and doctor accounts** on the production server
+3. **Browser notifications enabled** for both tabs
+4. **Stable internet connection**
 
-## 📋 Step-by-Step Testing Process
+## Test Accounts Setup
+Before testing, ensure you have:
+- One patient account logged in
+- One doctor account logged in (preferably in different browser/device)
 
-### Step 1: Patient Side Setup
-1. **Open Browser Tab 1** → Navigate to `http://localhost:5173`
-2. **Login as Patient**:
-   - Use existing patient credentials
-   - Or create a new patient account
-3. **Navigate to Doctors List**:
-   - Go to `/patient/doctors`
-   - You should see a list of available doctors
+## Test Scenarios
 
-### Step 2: Doctor Side Setup
-1. **Open Browser Tab 2** → Navigate to `http://localhost:5173`
-2. **Login as Doctor**:
-   - Use existing doctor credentials
-   - Or create a new doctor account
-3. **Navigate to Video Consultation**:
-   - Go to `/doctor/video-consultation`
-   - You should see "Waiting for incoming calls..." message
+### 1. Basic Video Call Flow Test
 
-### Step 3: Initiate Video Call
-1. **In Patient Tab**:
-   - Find any doctor from the list
-   - Click the **"Start Video Call"** button
-   - You should see a modal with "Sending call request..." status
+#### Step 1: Patient Initiates Call
+1. **Open patient tab** and navigate to `/patient/doctors`
+2. **Find a doctor** from the list
+3. **Click "Video Call"** button
+4. **Verify**: 
+   - Call request modal appears
+   - Patient name shows correctly (not "Sayantan Halder")
+   - Loading state shows "Requesting video call..."
 
-### Step 4: Doctor Response
-1. **In Doctor Tab**:
-   - You should see an **"Incoming Video Call"** notification
-   - The notification should show:
-     - Patient name
-     - Specialization
-     - "Accept" and "Decline" buttons
+#### Step 2: Doctor Receives Notification
+1. **In doctor tab**, you should see:
+   - **Real-time notification popup** with patient details
+   - **Browser notification** (if permissions granted)
+   - **Incoming call interface** with Accept/Decline buttons
+2. **Verify**:
+   - Doctor name shows correctly in the interface
+   - Patient name is displayed correctly
+   - Call details are accurate
 
-### Step 5: Accept Call
-1. **Click "Accept"** in the doctor tab
-2. **Expected Results**:
-   - Patient modal should show "Call Accepted!"
-   - Both users should be redirected to video call pages
-   - Video streams should start (if camera permissions granted)
+#### Step 3: Doctor Accepts Call
+1. **Click "Accept"** button in doctor interface
+2. **Verify**:
+   - Doctor redirects to `/doctor/video-call/{callId}`
+   - Video call interface loads properly
+   - No error messages appear
 
-## 🔍 What to Look For
+#### Step 4: Patient Receives Acceptance
+1. **In patient tab**, you should see:
+   - **Success notification** "Doctor has accepted your call"
+   - **Automatic redirect** to `/patient/video-call/{callId}`
+   - Video call interface loads
 
-### ✅ Success Indicators
-- [ ] Patient can see "Start Video Call" button
-- [ ] Clicking button shows "Sending call request..." modal
-- [ ] Doctor receives incoming call notification
-- [ ] Doctor can accept/decline the call
-- [ ] Both users navigate to video call interface
-- [ ] Camera/microphone permissions requested
-- [ ] Video streams appear (local and remote)
+### 2. Call Rejection Test
 
-### ❌ Common Issues to Check
-- [ ] Console errors in browser developer tools
-- [ ] Socket.IO connection errors
-- [ ] WebRTC permission denials
-- [ ] Network connectivity issues
+#### Step 1: Patient Initiates Call (Same as above)
+1. Patient clicks "Video Call" on a doctor
 
-## 🛠️ Debugging Steps
+#### Step 2: Doctor Rejects Call
+1. **In doctor tab**, click "Decline" button
+2. **Add reason** (optional): "Doctor is busy"
 
-### Check Browser Console
-1. **Open Developer Tools** (F12)
-2. **Go to Console tab**
-3. **Look for these log messages**:
+#### Step 3: Patient Receives Rejection
+1. **In patient tab**, you should see:
+   - **Rejection notification** with reason
+   - **Redirect to dashboard** after 3 seconds
 
-**Patient Side:**
+### 3. Cross-Device Testing
+
+#### Setup:
+- **Device 1**: Patient logged in
+- **Device 2**: Doctor logged in (different browser/device)
+
+#### Test:
+1. **Patient initiates call** from Device 1
+2. **Doctor receives notification** on Device 2
+3. **Doctor accepts/rejects** from Device 2
+4. **Patient receives response** on Device 1
+
+### 4. Error Handling Tests
+
+#### Test 1: Doctor Offline
+1. **Patient initiates call** to doctor who's not logged in
+2. **Verify**: Patient gets "Doctor will be notified when online" message
+
+#### Test 2: Network Issues
+1. **Disconnect internet** temporarily during call
+2. **Reconnect**
+3. **Verify**: System handles reconnection gracefully
+
+#### Test 3: Multiple Calls
+1. **Patient sends multiple calls** to same doctor
+2. **Verify**: Doctor receives all notifications properly
+
+## Expected Behaviors (After Fixes)
+
+### ✅ Fixed Issues:
+1. **Authentication**: Both users show correct names (not "Sayantan Halder")
+2. **Notifications**: Real-time notifications work across devices
+3. **Routing**: Proper redirects to video call pages
+4. **Error Handling**: Clear error messages and proper fallbacks
+
+### 🔍 What to Look For:
+
+#### Console Logs (Open Developer Tools):
 ```
-🔥 PATIENT: Initializing video call service with ID: [patientId]
-🔥 PATIENT: Starting video call with doctor: [doctorName]
-🔥 PATIENT: Video call request result: [callId]
+✅ FRONTEND: Video call service connected for patient/doctor
+🔔 DOCTOR: Incoming video call: {call details}
+🔥 DOCTOR: Accepting video call {callId}
+✅ Patient received call acceptance
 ```
 
-**Doctor Side:**
-```
-🔥 DOCTOR: Video call service initialized for doctor: [doctorId]
-🔔 DOCTOR: Incoming video call: [callData]
-✅ DOCTOR: Accepting call: [callId]
-```
+#### Network Tab:
+- WebSocket connections to `wss://telemedicine-sih-8i5h.onrender.com/video-call`
+- API calls to production server
+- Proper authentication headers
 
-### Check Network Tab
-1. **Open Developer Tools** → **Network tab**
-2. **Look for WebSocket connections**:
-   - Should see connection to `ws://localhost:3000/video-call`
-   - Status should be "101 Switching Protocols"
+#### UI Elements:
+- Correct user names displayed
+- Proper loading states
+- Success/error notifications
+- Smooth transitions between pages
 
-### Check Backend Logs
-1. **In backend terminal**, look for:
-```
-🔌 BACKEND: Video call client connected: [socketId]
-🔥 BACKEND: Patient [patientName] requesting video call with doctor [doctorName]
-📤 BACKEND: Doctor [doctorId] sending offer for call [callId]
-```
+## Troubleshooting
 
-## 🧪 Test Scenarios
+### Common Issues:
 
-### Scenario 1: Successful Call
-- Patient initiates call → Doctor accepts → Video call starts
-- **Expected**: Both users see each other's video
+#### 1. "Video call service not initialized"
+**Solution**: Refresh the page and ensure user is logged in
 
-### Scenario 2: Call Rejection
-- Patient initiates call → Doctor declines
-- **Expected**: Patient sees "Call Declined" message
+#### 2. "Doctor not connected via socket"
+**Solution**: Check if doctor is logged in and page is active
 
-### Scenario 3: Doctor Offline
-- Patient initiates call to offline doctor
-- **Expected**: Patient sees "Doctor unavailable" message
+#### 3. "Call request not found"
+**Solution**: Wait a moment and try again, or refresh both tabs
 
-### Scenario 4: Permission Denial
-- User denies camera/microphone access
-- **Expected**: Appropriate error message shown
+#### 4. Names showing incorrectly
+**Solution**: Check AuthContext is properly updated with fullname field
 
-## 🔧 Troubleshooting
+### Debug Steps:
+1. **Check console logs** for error messages
+2. **Verify WebSocket connections** in Network tab
+3. **Check authentication** by calling `/api/auth/me`
+4. **Test with different browsers/devices**
 
-### If Video Call Button Doesn't Appear
-1. Check if user is logged in as patient
-2. Verify doctors are loaded from API
-3. Check console for JavaScript errors
+## Success Criteria
 
-### If Doctor Doesn't Receive Call
-1. Verify doctor is logged in
-2. Check if doctor is on video consultation page
-3. Verify Socket.IO connection in Network tab
+✅ **All tests pass if:**
+- Patient can initiate video calls
+- Doctor receives real-time notifications
+- Doctor can accept/reject calls
+- Proper redirects occur after acceptance
+- Correct user names are displayed
+- Cross-device functionality works
+- Error handling is graceful
 
-### If Video Doesn't Start
-1. Check camera/microphone permissions
-2. Verify WebRTC support in browser
-3. Check console for WebRTC errors
+## Production Server URLs
+- **Backend**: `https://telemedicine-sih-8i5h.onrender.com`
+- **WebSocket**: `wss://telemedicine-sih-8i5h.onrender.com/video-call`
+- **Frontend**: Your deployed frontend URL
 
-### If Call Gets Stuck
-1. Refresh both browser tabs
-2. Check backend server logs
-3. Restart backend server if needed
+## Manual Test Checklist
 
-## 📱 Browser Compatibility
-- **Chrome**: Full support ✅
-- **Firefox**: Full support ✅
-- **Safari**: Full support ✅
-- **Edge**: Full support ✅
+- [ ] Patient can see doctor list
+- [ ] Patient can initiate video call
+- [ ] Doctor receives notification
+- [ ] Doctor can accept call
+- [ ] Doctor redirects to video call page
+- [ ] Patient receives acceptance notification
+- [ ] Patient redirects to video call page
+- [ ] Doctor can reject call
+- [ ] Patient receives rejection notification
+- [ ] Cross-device notifications work
+- [ ] User names display correctly
+- [ ] No console errors
+- [ ] WebSocket connections stable
 
-## 🎯 Expected Final Result
-When everything works correctly:
-1. Patient clicks "Start Video Call"
-2. Doctor receives notification and accepts
-3. Both users see video call interface
-4. Local and remote video streams appear
-5. Audio/video controls work (mute, video toggle, end call)
+## Next Steps After Testing
 
-## 📞 Next Steps After Testing
-1. **Report any issues** found during testing
-2. **Test different scenarios** (rejection, offline doctor, etc.)
-3. **Verify call controls** (mute, video toggle, end call)
-4. **Test on different browsers** if needed
-5. **Test mobile responsiveness** if applicable
+If all tests pass:
+1. **Deploy changes** to production
+2. **Monitor logs** for any issues
+3. **Test with real users**
+4. **Document any additional issues**
 
----
-
-**Ready to test?** Follow the steps above and let me know what you observe!
+If tests fail:
+1. **Check console errors**
+2. **Verify server logs**
+3. **Test individual components**
+4. **Apply additional fixes as needed**

@@ -25,7 +25,7 @@ const PatientDashboard: React.FC = () => {
     const fetchPatientData = async () => {
       try {
         // Fetch authenticated patient data from the backend
-          const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/patients/me', {
+          const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients/me`, {
           withCredentials: true, // Include auth cookies
         });
         
@@ -64,7 +64,7 @@ const PatientDashboard: React.FC = () => {
     if (newName && newName.trim()) {
       try {
         // Update name in database
-          await axios.patch('https://telemedicine-sih-8i5h.onrender.com/api/patients/me', {
+          await axios.patch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients/me`, {
           fullname: newName.trim()
         }, {
           withCredentials: true,

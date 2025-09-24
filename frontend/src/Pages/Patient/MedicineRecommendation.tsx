@@ -1,4 +1,3 @@
-import { FLASK_BASE_URL } from '../../utils/env';
 import React, { useState, ChangeEvent, useRef } from "react";
 import Sidebar from "../../Components/Sidebar";
 import { FaPills, FaSearch, FaSpinner, FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaRobot } from "react-icons/fa";
@@ -49,7 +48,7 @@ const MedicineRecommendation: React.FC = () => {
             let response;
             
             if (searchMethod === 'text') {
-                response = await fetch(`${FLASK_BASE_URL}/api/medicine/recommend`, {
+                response = await fetch(`${(import.meta as any).env.VITE_FLASK_URL}/api/medicine/recommend`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     credentials: 'include',
@@ -60,7 +59,7 @@ const MedicineRecommendation: React.FC = () => {
                 const formData = new FormData();
                 formData.append('file', selectedFile!);
                 
-                response = await fetch(`${FLASK_BASE_URL}/api/medicine/recommend-image`, {
+                response = await fetch(`${(import.meta as any).env.VITE_FLASK_URL}/api/medicine/recommend-image`, {
                     method: "POST",
                     body: formData,
                 });

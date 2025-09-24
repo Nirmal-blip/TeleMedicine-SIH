@@ -61,12 +61,12 @@ const PrescribedPatients: React.FC = () => {
     try {
       setIsLoading(true);
       // First get all patients for this doctor
-      const patientsResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/patients', {
+      const patientsResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients`, {
         withCredentials: true,
       });
       
       // Get completed appointments with prescriptions
-      const appointmentsResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/appointments/my/completed', {
+      const appointmentsResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/appointments/my/completed`, {
         withCredentials: true,
       });
       

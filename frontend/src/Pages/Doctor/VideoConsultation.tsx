@@ -38,7 +38,7 @@ const DoctorVideoConsultation: React.FC = () => {
 
   const fetchDoctorData = async () => {
     try {
-      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/doctors/me', {
+      const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/doctors/me`, {
         withCredentials: true
       });
       setDoctorData(response.data);
@@ -64,7 +64,7 @@ const DoctorVideoConsultation: React.FC = () => {
     try {
       console.log('Submitting prescription:', prescriptionData);
       
-      const response = await axios.post('https://telemedicine-sih-8i5h.onrender.com/api/prescriptions', prescriptionData, {
+      const response = await axios.post(`${(import.meta as any).env.VITE_BACKEND_URL}/api/prescriptions`, prescriptionData, {
         withCredentials: true
       });
       
@@ -79,7 +79,7 @@ const DoctorVideoConsultation: React.FC = () => {
 
   const initializeVideoCallServiceForDoctor = async () => {
     try {
-      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/auth/me', {
+      const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/me`, {
         withCredentials: true
       });
       

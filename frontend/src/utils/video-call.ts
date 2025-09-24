@@ -1,4 +1,3 @@
-import { BACKEND_BASE_URL } from './env';
 import { io, Socket } from 'socket.io-client';
 
 export interface VideoCallRequest {
@@ -34,7 +33,7 @@ export class VideoCallService {
 
   private connect() {
     try {
-      this.socket = io(`${BACKEND_BASE_URL}/video-call`, {
+      this.socket = io(`${(import.meta as any).env.VITE_BACKEND_URL}/video-call`, {
         query: {
           userId: this.userId,
           userType: this.userType,

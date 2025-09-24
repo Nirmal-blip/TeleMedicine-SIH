@@ -1,4 +1,3 @@
-import { BACKEND_BASE_URL } from '../../utils/env';
 import React, { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import Sidebar from '../../Components/Sidebar'
@@ -94,7 +93,7 @@ const DoctorsList: React.FC = () => {
       } else {
         // Fallback: try API
         try {
-          const response = await axios.get(`${BACKEND_BASE_URL}/api/patients/me`, {
+          const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients/me`, {
             withCredentials: true
           });
           patientId = response.data._id || response.data.id;
@@ -156,7 +155,7 @@ const DoctorsList: React.FC = () => {
   const fetchDoctors = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BACKEND_BASE_URL}/api/doctors`, {
+      const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/doctors`, {
         withCredentials: true
       });
       
@@ -312,7 +311,7 @@ const DoctorsList: React.FC = () => {
       setShowVideoCallModal(true);
       
       // Get current user info
-      const response = await axios.get(`${BACKEND_BASE_URL}/api/auth/me`, {
+        const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/me`, {
         withCredentials: true
       });
       console.log(response)
@@ -323,7 +322,7 @@ const DoctorsList: React.FC = () => {
 
       // First, create an immediate consultation appointment
       try {
-        const patientResponse = await axios.get(`${BACKEND_BASE_URL}/api/patients/me`, {
+        const patientResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients/me`, {
           withCredentials: true
         });
         
@@ -331,7 +330,7 @@ const DoctorsList: React.FC = () => {
         const currentDate = now.toISOString().split('T')[0];
         const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
 
-        const appointmentResponse = await axios.post(`${BACKEND_BASE_URL}/api/appointments`, {
+        const appointmentResponse = await axios.post(`${(import.meta as any).env.VITE_BACKEND_URL}/api/appointments`, {
           doctor: doctor.doctorId,
           patient: patientResponse.data.patientId,
           date: currentDate,
