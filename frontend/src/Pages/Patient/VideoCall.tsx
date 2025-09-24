@@ -63,7 +63,7 @@ const PatientVideoCall: React.FC = () => {
       } else {
         // Fallback: try API or use test ID
         try {
-          const response = await axios.get('http://localhost:3000/api/patients/me', {
+          const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/patients/me', {
             withCredentials: true
           });
           patientId = response.data._id || response.data.id;

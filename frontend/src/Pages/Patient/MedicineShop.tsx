@@ -62,7 +62,7 @@ const MedicineShop: React.FC = () => {
 
   const fetchCartFromServer = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/cart', {
+      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/cart', {
         credentials: 'include',
       });
       
@@ -97,7 +97,7 @@ const MedicineShop: React.FC = () => {
         params.append('prescriptionRequired', prescriptionFilter === 'prescription' ? 'true' : 'false');
       }
 
-      const response = await fetch(`http://localhost:3000/api/medicines?${params}`);
+      const response = await fetch(`https://telemedicine-sih-8i5h.onrender.com/api/medicines?${params}`);
       const data = await response.json();
       
       setMedicines(data.medicines);
@@ -111,7 +111,7 @@ const MedicineShop: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/medicines/categories');
+      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/medicines/categories');
       const data = await response.json();
       setCategories(data);
     } catch (error) {
@@ -135,7 +135,7 @@ const MedicineShop: React.FC = () => {
 
   const addToCart = async (medicine: Medicine) => {
     try {
-      const response = await fetch('http://localhost:3000/api/cart/add', {
+      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/cart/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

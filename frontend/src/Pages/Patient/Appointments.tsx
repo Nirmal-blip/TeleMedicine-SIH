@@ -37,16 +37,16 @@ const Appointments: React.FC = () => {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      let endpoint = 'http://localhost:3000/api/appointments';
+      let endpoint = 'https://telemedicine-sih-8i5h.onrender.com/api/appointments';
       
       // Determine which endpoint to call based on active tab
       if (activeTab === 'upcoming') {
-        endpoint = 'http://localhost:3000/api/appointments/my/upcoming';
+        endpoint = 'https://telemedicine-sih-8i5h.onrender.com/api/appointments/my/upcoming';
       } else if (activeTab === 'completed') {
-        endpoint = 'http://localhost:3000/api/appointments/my/completed';
+        endpoint = 'https://telemedicine-sih-8i5h.onrender.com/api/appointments/my/completed';
       } else {
         // For 'all' tab, get all appointments for the user
-        endpoint = 'http://localhost:3000/api/appointments';
+        endpoint = 'https://telemedicine-sih-8i5h.onrender.com/api/appointments';
       }
       
       const response = await axios.get(endpoint, {
