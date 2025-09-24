@@ -21,6 +21,8 @@ const PatientVideoCall: React.FC = () => {
   const [incomingCall, setIncomingCall] = useState<VideoCallNotification | null>(null);
   const [doctorInfo, setDoctorInfo] = useState<any>(null);
   const [callDuration, setCallDuration] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
+  const [maxRetries] = useState(3);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -163,6 +165,8 @@ const PatientVideoCall: React.FC = () => {
       // Set up WebRTC event listeners BEFORE initialization
       webrtc.onLocalStream((stream) => {
         console.log('🎥 PATIENT: Local stream received', stream);
+        console.log('🎥 PATIENT: Stream tracks:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
+        
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
           console.log('🎥 PATIENT: Local video element updated');
@@ -176,6 +180,8 @@ const PatientVideoCall: React.FC = () => {
 
       webrtc.onRemoteStream((stream) => {
         console.log('📺 PATIENT: Remote stream received', stream);
+        console.log('📺 PATIENT: Remote stream tracks:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
+        
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = stream;
           console.log('📺 PATIENT: Remote video element updated');
@@ -186,6 +192,7 @@ const PatientVideoCall: React.FC = () => {
         }
         setCallStatus('connected');
         setIsConnected(true);
+        setIsVideoCallActive(true);
       });
 
       webrtc.onConnectionStateChange((state) => {
@@ -234,6 +241,24 @@ const PatientVideoCall: React.FC = () => {
     }
   };
 
+  const retryVideoConnection = async () => {
+    if (retryCount < maxRetries && webrtcManager && callId) {
+      console.log(`🔄 PATIENT: Retrying video connection (attempt ${retryCount + 1}/${maxRetries})`);
+      setRetryCount(prev => prev + 1);
+      
+      try {
+        // Reinitialize WebRTC for the call
+        await initializeWebRTCForCall();
+      } catch (error) {
+        console.error('❌ PATIENT: Retry failed:', error);
+        if (retryCount + 1 >= maxRetries) {
+          alert('Video connection failed after multiple attempts. Please try again.');
+          navigate('/patient/doctors');
+        }
+      }
+    }
+  };
+
   const acceptIncomingCall = async () => {
     if (incomingCall && videoCallService) {
       console.log('✅ PATIENT: Accepting incoming call:', incomingCall.callId);
@@ -272,15 +297,17 @@ const PatientVideoCall: React.FC = () => {
       webrtcManager.endCall();
     }
 
-    // Clear video elements
+    // Clear video elements and reset state
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
+      localVideoRef.current.load(); // Reset video element
     }
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = null;
+      remoteVideoRef.current.load(); // Reset video element
     }
 
-    // Update state
+    // Reset video call state
     setIsVideoCallActive(false);
     setCallStatus('ended');
     setIsMuted(false);
@@ -382,8 +409,12 @@ const PatientVideoCall: React.FC = () => {
           ref={remoteVideoRef}
           autoPlay
           playsInline
+          muted={false}
           className="w-full h-full object-cover"
           style={{ display: isVideoCallActive ? 'block' : 'none' }}
+          onLoadedMetadata={() => console.log('📺 PATIENT: Remote video metadata loaded')}
+          onCanPlay={() => console.log('📺 PATIENT: Remote video can play')}
+          onError={(e) => console.error('❌ PATIENT: Remote video error:', e)}
         />
         
         {/* Waiting Message */}
@@ -394,9 +425,17 @@ const PatientVideoCall: React.FC = () => {
               <h2 className="text-2xl font-bold mb-2">
                 {callStatus === 'connecting' ? 'Connecting to Doctor...' : 'Waiting for Doctor'}
               </h2>
-              <p className="text-gray-300">
+              <p className="text-gray-300 mb-4">
                 Your video consultation will begin shortly
               </p>
+              {retryCount > 0 && retryCount < maxRetries && (
+                <button
+                  onClick={retryVideoConnection}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Retry Connection ({retryCount}/{maxRetries})
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -409,6 +448,9 @@ const PatientVideoCall: React.FC = () => {
             playsInline
             muted
             className="w-full h-full object-cover"
+            onLoadedMetadata={() => console.log('🎥 PATIENT: Local video metadata loaded')}
+            onCanPlay={() => console.log('🎥 PATIENT: Local video can play')}
+            onError={(e) => console.error('❌ PATIENT: Local video error:', e)}
           />
           {isVideoOff && (
             <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
@@ -416,6 +458,16 @@ const PatientVideoCall: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Video Status Indicator */}
+        {isVideoCallActive && (
+          <div className="absolute top-4 left-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              Video Active
+            </div>
+          </div>
+        )}
 
         {/* Call Controls */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">

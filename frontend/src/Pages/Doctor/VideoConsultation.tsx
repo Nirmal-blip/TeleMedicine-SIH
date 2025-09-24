@@ -23,6 +23,8 @@ const DoctorVideoConsultation: React.FC = () => {
   const [isPrescriptionFormOpen, setIsPrescriptionFormOpen] = useState(false);
   const [doctorData, setDoctorData] = useState<any>(null);
   const [currentPatient, setCurrentPatient] = useState<any>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [maxRetries] = useState(3);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -203,6 +205,8 @@ const DoctorVideoConsultation: React.FC = () => {
       // Set up WebRTC event listeners BEFORE initialization
       webrtc.onLocalStream((stream) => {
         console.log('🎥 DOCTOR: Local stream received', stream);
+        console.log('🎥 DOCTOR: Stream tracks:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
+        
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
           console.log('🎥 DOCTOR: Local video element updated');
@@ -216,6 +220,8 @@ const DoctorVideoConsultation: React.FC = () => {
 
       webrtc.onRemoteStream((stream) => {
         console.log('📺 DOCTOR: Remote stream received', stream);
+        console.log('📺 DOCTOR: Remote stream tracks:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
+        
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = stream;
           console.log('📺 DOCTOR: Remote video element updated');
@@ -226,6 +232,7 @@ const DoctorVideoConsultation: React.FC = () => {
         }
         setCallStatus('connected');
         setIsConnected(true);
+        setIsVideoCallActive(true);
       });
 
       webrtc.onConnectionStateChange((state) => {
@@ -283,6 +290,24 @@ const DoctorVideoConsultation: React.FC = () => {
     }
   };
 
+  const retryVideoConnection = async () => {
+    if (retryCount < maxRetries && webrtcManager && incomingCall) {
+      console.log(`🔄 DOCTOR: Retrying video connection (attempt ${retryCount + 1}/${maxRetries})`);
+      setRetryCount(prev => prev + 1);
+      
+      try {
+        // Reinitialize WebRTC for the call
+        await initializeWebRTCForCall(incomingCall.callId);
+      } catch (error) {
+        console.error('❌ DOCTOR: Retry failed:', error);
+        if (retryCount + 1 >= maxRetries) {
+          alert('Video connection failed after multiple attempts. Please try again.');
+          setCallStatus('idle');
+        }
+      }
+    }
+  };
+
   const endCall = () => {
     console.log('📞 DOCTOR: Ending call...');
     
@@ -291,16 +316,20 @@ const DoctorVideoConsultation: React.FC = () => {
       webrtcManager.endCall();
     }
 
-    // Clear video elements
+    // Clear video elements and reset state
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
+      localVideoRef.current.load(); // Reset video element
     }
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = null;
+      remoteVideoRef.current.load(); // Reset video element
     }
     
-    // Update state
+    // Reset video call state
     setIsVideoCallActive(false);
+    
+    // Update state
     setCallStatus('ended');
     setIsMuted(false);
     setIsVideoOff(false);
@@ -381,9 +410,13 @@ const DoctorVideoConsultation: React.FC = () => {
                       ref={remoteVideoRef}
                       autoPlay
                       playsInline
-            className="w-full h-full object-cover"
-            style={{ display: isVideoCallActive ? 'block' : 'none' }}
-          />
+                      muted={false}
+                      className="w-full h-full object-cover"
+                      style={{ display: isVideoCallActive ? 'block' : 'none' }}
+                      onLoadedMetadata={() => console.log('📺 DOCTOR: Remote video metadata loaded')}
+                      onCanPlay={() => console.log('📺 DOCTOR: Remote video can play')}
+                      onError={(e) => console.error('❌ DOCTOR: Remote video error:', e)}
+                    />
           
           {/* Waiting Message */}
           {!isVideoCallActive && (
@@ -393,28 +426,49 @@ const DoctorVideoConsultation: React.FC = () => {
                 <h2 className="text-2xl font-bold mb-2">
                   {callStatus === 'connecting' ? 'Connecting...' : 'Waiting for Patient'}
                 </h2>
-                <p className="text-gray-300">
+                <p className="text-gray-300 mb-4">
                   {incomingCall ? `Call with ${incomingCall.patientName}` : 'Video consultation in progress'}
                 </p>
+                {retryCount > 0 && retryCount < maxRetries && (
+                  <button
+                    onClick={retryVideoConnection}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Retry Connection ({retryCount}/{maxRetries})
+                  </button>
+                )}
               </div>
             </div>
           )}
 
           {/* Local Video (Doctor) */}
           <div className="absolute bottom-20 right-4 w-48 h-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-white">
-                      <video
-                        ref={localVideoRef}
-                        autoPlay
-                        playsInline
-                        muted
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
               className="w-full h-full object-cover"
-                      />
+              onLoadedMetadata={() => console.log('🎥 DOCTOR: Local video metadata loaded')}
+              onCanPlay={() => console.log('🎥 DOCTOR: Local video can play')}
+              onError={(e) => console.error('❌ DOCTOR: Local video error:', e)}
+            />
             {isVideoOff && (
-                        <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+              <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
                 <FaVideoSlash className="text-white text-2xl" />
-                  </div>
-                )}
               </div>
+            )}
+          </div>
+
+          {/* Video Status Indicator */}
+          {isVideoCallActive && (
+            <div className="absolute top-4 left-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                Video Active
+              </div>
+            </div>
+          )}
 
           {/* Call Controls */}
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
