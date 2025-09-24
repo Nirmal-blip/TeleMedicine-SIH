@@ -38,7 +38,7 @@ const PatientVideoCall: React.FC = () => {
 
   // Timer for call duration
   useEffect(() => {
-    let interval: number;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (callStatus === 'connected' && callStartTimeRef.current) {
       interval = setInterval(() => {
         const now = new Date();
