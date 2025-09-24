@@ -15,6 +15,7 @@ async function bootstrap() {
     const allowedOrigins = [
       frontendUrl,
       'https://telemedicine-sih-frontend.vercel.app', // Add your production frontend URL
+      'https://telemedicine-sih-8i5h.onrender.com', // Add backend URL for testing
       'http://localhost:5173',
       'http://localhost:3000'
     ];
