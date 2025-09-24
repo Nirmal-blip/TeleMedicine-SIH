@@ -8,14 +8,12 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "concurrently \"npm run start:nestjs\" \"npm run start:flask\"",
+    "start": "npm run start:nestjs",
     "start:nestjs": "nest start",
     "start:nestjs-only": "nest start",
-    "start:flask": "node start-flask.js",
-    "start:dev": "concurrently \"npm run start:dev:nestjs\" \"npm run start:dev:flask\"",
+    "start:dev": "npm run start:dev:nestjs",
     "start:dev:nestjs": "nest start --watch",
     "start:dev:nestjs-only": "nest start --watch",
-    "start:dev:flask": "node start-flask.js",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -26,6 +24,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs/cli": "^10.0.0",
     "@nestjs/axios": "^3.0.2",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.2",
@@ -58,7 +57,6 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
     "@types/bcrypt": "^5.0.2",

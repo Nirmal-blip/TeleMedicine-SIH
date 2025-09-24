@@ -43,6 +43,10 @@ except:
 # CHATBOT MODULE
 # =============================================================================
 
+# #initialised app
+# initialize_app()
+
+
 # Google Gemini API Key (loaded from backend .env file or fallback)
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyBjQmMBZT7eBD6oos14CJLbPvC-e22mDFw')
 if not GEMINI_API_KEY:
@@ -765,3 +769,22 @@ def initialize_app():
 if __name__ == "__main__":
     initialize_app()
     app.run(debug=True, host='0.0.0.0', port=8000)
+
+# Ensure initialization when running under a WSGI server (e.g., Render/Gunicorn) for Flask >=3
+from threading import Lock
+_init_lock = Lock()
+_initialized = False
+
+@app.before_request
+def _ensure_initialized():
+    global _initialized
+    if not _initialized:
+        with _init_lock:
+            if not _initialized:
+                try:
+                    initialize_app()
+                except Exception as _e:
+                    # Avoid crashing startup; errors will surface via /health and route responses
+                    print(f"Initialization error during request: {_e}")
+                finally:
+                    _initialized = True

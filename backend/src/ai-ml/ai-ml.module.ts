@@ -4,10 +4,11 @@ import { AiMlController } from './ai-ml.controller';
 import { AiMlService } from './ai-ml.service';
 import { ChatHistoryModule } from '../chat-history/chat-history.module';
 
+// Module disabled as Flask is now called directly from frontend
 @Module({
-  imports: [HttpModule, ChatHistoryModule],
-  controllers: [AiMlController],
-  providers: [AiMlService],
-  exports: [AiMlService],
+  imports: [],
+  controllers: [],
+  providers: [],
+  exports: [],
 })
 export class AiMlModule {}

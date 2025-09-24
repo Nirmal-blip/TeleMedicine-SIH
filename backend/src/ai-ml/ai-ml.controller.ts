@@ -21,7 +21,8 @@ import {
 import { AiMlService } from './ai-ml.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-@ApiTags('AI/ML')
+// Controller disabled: frontend calls Flask directly
+@ApiTags('AI/ML (disabled)')
 @Controller('api/ai')
 export class AiMlController {
   constructor(private readonly aiMlService: AiMlService) {}
@@ -30,9 +31,7 @@ export class AiMlController {
   @ApiOperation({ summary: 'Check AI/ML services health status' })
   @ApiResponse({ status: 200, description: 'Health status of all AI/ML services' })
   @ApiResponse({ status: 503, description: 'AI/ML services unavailable' })
-  async getHealthStatus() {
-    return this.aiMlService.getHealthStatus();
-  }
+  async getHealthStatus() { return { disabled: true }; }
 
   @Post('chat')
   @HttpCode(HttpStatus.OK)
@@ -49,11 +48,7 @@ export class AiMlController {
   })
   @ApiResponse({ status: 200, description: 'AI response with medical recommendations' })
   @ApiResponse({ status: 503, description: 'Chatbot service unavailable' })
-  async chat(@Body() body: { input: string; sessionId?: string }, @Request() req) {
-    // Extract userId if user is authenticated, otherwise null
-    const userId = req.user?.userId || null;
-    return this.aiMlService.getChatResponse(body.input, userId, body.sessionId);
-  }
+  async chat() { return { disabled: true }; }
 
   @Post('chat/stream')
   @HttpCode(HttpStatus.OK)
@@ -70,11 +65,7 @@ export class AiMlController {
   })
   @ApiResponse({ status: 200, description: 'Streaming AI response with medical recommendations' })
   @ApiResponse({ status: 503, description: 'Chatbot service unavailable' })
-  async chatStream(@Body() body: { input: string; sessionId?: string }, @Request() req) {
-    // Extract userId if user is authenticated, otherwise null
-    const userId = req.user?.userId || null;
-    return this.aiMlService.getChatStreamResponse(body.input, userId, body.sessionId);
-  }
+  async chatStream() { return { disabled: true }; }
 
   @Post('chat/save-response')
   @HttpCode(HttpStatus.OK)
@@ -93,20 +84,14 @@ export class AiMlController {
     } 
   })
   @ApiResponse({ status: 200, description: 'Bot response saved successfully' })
-  async saveBotResponse(@Body() body: { sessionId: string; botResponse: string }, @Request() req) {
-    const userId = req.user.userId;
-    await this.aiMlService.saveBotResponse(body.sessionId, body.botResponse, userId);
-    return { message: 'Bot response saved successfully' };
-  }
+  async saveBotResponse() { return { disabled: true }; }
 
   @Post('voice-chat')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiCookieAuth('token')
-  async voiceChat() {
-    return this.aiMlService.getVoiceChatResponse();
-  }
+  async voiceChat() { return { disabled: true }; }
 
   @Post('medicine/recommend')
   @HttpCode(HttpStatus.OK)
@@ -123,9 +108,7 @@ export class AiMlController {
   @ApiResponse({ status: 200, description: 'List of alternative medicines with details' })
   @ApiResponse({ status: 404, description: 'No alternatives found' })
   @ApiResponse({ status: 503, description: 'Medicine recommendation service unavailable' })
-  async recommendMedicine(@Body('medicine_name') medicineName: string) {
-    return this.aiMlService.getMedicineRecommendations(medicineName);
-  }
+  async recommendMedicine() { return { disabled: true }; }
 
   @Get('hospitals')
   @ApiOperation({ summary: 'Find nearby hospitals based on location' })
@@ -134,10 +117,5 @@ export class AiMlController {
   @ApiResponse({ status: 200, description: 'List of nearby hospitals with directions' })
   @ApiResponse({ status: 400, description: 'Invalid coordinates' })
   @ApiResponse({ status: 503, description: 'Hospital maps service unavailable' })
-  async getNearbyHospitals(
-    @Query('lat') lat: number,
-    @Query('lon') lon: number
-  ) {
-    return this.aiMlService.getNearbyHospitals(lat, lon);
-  }
+  async getNearbyHospitals() { return { disabled: true }; }
 }

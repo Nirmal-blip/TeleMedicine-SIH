@@ -48,7 +48,7 @@ const MedicineRecommendation: React.FC = () => {
             let response;
             
             if (searchMethod === 'text') {
-                response = await fetch("http://localhost:3000/api/ai/medicine/recommend", {
+                response = await fetch("https://telemedicine-sih.onrender.com/api/medicine/recommend", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     credentials: 'include',
@@ -59,7 +59,7 @@ const MedicineRecommendation: React.FC = () => {
                 const formData = new FormData();
                 formData.append('file', selectedFile!);
                 
-                response = await fetch("http://localhost:8000/api/medicine/recommend-image", {
+                response = await fetch("https://telemedicine-sih.onrender.com/api/medicine/recommend-image", {
                     method: "POST",
                     body: formData,
                 });
