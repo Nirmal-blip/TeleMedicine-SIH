@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuth = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('http://localhost:3000/api/auth/me', {
+      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/auth/me', {
         withCredentials: true,
       });
       
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const sendOTP = async (email: string, purpose: 'signup' | 'signin') => {
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/send-otp', {
+      const response = await axios.post('https://telemedicine-sih-8i5h.onrender.com/api/auth/send-otp', {
         email,
         purpose,
       });
@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const registerWithOTP = async (formData: any, otp: string) => {
     try {
       console.log('Registering with OTP:', { email: formData.email, otp: otp.substring(0, 2) + '****' });
-      const response = await axios.post('http://localhost:3000/api/auth/register-with-otp', {
+      const response = await axios.post('https://telemedicine-sih-8i5h.onrender.com/api/auth/register-with-otp', {
         ...formData,
         otp,
       }, { withCredentials: true });
@@ -112,7 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string, userType: 'patient' | 'doctor') => {
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/login', {
+      const response = await axios.post('https://telemedicine-sih-8i5h.onrender.com/api/auth/login', {
         email,
         password,
         userType,
@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loginWithOTP = async (email: string, password: string, userType: 'patient' | 'doctor', otp: string) => {
     try {
       console.log('Logging in with OTP:', { email, otp: otp.substring(0, 2) + '****' });
-      const response = await axios.post('http://localhost:3000/api/auth/login-with-otp', {
+      const response = await axios.post('https://telemedicine-sih-8i5h.onrender.com/api/auth/login-with-otp', {
         email,
         password,
         userType,
@@ -160,7 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.get('http://localhost:3000/api/auth/logout', { withCredentials: true });
+      await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/auth/logout', { withCredentials: true });
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

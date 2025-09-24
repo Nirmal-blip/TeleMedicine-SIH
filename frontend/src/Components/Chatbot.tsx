@@ -448,7 +448,7 @@ const Chatbot: React.FC = () => {
     // Chat History Functions
     const createNewChatSession = async () => {
         try {
-            const response = await fetch('http://localhost:3000/api/chat-history/session', {
+            const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/chat-history/session', {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -484,7 +484,7 @@ const Chatbot: React.FC = () => {
 
     const loadChatSessions = async () => {
         try {
-            const response = await fetch('http://localhost:3000/api/chat-history/sessions', {
+            const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/chat-history/sessions', {
                 credentials: 'include',
             });
             
@@ -499,7 +499,7 @@ const Chatbot: React.FC = () => {
 
     const loadChatSession = async (sessionId: string) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/chat-history/session/${sessionId}`, {
+            const response = await fetch(`https://telemedicine-sih-8i5h.onrender.com/api/chat-history/session/${sessionId}`, {
                 credentials: 'include',
             });
             
@@ -521,7 +521,7 @@ const Chatbot: React.FC = () => {
 
     const deleteChatSession = async (sessionId: string) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/chat-history/session/${sessionId}`, {
+            const response = await fetch(`https://telemedicine-sih-8i5h.onrender.com/api/chat-history/session/${sessionId}`, {
                 method: 'DELETE',
                 credentials: 'include',
             });
@@ -639,7 +639,7 @@ const Chatbot: React.FC = () => {
                 // Save bot response to chat history
                 if (sessionId) {
                     try {
-                        await fetch('http://localhost:3000/api/ai/chat/save-response', {
+                        await fetch('https://telemedicine-sih-8i5h.onrender.com/api/ai/chat/save-response', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -666,7 +666,7 @@ const Chatbot: React.FC = () => {
                     fallbackSessionId = await createNewChatSession();
                 }
                 
-                const fallbackResponse = await fetch('http://localhost:3000/api/ai/chat', {
+                const fallbackResponse = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/ai/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

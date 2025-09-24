@@ -16,7 +16,7 @@ export class RealTimeNotificationService {
   private connect() {
     try {
       // Connect to the video-call namespace
-      this.socket = io('http://localhost:3000/video-call', {
+      this.socket = io('https://telemedicine-sih-8i5h.onrender.com/video-call', {
         query: {
           userId: this.userId,
           userType: this.userType,

@@ -84,7 +84,7 @@ const Checkout: React.FC = () => {
 
   const fetchCart = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/cart', {
+      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/cart', {
         credentials: 'include',
       });
       
@@ -104,7 +104,7 @@ const Checkout: React.FC = () => {
 
   const validateCart = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/cart/validate', {
+      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/cart/validate', {
         credentials: 'include',
       });
       
@@ -165,7 +165,7 @@ const Checkout: React.FC = () => {
       formData.append('prescription', file);
 
       try {
-        const response = await fetch('http://localhost:3000/api/uploads/prescription', {
+        const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/uploads/prescription', {
           method: 'POST',
           credentials: 'include',
           body: formData,
@@ -196,7 +196,7 @@ const Checkout: React.FC = () => {
         prescriptionImages,
       };
 
-      const response = await fetch('http://localhost:3000/api/orders', {
+      const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -219,7 +219,7 @@ const Checkout: React.FC = () => {
           if (result) {
             // Open invoice in new tab
             try {
-              const invoiceUrl = `http://localhost:3000/api/orders/${data.order._id}/invoice`;
+              const invoiceUrl = `https://telemedicine-sih-8i5h.onrender.com/api/orders/${data.order._id}/invoice`;
               window.open(invoiceUrl, '_blank');
             } catch (error) {
               console.error('Could not open invoice:', error);
@@ -251,7 +251,7 @@ const Checkout: React.FC = () => {
       order_id: razorpayOrder.id,
       handler: async (response: any) => {
         try {
-          const verifyResponse = await fetch('http://localhost:3000/api/orders/verify-payment', {
+          const verifyResponse = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/orders/verify-payment', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -274,7 +274,7 @@ const Checkout: React.FC = () => {
             if (result) {
               // Open invoice in new tab
               try {
-                const invoiceUrl = `http://localhost:3000/api/orders/${order._id}/invoice`;
+                const invoiceUrl = `https://telemedicine-sih-8i5h.onrender.com/api/orders/${order._id}/invoice`;
                 window.open(invoiceUrl, '_blank');
               } catch (error) {
                 console.error('Could not open invoice:', error);

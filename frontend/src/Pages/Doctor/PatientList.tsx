@@ -46,7 +46,7 @@ const PatientList: React.FC = () => {
   const fetchPatients = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('http://localhost:3000/api/patients', {
+      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/patients', {
         withCredentials: true,
       });
       

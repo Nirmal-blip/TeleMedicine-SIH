@@ -71,7 +71,7 @@ const Orders: React.FC = () => {
       if (statusFilter) params.append('status', statusFilter);
       if (searchQuery) params.append('search', searchQuery);
 
-      const response = await fetch(`http://localhost:3000/api/orders?${params}`, {
+      const response = await fetch(`https://telemedicine-sih-8i5h.onrender.com/api/orders?${params}`, {
         credentials: 'include',
       });
       
@@ -152,7 +152,7 @@ const Orders: React.FC = () => {
 
   const downloadInvoice = async (orderId: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/orders/${orderId}/invoice`, {
+      const response = await fetch(`https://telemedicine-sih-8i5h.onrender.com/api/orders/${orderId}/invoice`, {
         credentials: 'include',
       });
       
@@ -177,7 +177,7 @@ const Orders: React.FC = () => {
     if (!reason) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/orders/${orderId}/cancel`, {
+      const response = await fetch(`https://telemedicine-sih-8i5h.onrender.com/api/orders/${orderId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

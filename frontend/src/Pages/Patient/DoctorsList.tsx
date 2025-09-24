@@ -93,7 +93,7 @@ const DoctorsList: React.FC = () => {
       } else {
         // Fallback: try API
         try {
-          const response = await axios.get('http://localhost:3000/api/patients/me', {
+          const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/patients/me', {
             withCredentials: true
           });
           patientId = response.data._id || response.data.id;
@@ -155,7 +155,7 @@ const DoctorsList: React.FC = () => {
   const fetchDoctors = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:3000/api/doctors', {
+      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/doctors', {
         withCredentials: true
       });
       
@@ -311,7 +311,7 @@ const DoctorsList: React.FC = () => {
       setShowVideoCallModal(true);
       
       // Get current user info
-      const response = await axios.get('http://localhost:3000/api/auth/me', {
+      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/auth/me', {
         withCredentials: true
       });
       console.log(response)
@@ -322,7 +322,7 @@ const DoctorsList: React.FC = () => {
 
       // First, create an immediate consultation appointment
       try {
-        const patientResponse = await axios.get('http://localhost:3000/api/patients/me', {
+        const patientResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/patients/me', {
           withCredentials: true
         });
         
@@ -330,7 +330,7 @@ const DoctorsList: React.FC = () => {
         const currentDate = now.toISOString().split('T')[0];
         const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
 
-        const appointmentResponse = await axios.post('http://localhost:3000/api/appointments', {
+        const appointmentResponse = await axios.post('https://telemedicine-sih-8i5h.onrender.com/api/appointments', {
           doctor: doctor.doctorId,
           patient: patientResponse.data.patientId,
           date: currentDate,

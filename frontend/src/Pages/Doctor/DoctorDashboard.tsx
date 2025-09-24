@@ -50,7 +50,7 @@ const DoctorDashboard: React.FC = () => {
       try {
         setLoading(true);
         // First get the current user info from auth endpoint
-        const authResponse = await axios.get('http://localhost:3000/api/auth/me', {
+        const authResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/auth/me', {
           withCredentials: true,
         });
         
@@ -62,7 +62,7 @@ const DoctorDashboard: React.FC = () => {
             
             // Now get detailed doctor info if needed
             try {
-              const doctorResponse = await axios.get('http://localhost:3000/api/doctors/me', {
+              const doctorResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/doctors/me', {
                 withCredentials: true,
               });
               if (doctorResponse.data && doctorResponse.data.fullname) {
@@ -214,7 +214,7 @@ const DoctorDashboard: React.FC = () => {
   const fetchDashboardStats = async () => {
     try {
       // Fetch today's appointments
-      const appointmentsResponse = await axios.get('http://localhost:3000/api/appointments/my/upcoming', {
+      const appointmentsResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/appointments/my/upcoming', {
         withCredentials: true,
       });
       
@@ -225,12 +225,12 @@ const DoctorDashboard: React.FC = () => {
       ).length;
 
       // Fetch total patients
-      const patientsResponse = await axios.get('http://localhost:3000/api/patients', {
+      const patientsResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/patients', {
         withCredentials: true,
       });
       
       // Get doctor's own stats
-      const doctorStatsResponse = await axios.get('http://localhost:3000/api/doctors/me/stats', {
+      const doctorStatsResponse = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/doctors/me/stats', {
         withCredentials: true,
       });
       
@@ -251,7 +251,7 @@ const DoctorDashboard: React.FC = () => {
     if (newName && newName.trim()) {
       try {
         // Try to update via doctors endpoint first
-        await axios.patch('http://localhost:3000/api/doctors/me', {
+        await axios.patch('https://telemedicine-sih-8i5h.onrender.com/api/doctors/me', {
           fullname: newName.trim()
         }, {
           withCredentials: true,

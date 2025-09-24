@@ -26,7 +26,7 @@ const VideoCallNotificationComponent: React.FC<VideoCallNotificationProps> = ({ 
 
   const initializeVideoCallService = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/auth/me', {
+      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/auth/me', {
         withCredentials: true
       });
       
