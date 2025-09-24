@@ -112,7 +112,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
     this.connectedUsers.delete(client.id);
   }
 
-  @SubscribeMessage('request-video-call')
+  @SubscribeMessage('patient:call-doctor')
   async handleRequestVideoCall(
     @MessageBody() data: Omit<VideoCallRequest, 'callId'>,
     @ConnectedSocket() client: Socket,
@@ -167,7 +167,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
       } else {
         // Send real-time notification to doctor sockets
         doctorSockets.forEach(socketId => {
-          this.server.to(socketId).emit('incoming-video-call', {
+          this.server.to(socketId).emit('doctor:incoming-call', {
             ...videoCallRequest,
             requestedAt: new Date().toISOString()
           });
@@ -223,7 +223,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
       }
 
       // Confirm to patient that call request was sent
-      client.emit('call-request-sent', {
+      client.emit('patient:call-request-sent', {
         callId,
         doctorName: data.doctorName,
         message: doctorSockets.length > 0 
@@ -237,7 +237,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
     }
   }
 
-  @SubscribeMessage('accept-video-call')
+  @SubscribeMessage('doctor:accept-call')
   async handleAcceptVideoCall(
     @MessageBody() data: { callId: string },
     @ConnectedSocket() client: Socket,
@@ -293,7 +293,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
 
       // Notify patient that doctor accepted the call
       patientSockets.forEach(socketId => {
-        this.server.to(socketId).emit('call-accepted', {
+        this.server.to(socketId).emit('patient:call-accepted', {
           callId: data.callId,
           doctorId: callRequest.doctorId,
           doctorName: callRequest.doctorName,
@@ -318,7 +318,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
     }
   }
 
-  @SubscribeMessage('reject-video-call')
+  @SubscribeMessage('doctor:reject-call')
   async handleRejectVideoCall(
     @MessageBody() data: { callId: string; reason?: string },
     @ConnectedSocket() client: Socket,
@@ -370,7 +370,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Notify patient that doctor rejected the call
       if (patientSockets.length > 0) {
         patientSockets.forEach(socketId => {
-          this.server.to(socketId).emit('call-rejected', {
+          this.server.to(socketId).emit('patient:call-rejected', {
             callId: data.callId,
             doctorId: callRequest.doctorId,
             doctorName: callRequest.doctorName,
@@ -476,10 +476,54 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
     }
   }
 
-  // Utility method for debugging
-  @SubscribeMessage('get-active-calls')
-  handleGetActiveCalls(@ConnectedSocket() client: Socket) {
-    const calls = Array.from(this.activeCalls.values());
-    client.emit('active-calls', calls);
+  @SubscribeMessage('webrtc:offer')
+  async handleWebRTCOffer(
+    @MessageBody() data: { callId: string; offer: any },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userInfo = this.connectedUsers.get(client.id);
+    if (!userInfo) return;
+
+    console.log(`📤 WebRTC: ${userInfo.userType} ${userInfo.userId} sending offer for call ${data.callId}`);
+
+    // Forward offer to other participants in the room
+    client.to(data.callId).emit('webrtc:offer', {
+      callId: data.callId,
+      offer: data.offer
+    });
+  }
+
+  @SubscribeMessage('webrtc:answer')
+  async handleWebRTCAnswer(
+    @MessageBody() data: { callId: string; answer: any },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userInfo = this.connectedUsers.get(client.id);
+    if (!userInfo) return;
+
+    console.log(`📤 WebRTC: ${userInfo.userType} ${userInfo.userId} sending answer for call ${data.callId}`);
+
+    // Forward answer to other participants in the room
+    client.to(data.callId).emit('webrtc:answer', {
+      callId: data.callId,
+      answer: data.answer
+    });
+  }
+
+  @SubscribeMessage('webrtc:ice-candidate')
+  async handleWebRTCIceCandidate(
+    @MessageBody() data: { callId: string; candidate: any },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userInfo = this.connectedUsers.get(client.id);
+    if (!userInfo) return;
+
+    console.log(`🧊 WebRTC: ${userInfo.userType} ${userInfo.userId} sending ICE candidate for call ${data.callId}`);
+
+    // Forward ICE candidate to other participants in the room
+    client.to(data.callId).emit('webrtc:ice-candidate', {
+      callId: data.callId,
+      candidate: data.candidate
+    });
   }
 }

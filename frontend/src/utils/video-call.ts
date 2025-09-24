@@ -84,7 +84,7 @@ export class VideoCallService {
       console.log('🔌 Socket connected:', this.isConnected);
       console.log('👤 Patient ID:', this.userId);
       
-      this.socket.emit('request-video-call', requestData);
+      this.socket.emit('patient:call-doctor', requestData);
       return `call-${Date.now()}`;
     } else {
       console.error('❌ Cannot send video call request:', {
@@ -99,13 +99,13 @@ export class VideoCallService {
   // Doctor methods
   public acceptVideoCall(callId: string) {
     if (this.socket && this.isConnected && this.userType === 'doctor') {
-      this.socket.emit('accept-video-call', { callId });
+      this.socket.emit('doctor:accept-call', { callId });
     }
   }
 
   public rejectVideoCall(callId: string, reason?: string) {
     if (this.socket && this.isConnected && this.userType === 'doctor') {
-      this.socket.emit('reject-video-call', { callId, reason });
+      this.socket.emit('doctor:reject-call', { callId, reason });
     }
   }
 
@@ -131,26 +131,26 @@ export class VideoCallService {
   // Event listeners for patients
   public onCallRequestSent(callback: (data: { callId: string; doctorName: string; message: string }) => void) {
     if (this.socket) {
-      this.socket.on('call-request-sent', callback);
+      this.socket.on('patient:call-request-sent', callback);
     }
   }
 
   public onCallAccepted(callback: (data: { callId: string; doctorId: string; doctorName: string; message: string; videoCallUrl: string }) => void) {
     if (this.socket) {
-      this.socket.on('call-accepted', callback);
+      this.socket.on('patient:call-accepted', callback);
     }
   }
 
   public onCallRejected(callback: (data: { callId: string; doctorId: string; doctorName: string; reason: string; message: string }) => void) {
     if (this.socket) {
-      this.socket.on('call-rejected', callback);
+      this.socket.on('patient:call-rejected', callback);
     }
   }
 
   // Event listeners for doctors
   public onIncomingVideoCall(callback: (data: VideoCallNotification) => void) {
     if (this.socket) {
-      this.socket.on('incoming-video-call', callback);
+      this.socket.on('doctor:incoming-call', callback);
     }
   }
 
@@ -204,6 +204,10 @@ export class VideoCallService {
       this.socket = null;
       this.isConnected = false;
     }
+  }
+
+  public getSocket(): Socket | null {
+    return this.socket;
   }
 
   public isServiceConnected(): boolean {

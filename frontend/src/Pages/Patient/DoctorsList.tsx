@@ -116,12 +116,12 @@ const DoctorsList: React.FC = () => {
       
       // Set up event listeners
       service.onCallRequestSent((data) => {
-        console.log('Call request sent:', data);
+        console.log('🔥 PATIENT: Call request sent:', data);
         setCallStatus('waiting');
       });
       
       service.onCallAccepted((data) => {
-        console.log('Call accepted:', data);
+        console.log('🔥 PATIENT: Call accepted:', data);
         setCallStatus('accepted');
         setShowVideoCallModal(false);
         // Navigate to video call page
@@ -129,7 +129,7 @@ const DoctorsList: React.FC = () => {
       });
       
       service.onCallRejected((data) => {
-        console.log('Call rejected:', data);
+        console.log('🔥 PATIENT: Call rejected:', data);
         setCallStatus('rejected');
         setTimeout(() => {
           setShowVideoCallModal(false);
@@ -139,7 +139,7 @@ const DoctorsList: React.FC = () => {
       });
       
       service.onCallError((data) => {
-        console.error('Call error:', data);
+        console.error('🔥 PATIENT: Call error:', data);
         // Don't show alert for minor errors, just log them
         setCallStatus('idle');
         setShowVideoCallModal(false);
@@ -537,17 +537,9 @@ const DoctorsList: React.FC = () => {
                     
                     <div className="flex gap-2">
                       <button
-                        onClick={() => openBookingModal(doctor)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300 text-sm"
-                      >
-                        <FaCalendar className="text-xs" />
-                        Book Appointment
-                      </button>
-                      
-                      <button
                         onClick={() => startVideoCall(doctor)}
                         disabled={isCallingDoctor === doctor.doctorId}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
                       >
                         <FaVideo className="text-xs" />
                         {isCallingDoctor === doctor.doctorId ? 'Calling...' : 'Start Video Call'}

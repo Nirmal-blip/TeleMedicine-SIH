@@ -7,11 +7,9 @@ import {
     FaVideo, 
     FaPills, 
     FaHistory, 
-    FaBell, 
     FaCog, 
     FaSignOutAlt,
     FaStethoscope,
-    FaPhone
 } from "react-icons/fa";
 import { useAuth } from '../contexts/AuthContext';
 import ConfirmationModal from './ConfirmationModal';
@@ -26,10 +24,8 @@ const menuItems: MenuItem[] = [
     { name: "Dashboard", icon: <FaThLarge />, path: "/doctor-dashboard" },
     { name: "Patient List", icon: <FaUsers />, path: "/doctor/patient-list" },
     { name: "Video Consultation", icon: <FaVideo />, path: "/doctor/video-consultation" },
-    { name: "Video Call Requests", icon: <FaPhone />, path: "/doctor/video-call-notifications" },
     { name: "Prescribed Patients", icon: <FaPills />, path: "/doctor/prescribed-patients" },
     { name: "Consultation History", icon: <FaHistory />, path: "/doctor/consultation-history" },
-    { name: "Notifications", icon: <FaBell />, path: "/doctor/notifications" },
 ];
 
 const bottomMenuItems: MenuItem[] = [

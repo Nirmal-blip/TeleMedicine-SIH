@@ -49,16 +49,32 @@ const DoctorDashboard: React.FC = () => {
     const fetchDoctorData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:3000/api/doctors/me', {
+        // First get the current user info from auth endpoint
+        const authResponse = await axios.get('http://localhost:3000/api/auth/me', {
           withCredentials: true,
         });
         
-        if (response.data && response.data.fullname) {
-          setDoctorName(response.data.fullname);
-          setIsAuthenticated(true);
-        } else if (response.data && response.data.name) {
-          setDoctorName(response.data.name);
-          setIsAuthenticated(true);
+        if (authResponse.data && authResponse.data.user) {
+          const user = authResponse.data.user;
+          if (user.userType === 'doctor') {
+            setDoctorName(user.fullname || "Doctor");
+            setIsAuthenticated(true);
+            
+            // Now get detailed doctor info if needed
+            try {
+              const doctorResponse = await axios.get('http://localhost:3000/api/doctors/me', {
+                withCredentials: true,
+              });
+              if (doctorResponse.data && doctorResponse.data.fullname) {
+                setDoctorName(doctorResponse.data.fullname);
+              }
+            } catch (doctorError) {
+              console.log('Could not fetch detailed doctor info, using auth data');
+            }
+          } else {
+            setIsAuthenticated(false);
+            setDoctorName("Doctor");
+          }
         }
         
         // Fetch dashboard statistics
@@ -103,13 +119,6 @@ const DoctorDashboard: React.FC = () => {
           }
         }
         
-        // For testing: use a hardcoded doctor ID if no user ID found
-        if (!userId) {
-          // Use one of the doctor IDs we know exists in the database
-          userId = '68bc042c1db03b0fc1d091a5'; // Nirmal's MongoDB ObjectId
-          console.log('🔥 DOCTOR DASHBOARD: Using test doctor ID:', userId);
-        }
-        
         if (userId) {
           console.log('🔥 DOCTOR DASHBOARD: Using user ID:', userId);
           
@@ -145,14 +154,14 @@ const DoctorDashboard: React.FC = () => {
         
         // Fallback: try to get user ID from API
         console.log('🔥 DOCTOR DASHBOARD: AuthContext user not available, trying API...');
-        const response = await axios.get('http://localhost:3000/api/doctors/me', {
+        const response = await axios.get('http://localhost:3000/api/auth/me', {
           withCredentials: true
         });
         
-        console.log('🔥 DOCTOR DASHBOARD: Full doctor response:', response.data);
+        console.log('🔥 DOCTOR DASHBOARD: Full auth response:', response.data);
         
-        userId = response.data._id || response.data.id;
-        console.log('🔥 DOCTOR DASHBOARD: Extracted doctor ID:', userId);
+        userId = response.data.user?.userId;
+        console.log('🔥 DOCTOR DASHBOARD: Extracted user ID:', userId);
         
         if (!userId) {
           console.error('❌ DOCTOR DASHBOARD: No user ID found in auth response!');
@@ -241,6 +250,7 @@ const DoctorDashboard: React.FC = () => {
     const newName = prompt("Enter your name:", doctorName);
     if (newName && newName.trim()) {
       try {
+        // Try to update via doctors endpoint first
         await axios.patch('http://localhost:3000/api/doctors/me', {
           fullname: newName.trim()
         }, {
@@ -463,29 +473,6 @@ const DoctorDashboard: React.FC = () => {
             </div>
           </div>
         </section>
-        
-        {/* Debug Test Button */}
-        <div className="fixed bottom-4 right-4 z-40">
-          <button
-            onClick={() => {
-              console.log('🧪 TESTING: Manual video call test triggered');
-              setIncomingCall({
-                callId: 'test-call-123',
-                doctorId: 'test-doctor',
-                doctorName: 'Test Doctor',
-                patientId: 'test-patient',
-                patientName: 'Test Patient',
-                specialization: 'General Medicine',
-                requestedAt: new Date().toISOString()
-              });
-              setShowCallNotification(true);
-            }}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-red-700"
-          >
-            🧪 Test Call
-          </button>
-        </div>
-
         <Chatbot />
       </main>
 

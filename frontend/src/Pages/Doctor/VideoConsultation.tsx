@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash, FaPhone, FaComments, FaCheck, FaTimes, FaBell, FaPills } from 'react-icons/fa';
 import { VideoCallService, initializeVideoCallService, VideoCallNotification } from '../../utils/video-call';
+import { WebRTCManager, initializeWebRTCManager } from '../../utils/webrtc';
 import DoctorSidebar from '../../Components/DoctorSidebar';
 import PrescriptionForm from '../../Components/PrescriptionForm';
 import axios from 'axios';
@@ -10,6 +11,7 @@ const DoctorVideoConsultation: React.FC = () => {
   const { callId } = useParams<{ callId: string }>();
   const navigate = useNavigate();
   const [videoCallService, setVideoCallService] = useState<VideoCallService | null>(null);
+  const [webrtcManager, setWebrtcManager] = useState<WebRTCManager | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -24,8 +26,6 @@ const DoctorVideoConsultation: React.FC = () => {
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
 
   useEffect(() => {
@@ -45,96 +45,6 @@ const DoctorVideoConsultation: React.FC = () => {
       console.log('Doctor data loaded:', response.data);
     } catch (error) {
       console.error('Failed to fetch doctor data:', error);
-    }
-  };
-
-  // WebRTC Functions
-  const startLocalVideo = async () => {
-    try {
-      console.log('🎥 Starting local video...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
-      });
-      
-      localStreamRef.current = stream;
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-      
-      console.log('✅ Local video started');
-      return stream;
-    } catch (error) {
-      console.error('❌ Error accessing camera/microphone:', error);
-      alert('Could not access camera/microphone. Please check permissions.');
-      return null;
-    }
-  };
-
-  const createPeerConnection = () => {
-    console.log('🔗 Creating peer connection...');
-    const configuration = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
-    };
-
-    const peerConnection = new RTCPeerConnection(configuration);
-
-    // Add local stream to peer connection
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStreamRef.current!);
-      });
-    }
-
-    // Handle remote stream
-    peerConnection.ontrack = (event) => {
-      console.log('📺 Received remote stream');
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
-    };
-
-    // Handle ICE candidates
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate && videoCallService) {
-        console.log('🧊 Sending ICE candidate');
-        // Send ICE candidate through WebSocket
-        // videoCallService.sendIceCandidate(event.candidate);
-      }
-    };
-
-    peerConnectionRef.current = peerConnection;
-    return peerConnection;
-  };
-
-  const startVideoCall = async () => {
-    try {
-      console.log('🚀 Starting video call...');
-      
-      // Start local video
-      const stream = await startLocalVideo();
-      if (!stream) return;
-
-      // Create peer connection
-      const peerConnection = createPeerConnection();
-
-      // Create offer
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-
-      console.log('📤 Created offer, waiting for answer...');
-      setIsVideoCallActive(true);
-      setCallStatus('connecting');
-
-      // Send offer through WebSocket
-      // videoCallService?.sendOffer(offer);
-
-    } catch (error) {
-      console.error('❌ Error starting video call:', error);
-      alert('Failed to start video call');
     }
   };
 
@@ -173,7 +83,7 @@ const DoctorVideoConsultation: React.FC = () => {
         withCredentials: true
       });
       
-      const userId = response.data.user.id;
+      const userId = response.data.user.userId;
       setDoctorId(userId);
       const service = initializeVideoCallService(userId, 'doctor');
       setVideoCallService(service);
@@ -192,7 +102,6 @@ const DoctorVideoConsultation: React.FC = () => {
         setCallStatus('connected');
         setIncomingCall(null);
         if (data.callId) {
-          setupMediaDevices();
           service.joinVideoRoom(data.callId);
         }
       });
@@ -239,84 +148,113 @@ const DoctorVideoConsultation: React.FC = () => {
     }
   };
 
-  const setupMediaDevices = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
-      });
-
-      localStreamRef.current = stream;
-      
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-
-    } catch (error) {
-      console.error('Error accessing media devices:', error);
-      alert('Unable to access camera/microphone. Please check permissions.');
-    }
-  };
 
   const acceptCall = async () => {
     if (videoCallService && incomingCall) {
       console.log('✅ DOCTOR: Accepting call:', incomingCall.callId);
       
       try {
-        // Start video call when accepting
-        await startVideoCall();
-        
+        // Accept the call through video call service first
         videoCallService.acceptVideoCall(incomingCall.callId);
-        setCallStatus('connected');
         
-        // Join the video room
-        videoCallService.joinVideoRoom(incomingCall.callId);
+        // Initialize WebRTC for the call
+        await initializeWebRTCForCall(incomingCall.callId);
         
         console.log('✅ Call accepted and video started');
       } catch (error) {
         console.error('❌ Error accepting call:', error);
         alert('Failed to start video call');
+        setCallStatus('idle');
+        setIncomingCall(null);
       }
+    }
+  };
+
+  const initializeWebRTCForCall = async (callId: string) => {
+    if (!videoCallService) {
+      console.error('❌ DOCTOR: Missing videoCallService');
+      return;
+    }
+
+    try {
+      console.log('🔧 DOCTOR: Initializing WebRTC for call:', callId);
+      
+      // Initialize WebRTC manager
+      const webrtc = initializeWebRTCManager();
+      setWebrtcManager(webrtc);
+
+      // Initialize WebRTC with socket and callId
+      const success = await webrtc.initialize(
+        videoCallService.getSocket()!, // Use public method to get socket
+        callId,
+        true // Doctor is the initiator
+      );
+
+      if (!success) {
+        throw new Error('Failed to initialize WebRTC');
+      }
+
+      // Set up WebRTC event listeners
+      webrtc.onLocalStream((stream) => {
+        console.log('🎥 DOCTOR: Local stream received');
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+        setIsVideoCallActive(true);
+      });
+
+      webrtc.onRemoteStream((stream) => {
+        console.log('📺 DOCTOR: Remote stream received');
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = stream;
+        }
+        setCallStatus('connected');
+        setIsConnected(true);
+      });
+
+      webrtc.onConnectionStateChange((state) => {
+        console.log('🔗 DOCTOR: Connection state:', state);
+        setIsConnected(state === 'connected');
+        if (state === 'connected') {
+          setCallStatus('connected');
+        } else if (state === 'disconnected' || state === 'failed') {
+          setCallStatus('ended');
+        }
+      });
+
+      // Join the video room
+      videoCallService.joinVideoRoom(callId);
+      
+      // Start the call (doctor is initiator)
+      await webrtc.startCall();
+      setCallStatus('connecting');
+
+    } catch (error) {
+      console.error('❌ DOCTOR: Failed to initialize WebRTC:', error);
+      throw error;
     }
   };
 
   const toggleMute = () => {
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
-        console.log('🎤 Audio', audioTrack.enabled ? 'unmuted' : 'muted');
-      }
+    if (webrtcManager) {
+      const isMuted = webrtcManager.toggleAudio();
+      setIsMuted(isMuted);
     }
   };
 
   const toggleVideo = () => {
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoOff(!videoTrack.enabled);
-        console.log('📹 Video', videoTrack.enabled ? 'enabled' : 'disabled');
-      }
+    if (webrtcManager) {
+      const isVideoOff = webrtcManager.toggleVideo();
+      setIsVideoOff(isVideoOff);
     }
   };
 
   const endCall = () => {
-    console.log('📞 Ending call...');
+    console.log('📞 DOCTOR: Ending call...');
     
-    // Stop local stream
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        track.stop();
-      });
-      localStreamRef.current = null;
-    }
-
-    // Close peer connection
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
+    // End WebRTC call
+    if (webrtcManager) {
+      webrtcManager.endCall();
     }
 
     // Clear video elements
@@ -351,8 +289,8 @@ const DoctorVideoConsultation: React.FC = () => {
   };
 
   const cleanup = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
+    if (webrtcManager) {
+      webrtcManager.endCall();
     }
     if (videoCallService && incomingCall) {
       videoCallService.leaveVideoRoom(incomingCall.callId);

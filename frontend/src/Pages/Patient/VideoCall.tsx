@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash, FaPhone } from 'react-icons/fa';
-import { VideoCallService, initializeVideoCallService } from '../../utils/video-call';
+import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash, FaPhone, FaComments, FaUserMd, FaTimes, FaCheck } from 'react-icons/fa';
+import { VideoCallService, initializeVideoCallService, VideoCallNotification } from '../../utils/video-call';
+import { WebRTCManager, initializeWebRTCManager } from '../../utils/webrtc';
 import Sidebar from '../../Components/Sidebar';
 import axios from 'axios';
 
@@ -9,27 +10,46 @@ const PatientVideoCall: React.FC = () => {
   const { callId } = useParams<{ callId: string }>();
   const navigate = useNavigate();
   const [videoCallService, setVideoCallService] = useState<VideoCallService | null>(null);
+  const [webrtcManager, setWebrtcManager] = useState<WebRTCManager | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
-  const [callStatus, setCallStatus] = useState<'idle' | 'connecting' | 'connected' | 'ended'>('idle');
+  const [callStatus, setCallStatus] = useState<'idle' | 'connecting' | 'connected' | 'ended' | 'incoming'>('idle');
   const [patientId, setPatientId] = useState<string>('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<VideoCallNotification | null>(null);
+  const [doctorInfo, setDoctorInfo] = useState<any>(null);
+  const [callDuration, setCallDuration] = useState(0);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const callStartTimeRef = useRef<Date | null>(null);
 
   useEffect(() => {
     initializeVideoCallServiceForPatient();
     if (callId) {
-      startVideoCall();
+      initializeWebRTCForCall();
     }
     return () => {
       cleanup();
     };
   }, [callId]);
+
+  // Timer for call duration
+  useEffect(() => {
+    let interval: number;
+    if (callStatus === 'connected' && callStartTimeRef.current) {
+      interval = setInterval(() => {
+        const now = new Date();
+        const duration = Math.floor((now.getTime() - callStartTimeRef.current!.getTime()) / 1000);
+        setCallDuration(duration);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [callStatus]);
 
   const initializeVideoCallServiceForPatient = async () => {
     try {
@@ -67,6 +87,7 @@ const PatientVideoCall: React.FC = () => {
       service.onCallAccepted((data) => {
         console.log('✅ PATIENT: Call accepted by doctor:', data);
         setCallStatus('connected');
+        callStartTimeRef.current = new Date();
       });
       
       service.onCallRejected((data) => {
@@ -81,94 +102,136 @@ const PatientVideoCall: React.FC = () => {
         setCallStatus('ended');
         cleanup();
       });
+
+      // Listen for incoming video calls from doctors
+      service.onIncomingVideoCall((callData) => {
+        console.log('🔔 PATIENT: Incoming video call from doctor:', callData);
+        setIncomingCall(callData);
+        setCallStatus('incoming');
+        setDoctorInfo({
+          name: callData.doctorName,
+          specialization: callData.specialization
+        });
+      });
       
     } catch (error) {
       console.error('Failed to initialize video call service:', error);
     }
   };
 
-  // WebRTC Functions
-  const startLocalVideo = async () => {
-    try {
-      console.log('🎥 Starting local video...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
-      });
-      
-      localStreamRef.current = stream;
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-      
-      console.log('✅ Local video started');
-      return stream;
-    } catch (error) {
-      console.error('❌ Error accessing camera/microphone:', error);
-      alert('Could not access camera/microphone. Please check permissions.');
-      return null;
+  const initializeWebRTCForCall = async () => {
+    if (!callId || !videoCallService) {
+      console.error('❌ PATIENT: Missing callId or videoCallService');
+      return;
     }
-  };
 
-  const startVideoCall = async () => {
     try {
-      console.log('🚀 PATIENT: Starting video call...');
-      setCallStatus('connecting');
+      console.log('🔧 PATIENT: Initializing WebRTC for call:', callId);
       
-      // Start local video
-      const stream = await startLocalVideo();
-      if (!stream) return;
+      // Initialize WebRTC manager
+      const webrtc = initializeWebRTCManager();
+      setWebrtcManager(webrtc);
 
-      setIsVideoCallActive(true);
-      
-      // Join the video room if we have a callId
-      if (callId && videoCallService) {
-        videoCallService.joinVideoRoom(callId);
+      // Initialize WebRTC with socket and callId
+      const success = await webrtc.initialize(
+        videoCallService.getSocket()!, // Use public method to get socket
+        callId,
+        false // Patient is not the initiator
+      );
+
+      if (!success) {
+        throw new Error('Failed to initialize WebRTC');
       }
 
+      // Set up WebRTC event listeners
+      webrtc.onLocalStream((stream) => {
+        console.log('🎥 PATIENT: Local stream received');
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+        setIsVideoCallActive(true);
+      });
+
+      webrtc.onRemoteStream((stream) => {
+        console.log('📺 PATIENT: Remote stream received');
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = stream;
+        }
+        setCallStatus('connected');
+        setIsConnected(true);
+      });
+
+      webrtc.onConnectionStateChange((state) => {
+        console.log('🔗 PATIENT: Connection state:', state);
+        setIsConnected(state === 'connected');
+        if (state === 'connected') {
+          setCallStatus('connected');
+        } else if (state === 'disconnected' || state === 'failed') {
+          setCallStatus('ended');
+        }
+      });
+
+      // Join the video room
+      videoCallService.joinVideoRoom(callId);
+      setCallStatus('connecting');
+
     } catch (error) {
-      console.error('❌ Error starting video call:', error);
-      alert('Failed to start video call');
+      console.error('❌ PATIENT: Failed to initialize WebRTC:', error);
+      alert('Failed to initialize video call. Please try again.');
+      navigate('/patient/doctors');
     }
   };
 
   const toggleMute = () => {
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
-        console.log('🎤 Audio', audioTrack.enabled ? 'unmuted' : 'muted');
-      }
+    if (webrtcManager) {
+      const isMuted = webrtcManager.toggleAudio();
+      setIsMuted(isMuted);
     }
   };
 
   const toggleVideo = () => {
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoOff(!videoTrack.enabled);
-        console.log('📹 Video', videoTrack.enabled ? 'enabled' : 'disabled');
-      }
+    if (webrtcManager) {
+      const isVideoOff = webrtcManager.toggleVideo();
+      setIsVideoOff(isVideoOff);
     }
+  };
+
+  const acceptIncomingCall = async () => {
+    if (incomingCall && videoCallService) {
+      console.log('✅ PATIENT: Accepting incoming call:', incomingCall.callId);
+      setCallStatus('connecting');
+      callStartTimeRef.current = new Date();
+      
+      // Initialize WebRTC for the incoming call
+      await initializeWebRTCForCall();
+      
+      // Accept the call
+      videoCallService.acceptVideoCall(incomingCall.callId);
+      setIncomingCall(null);
+    }
+  };
+
+  const rejectIncomingCall = () => {
+    if (incomingCall && videoCallService) {
+      console.log('❌ PATIENT: Rejecting incoming call:', incomingCall.callId);
+      videoCallService.rejectVideoCall(incomingCall.callId, 'Patient is not available');
+      setCallStatus('idle');
+      setIncomingCall(null);
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const endCall = () => {
     console.log('📞 PATIENT: Ending call...');
     
-    // Stop local stream
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        track.stop();
-      });
-      localStreamRef.current = null;
-    }
-
-    // Close peer connection
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
+    // End WebRTC call
+    if (webrtcManager) {
+      webrtcManager.endCall();
     }
 
     // Clear video elements
@@ -197,112 +260,216 @@ const PatientVideoCall: React.FC = () => {
   };
 
   const cleanup = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-    }
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
+    if (webrtcManager) {
+      webrtcManager.endCall();
     }
     if (videoCallService) {
       videoCallService.disconnect();
     }
   };
 
+  // Render incoming call notification
+  if (callStatus === 'incoming' && incomingCall) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <Sidebar />
+        <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
+          <div className="flex items-center justify-center min-h-[80vh]">
+            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+              <div className="animate-bounce text-6xl mb-6">📞</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Incoming Video Call</h2>
+              <p className="text-lg text-blue-600 font-medium mb-2">{doctorInfo?.name}</p>
+              <p className="text-gray-600 mb-6">{doctorInfo?.specialization}</p>
+              <p className="text-sm text-gray-500 mb-8">
+                Requested at: {new Date(incomingCall.requestedAt).toLocaleTimeString()}
+              </p>
+              
+              <div className="flex gap-4">
+                <button
+                  onClick={rejectIncomingCall}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-200"
+                >
+                  <FaTimes />
+                  Decline
+                </button>
+                <button
+                  onClick={acceptIncomingCall}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200"
+                >
+                  <FaCheck />
+                  Accept
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Render call ended state
+  if (callStatus === 'ended') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+        <Sidebar />
+        <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
+          <div className="flex items-center justify-center min-h-[80vh]">
+            <div className="text-center">
+              <div className="text-6xl mb-4">📞</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Call Ended</h2>
+              <p className="text-gray-600 mb-4">Thank you for using our video consultation service</p>
+              <p className="text-sm text-gray-400 mb-8">Returning to doctors list...</p>
+              <button
+                onClick={() => navigate('/patient/doctors')}
+                className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors duration-200"
+              >
+                Back to Doctors
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   // Render video call interface
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-900 relative">
       <Sidebar />
       
-      <div className="flex-1 relative bg-gray-900">
-        {/* Video Area */}
-        <div className="relative h-full">
-          {/* Remote Video (Doctor) */}
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-            style={{ display: isVideoCallActive ? 'block' : 'none' }}
-          />
-          
-          {/* Waiting Message */}
-          {!isVideoCallActive && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-              <div className="text-center text-white">
-                <div className="animate-pulse text-6xl mb-4">🏥</div>
-                <h2 className="text-2xl font-bold mb-2">
-                  {callStatus === 'connecting' ? 'Connecting to Doctor...' : 'Waiting for Doctor'}
-                </h2>
-                <p className="text-gray-300">
-                  Your video consultation will begin shortly
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Local Video (Patient) */}
-          <div className="absolute bottom-20 right-4 w-48 h-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-white">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            {isVideoOff && (
-              <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-                <FaVideoSlash className="text-white text-2xl" />
-              </div>
-            )}
-          </div>
-
-          {/* Call Controls */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-            <div className="flex items-center gap-4 bg-gray-800 bg-opacity-80 px-6 py-3 rounded-full">
-              <button
-                onClick={toggleMute}
-                className={`p-3 rounded-full transition-all duration-200 ${
-                  isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'
-                }`}
-              >
-                {isMuted ? (
-                  <FaMicrophoneSlash className="text-white text-lg" />
-                ) : (
-                  <FaMicrophone className="text-white text-lg" />
-                )}
-              </button>
-
-              <button
-                onClick={toggleVideo}
-                className={`p-3 rounded-full transition-all duration-200 ${
-                  isVideoOff ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'
-                }`}
-              >
-                {isVideoOff ? (
-                  <FaVideoSlash className="text-white text-lg" />
-                ) : (
-                  <FaVideo className="text-white text-lg" />
-                )}
-              </button>
-
-              <button
-                onClick={endCall}
-                className="p-3 rounded-full bg-red-600 hover:bg-red-700 transition-all duration-200"
-              >
-                <FaPhone className="text-white text-lg transform rotate-135" />
-              </button>
-            </div>
-          </div>
-
-          {/* Call Status */}
-          <div className="absolute top-4 left-4">
-            <div className="bg-gray-800 bg-opacity-80 px-4 py-2 rounded-lg">
-              <p className="text-white text-sm">
-                Status: <span className="capitalize">{callStatus}</span>
+      {/* Video Area */}
+      <div className="relative h-screen lg:ml-80">
+        {/* Remote Video (Doctor) */}
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover"
+          style={{ display: isVideoCallActive ? 'block' : 'none' }}
+        />
+        
+        {/* Waiting Message */}
+        {!isVideoCallActive && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+            <div className="text-center text-white">
+              <div className="animate-pulse text-6xl mb-4">🏥</div>
+              <h2 className="text-2xl font-bold mb-2">
+                {callStatus === 'connecting' ? 'Connecting to Doctor...' : 'Waiting for Doctor'}
+              </h2>
+              <p className="text-gray-300">
+                Your video consultation will begin shortly
               </p>
             </div>
           </div>
+        )}
+
+        {/* Local Video (Patient) */}
+        <div className="absolute bottom-20 right-4 w-48 h-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+          />
+          {isVideoOff && (
+            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+              <FaVideoSlash className="text-white text-2xl" />
+            </div>
+          )}
         </div>
+
+        {/* Call Controls */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+          <div className="flex items-center gap-4 bg-gray-800 bg-opacity-90 px-6 py-3 rounded-full shadow-lg">
+            <button
+              onClick={toggleMute}
+              className={`p-3 rounded-full transition-all duration-200 ${
+                isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'
+              }`}
+              title={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted ? (
+                <FaMicrophoneSlash className="text-white text-lg" />
+              ) : (
+                <FaMicrophone className="text-white text-lg" />
+              )}
+            </button>
+
+            <button
+              onClick={toggleVideo}
+              className={`p-3 rounded-full transition-all duration-200 ${
+                isVideoOff ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'
+              }`}
+              title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
+            >
+              {isVideoOff ? (
+                <FaVideoSlash className="text-white text-lg" />
+              ) : (
+                <FaVideo className="text-white text-lg" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setShowChat(!showChat)}
+              className="p-3 rounded-full bg-gray-600 hover:bg-gray-700 transition-all duration-200"
+              title="Toggle chat"
+            >
+              <FaComments className="text-white text-lg" />
+            </button>
+
+            <button
+              onClick={endCall}
+              className="p-3 rounded-full bg-red-600 hover:bg-red-700 transition-all duration-200"
+              title="End call"
+            >
+              <FaPhone className="text-white text-lg transform rotate-135" />
+            </button>
+          </div>
+        </div>
+
+        {/* Call Info */}
+        <div className="absolute top-4 left-4 bg-gray-800 bg-opacity-90 px-4 py-2 rounded-lg">
+          <div className="flex items-center gap-2 text-white">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+            <span className="text-sm font-medium">
+              {callStatus === 'connecting' ? 'Connecting...' : 'Connected'}
+            </span>
+            {callStatus === 'connected' && callDuration > 0 && (
+              <span className="text-sm text-gray-300 ml-2">
+                {formatDuration(callDuration)}
+              </span>
+            )}
+          </div>
+          {doctorInfo && (
+            <div className="text-xs text-gray-300 mt-1">
+              Doctor: {doctorInfo.name}
+            </div>
+          )}
+        </div>
+
+        {/* Chat Panel */}
+        {showChat && (
+          <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-lg transform transition-transform duration-300">
+            <div className="p-4 border-b bg-blue-600 text-white">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Chat</h3>
+                <button
+                  onClick={() => setShowChat(false)}
+                  className="text-white hover:text-gray-200"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+            <div className="h-full p-4">
+              <div className="text-center text-gray-500 mt-20">
+                <FaComments className="text-4xl mx-auto mb-2" />
+                <p>Chat feature coming soon</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
