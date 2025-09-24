@@ -110,14 +110,8 @@ const DoctorsList: React.FC = () => {
         return;
       }
       
-<<<<<<< HEAD
-      const userId = response.data.user.userId;
-      console.log('🔥 PATIENT: Initializing video call service with ID:', userId);
-      const service = initializeVideoCallService(userId, 'patient');
-=======
       console.log('🔥 PATIENT: Initializing video call service with ID:', patientId);
       const service = initializeVideoCallService(patientId, 'patient');
->>>>>>> 2b7400340d5a09f67b5a8f133d825991b2fcfc47
       setVideoCallService(service);
       
       // Set up event listeners
@@ -362,13 +356,8 @@ const DoctorsList: React.FC = () => {
       }
       
       // Request video call
-<<<<<<< HEAD
-      videoCallService.requestVideoCall({
-        doctorId: doctor.doctorId,
-=======
       console.log('🔥 PATIENT: About to request video call with doctor:', {
         doctorId: doctor._id,
->>>>>>> 2b7400340d5a09f67b5a8f133d825991b2fcfc47
         doctorName: doctor.fullname,
         patientName: patientName,
         specialization: doctor.specialization
@@ -425,22 +414,22 @@ const DoctorsList: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <Sidebar />
       <main className="lg:ml-80 p-4 lg:p-8 xl:p-12 overflow-y-auto min-h-screen">
-        <div className="mt-6">
+        <div className="">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Find Your Doctor</h1>
           <p className="text-gray-600 mb-8">Connect with verified healthcare professionals</p>
 
           {/* Search and Filter Section */}
-          <div className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-gray-100 mb-8">
+          <div className="bg-emerald-100/30 backdrop-blur-sm p-8 rounded-2xl shadow-lg mb-8">
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Search Bar */}
-            <div className="relative flex-1">
-              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
+              <div className="relative flex-1">
+                <FaSearch className="absolute left-4 top-1/2 z-50 transform -translate-y-1/2 text-emerald-500" />
+                <input
+                  type="text"
                   placeholder="Search by doctor name, specialization, or hospital..."
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 bg-white/90 backdrop-blur-sm text-gray-800 placeholder-gray-500 focus:ring-4 focus:ring-white/30 focus:bg-white transition-all duration-300 text-lg shadow-lg"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-transparent w-full pl-12 pr-4 py-4 rounded-2xl border border-emerald-300 text-gray-800 placeholder-emerald-500 outline-emerald-700 transition-all duration-300 text-lg"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               

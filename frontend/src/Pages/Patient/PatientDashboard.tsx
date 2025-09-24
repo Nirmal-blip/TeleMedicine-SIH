@@ -89,18 +89,11 @@ const PatientDashboard: React.FC = () => {
 
   const specialties: Specialty[] = [
     { 
-      title: "Video Consultation", 
-      desc: "Connect with certified doctors through secure video calls", 
-      icon: <FaStethoscope className="w-8 h-8" />, 
-      route: "/video-consultation",
-      color: "from-emerald-500 to-teal-500"
-    },
-    { 
       title: "Medicine Shop", 
       desc: "Order medicines online with fast delivery and prescription upload", 
       icon: <FaShoppingCart className="w-8 h-8" />, 
       route: "/patient/medicine-shop",
-      color: "from-blue-500 to-indigo-500"
+      color: "from-emerald-500 to-teal-500"
     },
     { 
       title: "Medicine Recommendation", 
@@ -199,7 +192,7 @@ const PatientDashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {specialties.map((specialty, index) => (
               <div 
                 key={index} 
@@ -209,18 +202,20 @@ const PatientDashboard: React.FC = () => {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 opacity-0 group-hover:opacity-50 transition-opacity duration-500 rounded-3xl"></div>
                 
-                <div className="relative z-10">
-                  <div className={`w-18 h-18 bg-gradient-to-r ${specialty.color} rounded-3xl flex items-center justify-center mb-6 text-white group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                    {specialty.icon}
+                <div className="flex flex-col justify-between h-full">
+                  <div>
+                    <div className={`w-18 h-18 bg-gradient-to-r ${specialty.color} rounded-3xl flex items-center justify-center mb-6 text-white group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                      {specialty.icon}
+                    </div>
+                    
+                    <h3 className="text-xl font-bold text-teal-600 mb-3 hover:text-teal-900 transition-colors duration-300">
+                      {specialty.title}
+                    </h3>
+                    
+                    <p className="text-gray-600 mb-6 leading-relaxed text-sm">
+                      {specialty.desc}
+                    </p>
                   </div>
-                  
-                  <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-emerald-600 transition-colors duration-300">
-                    {specialty.title}
-                  </h3>
-                  
-                  <p className="text-gray-600 mb-6 leading-relaxed text-sm">
-                    {specialty.desc}
-                  </p>
                   
                   <div className="flex items-center text-emerald-600 font-medium group-hover:translate-x-2 transition-transform duration-300">
                     <span className="text-sm">Get Started</span>

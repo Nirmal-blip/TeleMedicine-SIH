@@ -780,7 +780,7 @@ const Chatbot: React.FC = () => {
 
                 {/* Chat Window */}
                 {isOpen && (
-                    <div className={`mb-4 ${showChatHistory ? 'w-[700px]' : 'w-96'} h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-200 overflow-hidden transition-all duration-300`}>
+                    <div className={`mb-20 ${showChatHistory ? 'w-[700px]' : 'w-96'} h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-200 overflow-hidden transition-all duration-300`}>
                         {/* Header */}
                         <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 flex justify-between items-center flex-shrink-0">
                             <div className="flex items-center gap-3">
@@ -1013,7 +1013,7 @@ const Chatbot: React.FC = () => {
 
                 {/* Welcome Bubble */}
                 {showWelcome && !isOpen && (
-                    <div className="welcome-text mb-2 bg-white p-4 rounded-2xl shadow-lg border border-gray-200 max-w-xs">
+                    <div className="welcome-text mb-20 bg-white p-4 rounded-2xl shadow-lg border border-gray-200 max-w-xs">
                         <div className="flex items-center gap-2 mb-2">
                             <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
                                 <FontAwesomeIcon icon={faRobot} className="text-white text-sm" />
@@ -1027,7 +1027,7 @@ const Chatbot: React.FC = () => {
                 {/* Floating Button */}
                 <button
                     onClick={toggleChat}
-                    className={`bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-full shadow-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-110 ${showWelcome && !isOpen ? 'pulse' : ''}`}
+                    className={`absolute bottom-0 right-0 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-full shadow-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-110 ${showWelcome && !isOpen ? 'pulse' : ''}`}
                 >
                     <FontAwesomeIcon icon={faRobot} className="text-xl" />
                 </button>
