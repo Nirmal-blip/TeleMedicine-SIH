@@ -1,4 +1,10 @@
 {
+  "name": "telemedicine-root",
+  "private": true,
+  "scripts": {
+    "build": "cd backend && npm ci --no-audit --no-fund && npm run build",
+    "start": "cd backend && npm run start:prod"
+  },
   "dependencies": {
     "@nestjs/cli": "^11.0.10",
     "mongodb": "^6.19.0"
