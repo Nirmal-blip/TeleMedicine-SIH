@@ -16,7 +16,6 @@ import { FaShield } from "react-icons/fa6";
 import Chatbot from "../../Components/Chatbot";
 import DoctorSidebar from "../../Components/DoctorSidebar";
 import doctorImage from "../../assets/girl.png";
-import { BACKEND_BASE_URL } from "../../utils/env";
 
 interface QuickAction {
   title: string;
@@ -49,7 +48,7 @@ const DoctorDashboard: React.FC = () => {
         setLoading(true);
 
         // Get auth info
-        const authResponse = await axios.get(`${BACKEND_BASE_URL}/api/auth/me`, {
+        const authResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/me`, {
           withCredentials: true,
         });
 
@@ -61,7 +60,7 @@ const DoctorDashboard: React.FC = () => {
 
             // Get detailed doctor info
             try {
-              const doctorResponse = await axios.get(`${BACKEND_BASE_URL}/api/doctors/me`, {
+              const doctorResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/doctors/me`, {
                 withCredentials: true,
               });
               if (doctorResponse.data?.fullname) {
@@ -103,7 +102,7 @@ const DoctorDashboard: React.FC = () => {
 
         if (!userId) {
           // Fallback: get from API
-          const response = await axios.get(`${BACKEND_BASE_URL}/api/auth/me`, {
+          const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/me`, {
             withCredentials: true,
           });
           userId = response.data.user?.userId;
@@ -145,12 +144,12 @@ const DoctorDashboard: React.FC = () => {
   // Fetch dashboard stats
   const fetchDashboardStats = async () => {
     try {
-      const appointmentsResponse = await axios.get(`${BACKEND_BASE_URL}/api/appointments/my/upcoming`, { withCredentials: true });
+      const appointmentsResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/appointments/my/upcoming`, { withCredentials: true });
       const today = new Date().toISOString().split("T")[0];
       const todayAppointments = appointmentsResponse.data.filter((apt: any) => new Date(apt.date).toISOString().split("T")[0] === today).length;
 
-      const patientsResponse = await axios.get(`${BACKEND_BASE_URL}/api/patients`, { withCredentials: true });
-      const doctorStatsResponse = await axios.get(`${BACKEND_BASE_URL}/api/doctors/me/stats`, { withCredentials: true });
+      const patientsResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients`, { withCredentials: true });
+      const doctorStatsResponse = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/doctors/me/stats`, { withCredentials: true });
 
       setDashboardStats({
         todayAppointments,
@@ -168,7 +167,7 @@ const DoctorDashboard: React.FC = () => {
     const newName = prompt("Enter your name:", doctorName);
     if (newName?.trim()) {
       try {
-        await axios.patch(`${BACKEND_BASE_URL}/api/doctors/me`, { fullname: newName.trim() }, { withCredentials: true });
+        await axios.patch(`${(import.meta as any).env.VITE_BACKEND_URL}/api/doctors/me`, { fullname: newName.trim() }, { withCredentials: true });
         setDoctorName(newName.trim());
         alert("Name updated successfully!");
       } catch (error: any) {
