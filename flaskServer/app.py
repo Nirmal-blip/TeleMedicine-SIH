@@ -43,8 +43,8 @@ except:
 # CHATBOT MODULE
 # =============================================================================
 
-#initialised app
-initialize_app()
+# #initialised app
+# initialize_app()
 
 
 # Google Gemini API Key (loaded from backend .env file or fallback)
