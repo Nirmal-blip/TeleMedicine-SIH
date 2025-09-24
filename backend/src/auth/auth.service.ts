@@ -119,6 +119,7 @@ export class AuthService {
     const token = this.jwtService.sign({
       email: email,
       userid: user._id,
+      fullname: user.fullname,
       userType: userType,
     });
 
@@ -152,6 +153,7 @@ export class AuthService {
     const token = this.jwtService.sign({
       email: user.email,
       userid: user._id,
+      fullname: user.fullname,
       userType: userType,
     });
 
@@ -233,6 +235,7 @@ export class AuthService {
     const token = this.jwtService.sign({
       email: email,
       userid: user._id,
+      fullname: user.fullname,
       userType: userType,
     });
 

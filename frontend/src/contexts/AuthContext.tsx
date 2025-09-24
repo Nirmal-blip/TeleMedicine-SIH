@@ -94,13 +94,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }, { withCredentials: true });
 
       if (response.data.message) {
-        setUser({
-          userId: '', // Will be set after login
-          email: formData.email,
-          fullname: formData.fullname || '',
-          userType: formData.userType,
-        });
-        refreshTokenState();
+        // After successful registration, fetch user details
+        await checkAuth();
         return response.data;
       }
     } catch (error: any) {
@@ -119,13 +114,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }, { withCredentials: true });
 
       if (response.data.userType) {
-        setUser({
-          userId: response.data.userId || '',
-          email: email,
-          fullname: '',
-          userType: response.data.userType,
-        });
-        refreshTokenState(); // Refresh token state after successful login
+        // After successful login, fetch user details
+        await checkAuth();
       }
     } catch (error) {
       throw error;
@@ -143,13 +133,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }, { withCredentials: true });
 
       if (response.data.userType) {
-        setUser({
-          userId: response.data.userId || '',
-          email: email,
-          fullname: '',
-          userType: response.data.userType,
-        });
-        refreshTokenState();
+        // After successful login, fetch user details
+        await checkAuth();
       }
     } catch (error: any) {
       console.error('Login error:', error.response?.data || error.message);

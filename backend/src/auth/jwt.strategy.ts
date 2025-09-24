@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: 'Sayantan', // In production, use environment variable
+      secretOrKey: process.env.JWT_SECRET || 'Sayantan', // Use environment variable in production
     });
   }
 

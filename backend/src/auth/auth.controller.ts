@@ -20,8 +20,9 @@ export class AuthController {
     
     res.cookie('token', result.token, { 
       secure: process.env.NODE_ENV === 'production', // Only secure in production 
-      sameSite: 'strict',
-      httpOnly: true 
+      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'strict') as 'none' | 'strict' | 'lax',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
     
     return res.status(201).json({ message: result.message });
@@ -37,8 +38,9 @@ export class AuthController {
     
     res.cookie('token', result.token, { 
       secure: process.env.NODE_ENV === 'production', // Only secure in production 
-      sameSite: 'strict',
-      httpOnly: true 
+      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'strict') as 'none' | 'strict' | 'lax',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
     
     return res.status(200).json({ 
@@ -56,6 +58,8 @@ export class AuthController {
       httpOnly: true, 
       expires: new Date(0),
       path: '/', // Make sure to include the path
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'strict') as 'none' | 'strict' | 'lax',
     };
 
     res.cookie('token', '', cookieOptions);

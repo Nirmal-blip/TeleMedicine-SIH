@@ -13,7 +13,7 @@ import { EmailModule } from '../email/email.module';
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: 'Sayantan', // In production, use environment variable
+      secret: process.env.JWT_SECRET || 'Sayantan', // Use environment variable in production
       signOptions: { expiresIn: '7d' },
     }),
     MongooseModule.forFeature([
