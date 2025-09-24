@@ -43,7 +43,7 @@ import { AppController } from './app.controller';
     DoctorsModule,
     AppointmentsModule,
     UploadsModule,
-    AiMlModule,
+    // AiMlModule, // disabled: frontend now calls Flask directly
     ChatHistoryModule,
     NotificationsModule,
     VideoCallModule,

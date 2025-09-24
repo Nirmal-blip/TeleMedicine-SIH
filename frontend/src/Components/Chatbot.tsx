@@ -569,7 +569,7 @@ const Chatbot: React.FC = () => {
             }
 
             // Use streaming endpoint
-            const response = await fetch('http://localhost:8000/api/chat/stream', {
+            const response = await fetch('https://telemedicine-sih.onrender.com/api/chat/stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

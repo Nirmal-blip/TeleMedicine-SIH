@@ -109,7 +109,7 @@ const PatientSupport: React.FC = () => {
                 const { latitude, longitude } = position.coords;
                 setUserLocation({ lat: latitude, lon: longitude });
 
-                fetch(`http://localhost:8000/api/hospitals?lat=${latitude}&lon=${longitude}`)
+                fetch(`https://telemedicine-sih.onrender.com/api/hospitals?lat=${latitude}&lon=${longitude}`)
                     .then((response) => {
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
