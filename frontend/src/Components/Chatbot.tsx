@@ -569,7 +569,8 @@ const Chatbot: React.FC = () => {
             }
 
             // Use streaming endpoint
-            const response = await fetch(`${(import.meta as any).env.VITE_FLASK_URL}/api/chat/stream`, {
+            const flaskUrl = (import.meta as any).env.VITE_FLASK_URL || 'http://localhost:8000';
+            const response = await fetch(`${flaskUrl}/api/chat/stream`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -22,7 +22,12 @@ from PIL import Image
 import io
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+# Configure CORS to allow credentials and specific origins
+CORS(app, 
+     origins=['http://localhost:5173', 'https://telemedicine-sih-frontend.vercel.app'],
+     supports_credentials=True,
+     allow_headers=['Content-Type', 'Authorization', 'Accept'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
 # Load environment variables from backend .env file (if it exists)
 backend_env_path = os.path.join(os.path.dirname(__file__), '..', 'backend', '.env')
@@ -579,8 +584,9 @@ def chat_stream():
             headers={
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Origin': 'http://localhost:5173',
+                'Access-Control-Allow-Credentials': 'true',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
                 'Content-Type': 'text/plain; charset=utf-8'
             }
         )

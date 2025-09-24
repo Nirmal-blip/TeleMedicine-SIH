@@ -48,7 +48,8 @@ const MedicineRecommendation: React.FC = () => {
             let response;
             
             if (searchMethod === 'text') {
-                response = await fetch(`${(import.meta as any).env.VITE_FLASK_URL}/api/medicine/recommend`, {
+                const flaskUrl = (import.meta as any).env.VITE_FLASK_URL || 'http://localhost:8000';
+                response = await fetch(`${flaskUrl}/api/medicine/recommend`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     credentials: 'include',
@@ -59,7 +60,8 @@ const MedicineRecommendation: React.FC = () => {
                 const formData = new FormData();
                 formData.append('file', selectedFile!);
                 
-                response = await fetch(`${(import.meta as any).env.VITE_FLASK_URL}/api/medicine/recommend-image`, {
+                const flaskUrl = (import.meta as any).env.VITE_FLASK_URL || 'http://localhost:8000';
+                response = await fetch(`${flaskUrl}/api/medicine/recommend-image`, {
                     method: "POST",
                     body: formData,
                 });

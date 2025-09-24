@@ -109,7 +109,8 @@ const PatientSupport: React.FC = () => {
                 const { latitude, longitude } = position.coords;
                 setUserLocation({ lat: latitude, lon: longitude });
 
-                fetch(`${(import.meta as any).env.VITE_FLASK_URL}/api/hospitals?lat=${latitude}&lon=${longitude}`)
+                const flaskUrl = (import.meta as any).env.VITE_FLASK_URL || 'http://localhost:8000';
+                fetch(`${flaskUrl}/api/hospitals?lat=${latitude}&lon=${longitude}`)
                     .then((response) => {
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
