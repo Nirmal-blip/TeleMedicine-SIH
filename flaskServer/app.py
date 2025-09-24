@@ -43,6 +43,10 @@ except:
 # CHATBOT MODULE
 # =============================================================================
 
+#initialised app
+initialize_app()
+
+
 # Google Gemini API Key (loaded from backend .env file or fallback)
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyBjQmMBZT7eBD6oos14CJLbPvC-e22mDFw')
 if not GEMINI_API_KEY:
