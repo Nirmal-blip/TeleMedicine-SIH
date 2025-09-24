@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
+import { BACKEND_BASE_URL } from '../utils/env';
 import { hasTokenCookie } from '../utils/cookieUtils';
 
 interface User {
