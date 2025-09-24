@@ -30,14 +30,9 @@ async function bootstrap() {
 
     // Configure Socket.IO adapter with proper CORS settings
     // The main app.enableCors does not apply to WebSockets
-    app.useWebSocketAdapter(new IoAdapter({
-      app,
-      cors: {
-        origin: allowedOrigins,
-        methods: ['GET', 'POST'],
-        credentials: true,
-      },
-    }));
+    app.useWebSocketAdapter(new IoAdapter(app));
+    
+    console.log('✅ Socket.IO adapter configured');
 
     // Enable CORS with multiple allowed origins
     app.enableCors({

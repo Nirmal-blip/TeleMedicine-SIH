@@ -16,7 +16,8 @@ export class RealTimeNotificationService {
   private connect() {
     try {
       // Connect to the video-call namespace
-      this.socket = io(`${(import.meta as any).env.VITE_BACKEND_URL}/video-call`, {
+      const backendUrl = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
+      this.socket = io(`${backendUrl}/video-call`, {
         query: {
           userId: this.userId,
           userType: this.userType,

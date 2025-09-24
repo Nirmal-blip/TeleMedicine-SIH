@@ -33,12 +33,18 @@ export class VideoCallService {
 
   private connect() {
     try {
-      this.socket = io(`${(import.meta as any).env.VITE_BACKEND_URL}/video-call`, {
+      const backendUrl = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
+      console.log(`🔌 FRONTEND: Connecting to Socket.IO at ${backendUrl}/video-call`);
+      
+      this.socket = io(`${backendUrl}/video-call`, {
         query: {
           userId: this.userId,
           userType: this.userType,
         },
         withCredentials: true,
+        transports: ['websocket', 'polling'],
+        timeout: 10000,
+        forceNew: true,
       });
 
       this.socket.on('connect', () => {
@@ -57,6 +63,21 @@ export class VideoCallService {
 
       this.socket.on('connect_error', (error: any) => {
         console.error(`🚨 FRONTEND: Video call connection error for ${this.userType} ${this.userId}:`, error);
+        console.error(`🚨 FRONTEND: Connection URL: ${backendUrl}/video-call`);
+        console.error(`🚨 FRONTEND: Error details:`, {
+          message: error.message,
+          type: error.type,
+          description: error.description,
+          context: error.context
+        });
+      });
+
+      this.socket.on('reconnect_error', (error: any) => {
+        console.error(`🚨 FRONTEND: Video call reconnection error:`, error);
+      });
+
+      this.socket.on('reconnect_failed', () => {
+        console.error(`🚨 FRONTEND: Video call reconnection failed`);
       });
 
     } catch (error) {

@@ -33,7 +33,13 @@ interface VideoCallRequest {
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:3001', 'http://localhost:3000'],
+    origin: [
+      'http://localhost:5173', 
+      'http://localhost:3001', 
+      'http://localhost:3000',
+      'https://telemedicine-sih-frontend.vercel.app',
+      'https://telemedicine-sih-8i5h.onrender.com'
+    ],
     credentials: true,
   },
   namespace: '/video-call',
@@ -55,6 +61,8 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
   async handleConnection(client: Socket) {
     console.log(`🔌 BACKEND: Video call client connected: ${client.id}`);
     console.log(`🔍 BACKEND: Connection query:`, client.handshake.query);
+    console.log(`🔍 BACKEND: Connection headers:`, client.handshake.headers);
+    console.log(`🔍 BACKEND: Connection origin:`, client.handshake.headers.origin);
     
     const userId = client.handshake.query.userId as string;
     const userType = client.handshake.query.userType as string;
