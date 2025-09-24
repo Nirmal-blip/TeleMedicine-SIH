@@ -68,40 +68,76 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
     const userType = client.handshake.query.userType as string;
     
     if (userId && userType && userId !== 'undefined') {
-      // If it's a doctor, get their custom doctorId and store that instead
+      // If it's a doctor, handle both MongoDB ObjectId and custom doctorId
       if (userType === 'doctor') {
         try {
-          const doctor = await this.doctorModel.findById(userId);
-          if (doctor && doctor.doctorId) {
-            this.connectedUsers.set(client.id, {
-              userId: doctor.doctorId, // Store custom doctorId instead of MongoDB ObjectId
-              userType: userType as 'doctor' | 'patient',
-              socketId: client.id,
-            });
-            console.log(`✅ BACKEND: Doctor ${doctor.fullname} connected with custom ID ${doctor.doctorId} (MongoDB: ${userId})`);
+          let doctor;
+          let customDoctorId;
+          
+          // Check if userId is a MongoDB ObjectId (24 hex characters) or custom doctorId
+          if (userId.match(/^[0-9a-fA-F]{24}$/)) {
+            // It's a MongoDB ObjectId
+            doctor = await this.doctorModel.findById(userId);
+            if (doctor && doctor.doctorId) {
+              customDoctorId = doctor.doctorId;
+            } else {
+              console.log(`❌ BACKEND: Doctor ${userId} not found or missing doctorId`);
+              return;
+            }
           } else {
-            console.log(`❌ BACKEND: Doctor ${userId} not found or missing doctorId`);
-            return;
+            // It's a custom doctorId, find doctor by doctorId field
+            doctor = await this.doctorModel.findOne({ doctorId: userId });
+            if (doctor) {
+              customDoctorId = doctor.doctorId;
+            } else {
+              console.log(`❌ BACKEND: Doctor with custom ID ${userId} not found`);
+              return;
+            }
           }
+          
+          this.connectedUsers.set(client.id, {
+            userId: customDoctorId, // Store custom doctorId
+            userType: userType as 'doctor' | 'patient',
+            socketId: client.id,
+          });
+          console.log(`✅ BACKEND: Doctor ${doctor.fullname} connected with custom ID ${customDoctorId} (Input: ${userId})`);
         } catch (error) {
           console.error('❌ BACKEND: Error fetching doctor:', error);
           return;
         }
       } else if (userType === 'patient') {
-        // If it's a patient, get their custom patientId and store that instead
+        // If it's a patient, handle both MongoDB ObjectId and custom patientId
         try {
-          const patient = await this.patientModel.findById(userId);
-          if (patient && patient.patientId) {
-            this.connectedUsers.set(client.id, {
-              userId: patient.patientId, // Store custom patientId instead of MongoDB ObjectId
-              userType: userType as 'doctor' | 'patient',
-              socketId: client.id,
-            });
-            console.log(`✅ BACKEND: Patient ${patient.fullname} connected with custom ID ${patient.patientId} (MongoDB: ${userId})`);
+          let patient;
+          let customPatientId;
+          
+          // Check if userId is a MongoDB ObjectId (24 hex characters) or custom patientId
+          if (userId.match(/^[0-9a-fA-F]{24}$/)) {
+            // It's a MongoDB ObjectId
+            patient = await this.patientModel.findById(userId);
+            if (patient && patient.patientId) {
+              customPatientId = patient.patientId;
+            } else {
+              console.log(`❌ BACKEND: Patient ${userId} not found or missing patientId`);
+              return;
+            }
           } else {
-            console.log(`❌ BACKEND: Patient ${userId} not found or missing patientId`);
-            return;
+            // It's a custom patientId, find patient by patientId field
+            patient = await this.patientModel.findOne({ patientId: userId });
+            if (patient) {
+              customPatientId = patient.patientId;
+            } else {
+              console.log(`❌ BACKEND: Patient with custom ID ${userId} not found`);
+              return;
+            }
           }
+          
+          this.connectedUsers.set(client.id, {
+            userId: customPatientId, // Store custom patientId
+            userType: userType as 'doctor' | 'patient',
+            socketId: client.id,
+          });
+          console.log(`✅ BACKEND: Patient ${patient.fullname} connected with custom ID ${customPatientId} (Input: ${userId})`);
         } catch (error) {
           console.error('❌ BACKEND: Error fetching patient:', error);
           return;

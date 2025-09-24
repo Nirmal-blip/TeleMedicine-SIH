@@ -83,7 +83,7 @@ const DoctorVideoConsultation: React.FC = () => {
         withCredentials: true
       });
       
-      const userId = response.data.user.userId;
+      const userId = response.data.user.doctorId || response.data.user.userId;
       setDoctorId(userId);
       const service = initializeVideoCallService(userId, 'doctor');
       setVideoCallService(service);
