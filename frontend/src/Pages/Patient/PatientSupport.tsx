@@ -1,3 +1,4 @@
+import { FLASK_BASE_URL } from '../../utils/env';
 import React, { useEffect, useState, useMemo } from "react";
 import Sidebar from "../../Components/Sidebar";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
@@ -109,7 +110,7 @@ const PatientSupport: React.FC = () => {
                 const { latitude, longitude } = position.coords;
                 setUserLocation({ lat: latitude, lon: longitude });
 
-                fetch(`https://telemedicine-sih.onrender.com/api/hospitals?lat=${latitude}&lon=${longitude}`)
+                fetch(`${FLASK_BASE_URL}/api/hospitals?lat=${latitude}&lon=${longitude}`)
                     .then((response) => {
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);

@@ -1,3 +1,4 @@
+import { BACKEND_BASE_URL } from './env';
 import { io, Socket } from 'socket.io-client';
 import { NotificationManager, NotificationData } from './notifications';
 
@@ -16,7 +17,7 @@ export class RealTimeNotificationService {
   private connect() {
     try {
       // Connect to the video-call namespace
-      this.socket = io('https://telemedicine-sih-8i5h.onrender.com/video-call', {
+      this.socket = io(`${BACKEND_BASE_URL}/video-call`, {
         query: {
           userId: this.userId,
           userType: this.userType,

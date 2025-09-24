@@ -1,3 +1,4 @@
+import { BACKEND_BASE_URL } from '../utils/env';
 import React, { useState, useEffect, ChangeEvent, FormEvent, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faXmark, faPaperPlane, faMicrophone, faMicrophoneSlash, faVolumeUp, faHistory, faPlus, faTrash, faClock } from '@fortawesome/free-solid-svg-icons';
@@ -448,7 +449,7 @@ const Chatbot: React.FC = () => {
     // Chat History Functions
     const createNewChatSession = async () => {
         try {
-            const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/chat-history/session', {
+            const response = await fetch(`${BACKEND_BASE_URL}/api/chat-history/session`, {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -484,7 +485,7 @@ const Chatbot: React.FC = () => {
 
     const loadChatSessions = async () => {
         try {
-            const response = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/chat-history/sessions', {
+            const response = await fetch(`${BACKEND_BASE_URL}/api/chat-history/sessions`, {
                 credentials: 'include',
             });
             
@@ -499,7 +500,7 @@ const Chatbot: React.FC = () => {
 
     const loadChatSession = async (sessionId: string) => {
         try {
-            const response = await fetch(`https://telemedicine-sih-8i5h.onrender.com/api/chat-history/session/${sessionId}`, {
+            const response = await fetch(`${BACKEND_BASE_URL}/api/chat-history/session/${sessionId}`, {
                 credentials: 'include',
             });
             
@@ -521,7 +522,7 @@ const Chatbot: React.FC = () => {
 
     const deleteChatSession = async (sessionId: string) => {
         try {
-            const response = await fetch(`https://telemedicine-sih-8i5h.onrender.com/api/chat-history/session/${sessionId}`, {
+            const response = await fetch(`${BACKEND_BASE_URL}/api/chat-history/session/${sessionId}`, {
                 method: 'DELETE',
                 credentials: 'include',
             });
@@ -639,7 +640,7 @@ const Chatbot: React.FC = () => {
                 // Save bot response to chat history
                 if (sessionId) {
                     try {
-                        await fetch('https://telemedicine-sih-8i5h.onrender.com/api/ai/chat/save-response', {
+                        await fetch(`${BACKEND_BASE_URL}/api/ai/chat/save-response`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -666,7 +667,7 @@ const Chatbot: React.FC = () => {
                     fallbackSessionId = await createNewChatSession();
                 }
                 
-                const fallbackResponse = await fetch('https://telemedicine-sih-8i5h.onrender.com/api/ai/chat', {
+                const fallbackResponse = await fetch(`${BACKEND_BASE_URL}/api/ai/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -1,3 +1,4 @@
+import { BACKEND_BASE_URL } from './env';
 import { io, Socket } from 'socket.io-client';
 
 export interface VideoCallRequest {
@@ -33,7 +34,7 @@ export class VideoCallService {
 
   private connect() {
     try {
-      this.socket = io('https://telemedicine-sih-8i5h.onrender.com/video-call', {
+      this.socket = io(`${BACKEND_BASE_URL}/video-call`, {
         query: {
           userId: this.userId,
           userType: this.userType,
