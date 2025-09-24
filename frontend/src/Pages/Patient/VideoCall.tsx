@@ -160,30 +160,29 @@ const PatientVideoCall: React.FC = () => {
         throw new Error('No socket available');
       }
 
-      // Initialize WebRTC with socket and callId
-      const success = await webrtc.initialize(
-        socket,
-        callId,
-        false // Patient is not the initiator
-      );
-
-      if (!success) {
-        throw new Error('Failed to initialize WebRTC');
-      }
-
-      // Set up WebRTC event listeners
+      // Set up WebRTC event listeners BEFORE initialization
       webrtc.onLocalStream((stream) => {
-        console.log('🎥 PATIENT: Local stream received');
+        console.log('🎥 PATIENT: Local stream received', stream);
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
+          console.log('🎥 PATIENT: Local video element updated');
+          // Force video to play
+          localVideoRef.current.play().catch(console.error);
+        } else {
+          console.error('❌ PATIENT: localVideoRef.current is null');
         }
         setIsVideoCallActive(true);
       });
 
       webrtc.onRemoteStream((stream) => {
-        console.log('📺 PATIENT: Remote stream received');
+        console.log('📺 PATIENT: Remote stream received', stream);
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = stream;
+          console.log('📺 PATIENT: Remote video element updated');
+          // Force video to play
+          remoteVideoRef.current.play().catch(console.error);
+        } else {
+          console.error('❌ PATIENT: remoteVideoRef.current is null');
         }
         setCallStatus('connected');
         setIsConnected(true);
@@ -198,6 +197,17 @@ const PatientVideoCall: React.FC = () => {
           setCallStatus('ended');
         }
       });
+
+      // Initialize WebRTC with socket and callId AFTER setting up listeners
+      const success = await webrtc.initialize(
+        socket,
+        callId,
+        false // Patient is not the initiator
+      );
+
+      if (!success) {
+        throw new Error('Failed to initialize WebRTC');
+      }
 
       // Join the video room
       videoCallService.joinVideoRoom(callId);
