@@ -12,7 +12,14 @@ async function bootstrap() {
     // Define the allowed origin for your frontend
     // Use an environment variable for production and a fallback for development
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    console.log(`✅ Allowing CORS for origin: ${frontendUrl}`);
+    const allowedOrigins = [
+      frontendUrl,
+      'https://telemedicine-sih-frontend.vercel.app', // Add your production frontend URL
+      'http://localhost:5173',
+      'http://localhost:3000'
+    ];
+    
+    console.log(`✅ Allowing CORS for origins: ${allowedOrigins.join(', ')}`);
     console.log(`✅ Environment: ${process.env.NODE_ENV}`);
 
     // Configure Socket.IO adapter with proper CORS settings
@@ -20,15 +27,15 @@ async function bootstrap() {
     app.useWebSocketAdapter(new IoAdapter({
       app,
       cors: {
-        origin: frontendUrl,
+        origin: allowedOrigins,
         methods: ['GET', 'POST'],
         credentials: true,
       },
     }));
 
-    // Enable CORS with a specific origin
+    // Enable CORS with multiple allowed origins
     app.enableCors({
-      origin: frontendUrl,
+      origin: allowedOrigins,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],

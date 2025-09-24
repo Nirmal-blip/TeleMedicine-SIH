@@ -44,9 +44,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuth = async () => {
     try {
       setIsLoading(true);
+      console.log('🔍 Checking auth status...');
+      
+      // Add a small delay to ensure cookie is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/me`, {
         withCredentials: true,
       });
+      
+      console.log('✅ Auth check successful:', response.data);
       
       if (response.data.user) {
         setUser({
@@ -58,7 +65,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setUser(null);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.log('❌ Auth check failed:', error.response?.status, error.response?.data);
       // This is normal for unauthenticated users - don't log as error
       setUser(null);
     } finally {
@@ -94,8 +102,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }, { withCredentials: true });
 
       if (response.data.message) {
-        // After successful registration, fetch user details
-        await checkAuth();
+        // Set user state directly from registration response
+        setUser({
+          userId: response.data.userId || '',
+          email: formData.email,
+          fullname: formData.fullname || '',
+          userType: formData.userType,
+        });
+        
+        // Refresh token state
+        refreshTokenState();
+        
         return response.data;
       }
     } catch (error: any) {
@@ -114,8 +131,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }, { withCredentials: true });
 
       if (response.data.userType) {
-        // After successful login, fetch user details
-        await checkAuth();
+        // Set user state directly from login response
+        setUser({
+          userId: response.data.userId || '',
+          email: email,
+          fullname: response.data.fullname || '',
+          userType: response.data.userType,
+        });
+        
+        // Refresh token state
+        refreshTokenState();
       }
     } catch (error) {
       throw error;
@@ -132,9 +157,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         otp,
       }, { withCredentials: true });
 
+      console.log('✅ Login response:', response.data);
+
       if (response.data.userType) {
-        // After successful login, fetch user details
-        await checkAuth();
+        console.log('🔄 Login successful, setting user state directly...');
+        
+        // Set user state directly from login response instead of calling checkAuth
+        setUser({
+          userId: response.data.userId || '',
+          email: email,
+          fullname: response.data.fullname || '',
+          userType: response.data.userType,
+        });
+        
+        // Refresh token state
+        refreshTokenState();
+        
+        console.log('✅ User state set successfully');
       }
     } catch (error: any) {
       console.error('Login error:', error.response?.data || error.message);

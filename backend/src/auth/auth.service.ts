@@ -123,7 +123,13 @@ export class AuthService {
       userType: userType,
     });
 
-    return { token, message: 'User registered successfully' };
+    return { 
+      token, 
+      message: 'User registered successfully',
+      userId: user._id,
+      fullname: user.fullname,
+      userType: userType
+    };
   }
 
   async login(loginDto: LoginDto) {
@@ -157,7 +163,13 @@ export class AuthService {
       userType: userType,
     });
 
-    return { token, message: 'Login successful', userType };
+    return { 
+      token, 
+      message: 'Login successful', 
+      userType,
+      userId: user._id,
+      fullname: user.fullname
+    };
   }
 
   async sendOTP(email: string, purpose: 'signup' | 'signin'): Promise<{ success: boolean; message: string }> {
@@ -239,7 +251,13 @@ export class AuthService {
       userType: userType,
     });
 
-    return { token, message: 'User registered successfully' };
+    return { 
+      token, 
+      message: 'User registered successfully',
+      userId: user._id,
+      fullname: user.fullname,
+      userType: userType
+    };
   }
 
   async loginWithOTP(loginDto: LoginWithOtpDto) {
@@ -279,6 +297,12 @@ export class AuthService {
       userType: userType,
     });
 
-    return { token, message: 'Login successful', userType };
+    return { 
+      token, 
+      message: 'Login successful', 
+      userType,
+      userId: user._id,
+      fullname: user.fullname
+    };
   }
 }
