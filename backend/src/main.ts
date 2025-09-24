@@ -20,6 +20,11 @@ async function bootstrap() {
       'http://localhost:3000'
     ];
     
+    // Log environment info for debugging
+    console.log(`✅ NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`✅ RENDER: ${process.env.RENDER}`);
+    console.log(`✅ FRONTEND_URL: ${process.env.FRONTEND_URL}`);
+    
     console.log(`✅ Allowing CORS for origins: ${allowedOrigins.join(', ')}`);
     console.log(`✅ Environment: ${process.env.NODE_ENV}`);
 

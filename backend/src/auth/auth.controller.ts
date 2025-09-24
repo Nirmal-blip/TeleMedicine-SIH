@@ -9,6 +9,16 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  private getCookieOptions(isProduction: boolean) {
+    return {
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'strict') as 'none' | 'strict' | 'lax',
+      httpOnly: true,
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    };
+  }
+
   @Post('register')
   @ApiOperation({ summary: 'Register a new user (patient or doctor)' })
   @ApiBody({ type: RegisterDto })
@@ -18,12 +28,9 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto, @Res() res: Response) {
     const result = await this.authService.register(registerDto);
     
-    res.cookie('token', result.token, { 
-      secure: process.env.NODE_ENV === 'production', // Only secure in production 
-      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'strict') as 'none' | 'strict' | 'lax',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    
+    res.cookie('token', result.token, this.getCookieOptions(isProduction));
     
     return res.status(201).json({ message: result.message });
   }
@@ -36,12 +43,9 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto, @Res() res: Response) {
     const result = await this.authService.login(loginDto);
     
-    res.cookie('token', result.token, { 
-      secure: process.env.NODE_ENV === 'production', // Only secure in production 
-      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'strict') as 'none' | 'strict' | 'lax',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    
+    res.cookie('token', result.token, this.getCookieOptions(isProduction));
     
     return res.status(200).json({ 
       message: result.message, 
@@ -54,12 +58,14 @@ export class AuthController {
   @ApiOperation({ summary: 'User logout' })
   @ApiResponse({ status: 302, description: 'Redirected to home page' })
   logout(@Res() res: Response) {
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    
     const cookieOptions = { 
       httpOnly: true, 
       expires: new Date(0),
-      path: '/', // Make sure to include the path
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'strict') as 'none' | 'strict' | 'lax',
+      path: '/',
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'strict') as 'none' | 'strict' | 'lax',
     };
 
     res.cookie('token', '', cookieOptions);
@@ -95,11 +101,9 @@ export class AuthController {
   async registerWithOTP(@Body() registerDto: RegisterWithOtpDto, @Res() res: Response) {
     const result = await this.authService.registerWithOTP(registerDto);
     
-    res.cookie('token', result.token, { 
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      httpOnly: true 
-    });
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    
+    res.cookie('token', result.token, this.getCookieOptions(isProduction));
     
     return res.status(201).json({ message: result.message });
   }
@@ -112,11 +116,9 @@ export class AuthController {
   async loginWithOTP(@Body() loginDto: LoginWithOtpDto, @Res() res: Response) {
     const result = await this.authService.loginWithOTP(loginDto);
     
-    res.cookie('token', result.token, { 
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      httpOnly: true 
-    });
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    
+    res.cookie('token', result.token, this.getCookieOptions(isProduction));
     
     return res.status(200).json({ 
       message: result.message, 
