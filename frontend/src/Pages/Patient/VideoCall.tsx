@@ -29,16 +29,33 @@ const PatientVideoCall: React.FC = () => {
   useEffect(() => {
     console.log('🔥 PATIENT: VideoCall component mounted with callId:', callId);
     initializeVideoCallServiceForPatient();
-    if (callId) {
-      // Add a small delay to ensure video call service is initialized
-      setTimeout(() => {
-        initializeWebRTCForCall();
-      }, 1000);
-    }
     return () => {
       cleanup();
     };
   }, [callId]);
+
+  // Separate useEffect to handle WebRTC initialization when service is ready
+  useEffect(() => {
+    if (callId && videoCallService) {
+      // Check if service is already connected
+      if (videoCallService.isServiceConnected()) {
+        console.log('🔥 PATIENT: Service is already connected, initializing WebRTC for callId:', callId);
+        initializeWebRTCForCall();
+      } else {
+        // Wait for connection with a timeout
+        console.log('🔥 PATIENT: Waiting for service connection...');
+        const checkConnection = () => {
+          if (videoCallService.isServiceConnected()) {
+            console.log('🔥 PATIENT: Service connected, initializing WebRTC for callId:', callId);
+            initializeWebRTCForCall();
+          } else {
+            setTimeout(checkConnection, 100); // Check every 100ms
+          }
+        };
+        setTimeout(checkConnection, 100);
+      }
+    }
+  }, [callId, videoCallService]);
 
   // Timer for call duration
   useEffect(() => {
