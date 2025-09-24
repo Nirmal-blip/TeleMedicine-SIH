@@ -265,10 +265,26 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
 
       console.log(`Doctor ${userInfo.userId} accepting call ${data.callId}`);
 
-      // Find patient's socket connections
+      // Convert patient MongoDB ObjectId to custom patientId for socket lookup
+      let targetPatientId = callRequest.patientId;
+      try {
+        const patient = await this.patientModel.findById(callRequest.patientId).select('patientId');
+        if (patient && patient.patientId) {
+          targetPatientId = patient.patientId;
+          console.log(`🆔 BACKEND: Converted patient MongoDB ID ${callRequest.patientId} to custom patientId ${targetPatientId}`);
+        } else {
+          console.log(`❌ BACKEND: Could not find custom patientId for MongoDB ID ${callRequest.patientId}`);
+        }
+      } catch (error) {
+        console.error('❌ BACKEND: Error fetching patient for ID conversion:', error);
+      }
+
+      // Find patient's socket connections using custom patientId
       const patientSockets = Array.from(this.connectedUsers.entries())
-        .filter(([_, user]) => user.userId === callRequest.patientId && user.userType === 'patient')
+        .filter(([_, user]) => user.userId === targetPatientId && user.userType === 'patient')
         .map(([socketId, _]) => socketId);
+
+      console.log(`🔌 BACKEND: Found ${patientSockets.length} patient socket(s) for custom ID ${targetPatientId}`);
 
       if (patientSockets.length === 0) {
         client.emit('call-error', { message: 'Patient is no longer available' });
@@ -279,7 +295,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Create notification for patient about call acceptance
       try {
         await this.notificationsService.createNotification({
-          patientId: callRequest.patientId,
+          patientId: targetPatientId,
           recipientType: 'Patient',
           senderDoctorId: callRequest.doctorId,
           senderType: 'Doctor',
@@ -294,7 +310,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
             acceptedAt: new Date().toISOString()
           }
         });
-        console.log(`✅ Acceptance notification created for patient ${callRequest.patientId}`);
+        console.log(`✅ Acceptance notification created for patient ${targetPatientId}`);
       } catch (error) {
         console.error('Failed to create acceptance notification:', error);
       }
@@ -346,15 +362,31 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
 
       console.log(`Doctor ${userInfo.userId} rejecting call ${data.callId}`);
 
-      // Find patient's socket connections
+      // Convert patient MongoDB ObjectId to custom patientId for socket lookup
+      let targetPatientId = callRequest.patientId;
+      try {
+        const patient = await this.patientModel.findById(callRequest.patientId).select('patientId');
+        if (patient && patient.patientId) {
+          targetPatientId = patient.patientId;
+          console.log(`🆔 BACKEND: Converted patient MongoDB ID ${callRequest.patientId} to custom patientId ${targetPatientId}`);
+        } else {
+          console.log(`❌ BACKEND: Could not find custom patientId for MongoDB ID ${callRequest.patientId}`);
+        }
+      } catch (error) {
+        console.error('❌ BACKEND: Error fetching patient for ID conversion:', error);
+      }
+
+      // Find patient's socket connections using custom patientId
       const patientSockets = Array.from(this.connectedUsers.entries())
-        .filter(([_, user]) => user.userId === callRequest.patientId && user.userType === 'patient')
+        .filter(([_, user]) => user.userId === targetPatientId && user.userType === 'patient')
         .map(([socketId, _]) => socketId);
+
+      console.log(`🔌 BACKEND: Found ${patientSockets.length} patient socket(s) for custom ID ${targetPatientId}`);
 
       // Create notification for patient about call rejection
       try {
         await this.notificationsService.createNotification({
-          patientId: callRequest.patientId,
+          patientId: targetPatientId,
           recipientType: 'Patient',
           senderDoctorId: callRequest.doctorId,
           senderType: 'Doctor',
@@ -370,7 +402,7 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
             reason: data.reason
           }
         });
-        console.log(`✅ Rejection notification created for patient ${callRequest.patientId}`);
+        console.log(`✅ Rejection notification created for patient ${targetPatientId}`);
       } catch (error) {
         console.error('Failed to create rejection notification:', error);
       }

@@ -96,12 +96,12 @@ const DoctorsList: React.FC = () => {
           const response = await axios.get(`${(import.meta as any).env.VITE_BACKEND_URL}/api/patients/me`, {
             withCredentials: true
           });
-          patientId = response.data._id || response.data.id;
+          patientId = response.data.patientId || response.data._id || response.data.id;
           console.log('🔥 PATIENT: Got patient ID from API:', patientId);
         } catch (apiError) {
           console.log('🔥 PATIENT: API failed, using test patient ID');
-          // For testing: use a hardcoded patient ID
-          patientId = '68bb0972d6ac0c5ddcba5ec8'; // Prithviraj Verma's MongoDB ObjectId
+          // For testing: use a hardcoded patient ID (custom patientId, not MongoDB ObjectId)
+          patientId = 'PATIENT001'; // Use custom patient ID for testing
         }
       }
       
