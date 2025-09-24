@@ -552,6 +552,25 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
     }
   }
 
+  @SubscribeMessage('webrtc:participant-ready')
+  async handleParticipantReady(
+    @MessageBody() data: { callId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userInfo = this.connectedUsers.get(client.id);
+    if (!userInfo) return;
+
+    console.log(`📢 WebRTC: ${userInfo.userType} ${userInfo.userId} is ready for call ${data.callId}`);
+    console.log(`📢 WebRTC: Broadcasting participant ready to room ${data.callId}`);
+
+    // Broadcast participant ready signal to other participants in the room
+    client.to(data.callId).emit('webrtc:participant-ready', {
+      callId: data.callId
+    });
+    
+    console.log(`📢 WebRTC: Participant ready signal broadcasted to room ${data.callId}`);
+  }
+
   @SubscribeMessage('webrtc:offer')
   async handleWebRTCOffer(
     @MessageBody() data: { callId: string; offer: any },

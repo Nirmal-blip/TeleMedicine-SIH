@@ -56,7 +56,7 @@ export class WebRTCManager {
 
       console.log('🔧 WebRTC: Initializing with callId:', callId, 'isInitiator:', isInitiator);
 
-      // Setup socket event listeners
+      // Setup socket event listeners FIRST
       this.setupSocketListeners();
 
       // Get user media
@@ -65,10 +65,47 @@ export class WebRTCManager {
       // Create peer connection
       this.createPeerConnection();
 
+      // If we're the initiator, wait a bit for the other participant to be ready
+      if (this.isInitiator) {
+        console.log('🚀 WebRTC: Initiator - waiting for other participant to be ready...');
+        // Wait for a signal that the other participant is ready
+        await this.waitForOtherParticipant();
+      }
+
       return true;
     } catch (error) {
       console.error('❌ WebRTC: Failed to initialize:', error);
       return false;
+    }
+  }
+
+  // Wait for other participant to be ready
+  private async waitForOtherParticipant(): Promise<void> {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        console.log('⏰ WebRTC: Timeout waiting for other participant, proceeding anyway...');
+        resolve();
+      }, 3000); // Wait max 3 seconds
+
+      // Listen for other participant ready signal
+      if (this.socket) {
+        const onOtherParticipantReady = () => {
+          console.log('✅ WebRTC: Other participant is ready, proceeding with call...');
+          clearTimeout(timeout);
+          this.socket?.off('webrtc:participant-ready', onOtherParticipantReady);
+          resolve();
+        };
+        
+        this.socket.on('webrtc:participant-ready', onOtherParticipantReady);
+      }
+    });
+  }
+
+  // Signal that this participant is ready
+  public signalParticipantReady(): void {
+    if (this.socket && this.callId) {
+      console.log('📢 WebRTC: Signaling that participant is ready');
+      this.socket.emit('webrtc:participant-ready', { callId: this.callId });
     }
   }
 
@@ -245,6 +282,16 @@ export class WebRTCManager {
         console.log('❌ WebRTC: CallId mismatch or no peer connection, ignoring ICE candidate');
       }
     });
+
+    // Handle participant ready signal
+    this.socket.on('webrtc:participant-ready', (data: { callId: string }) => {
+      console.log('📥 WebRTC: Received participant ready signal for callId:', data.callId, 'current callId:', this.callId);
+      if (data.callId === this.callId) {
+        console.log('📥 WebRTC: Other participant is ready for callId:', this.callId);
+      } else {
+        console.log('❌ WebRTC: CallId mismatch, ignoring participant ready signal');
+      }
+    });
   }
 
   // Create and send offer (for initiator)
@@ -342,7 +389,29 @@ export class WebRTCManager {
 
     try {
       console.log('🚀 WebRTC: Starting call...');
+      console.log('🚀 WebRTC: Local stream available:', !!this.localStream);
+      console.log('🚀 WebRTC: Local stream tracks:', this.localStream?.getTracks().length || 0);
+      console.log('🚀 WebRTC: Peer connection state:', this.peerConnection?.connectionState);
+      
       await this.createOffer();
+      
+      // Set up a timeout to check if remote stream arrives
+      setTimeout(() => {
+        if (!this.remoteStream && this.peerConnection?.connectionState === 'connected') {
+          console.warn('⚠️ WebRTC: Connected but no remote stream received after 5 seconds');
+          // Try to get remote streams from the peer connection
+          const receivers = this.peerConnection.getReceivers();
+          console.log('📺 WebRTC: Available receivers:', receivers.length);
+          receivers.forEach((receiver, index) => {
+            console.log(`📺 WebRTC: Receiver ${index}:`, {
+              track: receiver.track?.kind,
+              enabled: receiver.track?.enabled,
+              readyState: receiver.track?.readyState
+            });
+          });
+        }
+      }, 5000);
+      
     } catch (error) {
       console.error('❌ WebRTC: Failed to start call:', error);
       throw error;

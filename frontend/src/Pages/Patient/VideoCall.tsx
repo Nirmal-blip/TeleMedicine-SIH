@@ -216,6 +216,9 @@ const PatientVideoCall: React.FC = () => {
         throw new Error('Failed to initialize WebRTC');
       }
 
+      // Signal that this participant is ready
+      webrtc.signalParticipantReady();
+
       // Join the video room
       videoCallService.joinVideoRoom(callId);
       setCallStatus('connecting');
