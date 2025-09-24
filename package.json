@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@nestjs/cli": "^11.0.10",
     "mongodb": "^6.19.0"
   }
 }
