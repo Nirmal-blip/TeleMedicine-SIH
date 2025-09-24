@@ -135,13 +135,30 @@ export class WebRTCManager {
     this.peerConnection.ontrack = (event) => {
       console.log('📺 WebRTC: Received remote stream event', event);
       console.log('📺 WebRTC: Number of streams:', event.streams.length);
+      console.log('📺 WebRTC: Event details:', {
+        streams: event.streams.length,
+        track: event.track,
+        trackKind: event.track?.kind,
+        trackEnabled: event.track?.enabled,
+        trackReadyState: event.track?.readyState
+      });
+      
       if (event.streams && event.streams.length > 0) {
         this.remoteStream = event.streams[0];
         console.log('📺 WebRTC: Remote stream set:', this.remoteStream);
         console.log('📺 WebRTC: Remote stream tracks:', this.remoteStream.getTracks().length);
+        console.log('📺 WebRTC: Remote stream track details:', this.remoteStream.getTracks().map(t => ({
+          kind: t.kind,
+          enabled: t.enabled,
+          readyState: t.readyState,
+          id: t.id
+        })));
         
         if (this.onRemoteStreamCallback) {
+          console.log('📺 WebRTC: Calling remote stream callback');
           this.onRemoteStreamCallback(this.remoteStream);
+        } else {
+          console.warn('⚠️ WebRTC: No remote stream callback set');
         }
       } else {
         console.log('❌ WebRTC: No streams in track event');
@@ -192,6 +209,10 @@ export class WebRTCManager {
     // Handle incoming offer
     this.socket.on('webrtc:offer', async (data: { callId: string; offer: RTCSessionDescriptionInit }) => {
       console.log('📥 WebRTC: Received offer event for callId:', data.callId, 'current callId:', this.callId);
+      console.log('📥 WebRTC: Offer data:', data);
+      console.log('📥 WebRTC: Peer connection exists:', !!this.peerConnection);
+      console.log('📥 WebRTC: Local stream exists:', !!this.localStream);
+      
       if (data.callId === this.callId) {
         console.log('📥 WebRTC: Processing offer...');
         await this.handleOffer(data.offer);
@@ -203,6 +224,9 @@ export class WebRTCManager {
     // Handle incoming answer
     this.socket.on('webrtc:answer', async (data: { callId: string; answer: RTCSessionDescriptionInit }) => {
       console.log('📥 WebRTC: Received answer event for callId:', data.callId, 'current callId:', this.callId);
+      console.log('📥 WebRTC: Answer data:', data);
+      console.log('📥 WebRTC: Peer connection exists:', !!this.peerConnection);
+      
       if (data.callId === this.callId) {
         console.log('📥 WebRTC: Processing answer...');
         await this.handleAnswer(data.answer);
@@ -262,12 +286,16 @@ export class WebRTCManager {
     try {
       console.log('📥 WebRTC: Handling offer...', offer);
       console.log('📥 WebRTC: Local stream available:', !!this.localStream);
+      console.log('📥 WebRTC: Local stream tracks:', this.localStream?.getTracks().length || 0);
       
       await this.peerConnection.setRemoteDescription(offer);
+      console.log('📥 WebRTC: Remote description set successfully');
       
       // Create and send answer
       const answer = await this.peerConnection.createAnswer();
+      console.log('📥 WebRTC: Answer created:', answer);
       await this.peerConnection.setLocalDescription(answer);
+      console.log('📥 WebRTC: Local description set successfully');
 
       // Send answer through socket
       if (this.socket) {
@@ -293,8 +321,13 @@ export class WebRTCManager {
 
     try {
       console.log('📥 WebRTC: Handling answer...', answer);
+      console.log('📥 WebRTC: Peer connection state:', this.peerConnection.connectionState);
+      console.log('📥 WebRTC: ICE connection state:', this.peerConnection.iceConnectionState);
+      
       await this.peerConnection.setRemoteDescription(answer);
       console.log('✅ WebRTC: Answer handled, connection should be established');
+      console.log('📥 WebRTC: Peer connection state after answer:', this.peerConnection.connectionState);
+      console.log('📥 WebRTC: ICE connection state after answer:', this.peerConnection.iceConnectionState);
     } catch (error) {
       console.error('❌ WebRTC: Failed to handle answer:', error);
       throw error;
