@@ -58,7 +58,7 @@ const ConsultationHistory: React.FC = () => {
     try {
       setIsLoading(true);
       // Fetch completed appointments which represent consultation history for doctors
-      const response = await axios.get('http://localhost:3000/api/appointments/my/completed', {
+      const response = await axios.get('https://telemedicine-sih-8i5h.onrender.com/api/appointments/my/completed', {
         withCredentials: true,
       });
       

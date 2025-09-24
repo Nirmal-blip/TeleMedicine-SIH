@@ -1,2 +1,2 @@
-export const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+export const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://telemedicine-sih-8i5h.onrender.com';
 export const FLASK_BASE_URL = import.meta.env.VITE_FLASK_URL || 'http://localhost:8000';
