@@ -249,12 +249,19 @@ const DoctorVideoConsultation: React.FC = () => {
         throw new Error('Failed to initialize WebRTC');
       }
 
-      // Join the video room
+      // Join the video room first
       videoCallService.joinVideoRoom(callId);
       
-      // Start the call (doctor is initiator)
-      await webrtc.startCall();
-      setCallStatus('connecting');
+      // Wait a moment for room joining to complete, then start the call
+      setTimeout(async () => {
+        try {
+          console.log('🚀 DOCTOR: Starting call after room join...');
+          await webrtc.startCall();
+          setCallStatus('connecting');
+        } catch (error) {
+          console.error('❌ DOCTOR: Failed to start call:', error);
+        }
+      }, 1000);
 
     } catch (error) {
       console.error('❌ DOCTOR: Failed to initialize WebRTC:', error);

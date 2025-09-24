@@ -561,12 +561,15 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
     if (!userInfo) return;
 
     console.log(`📤 WebRTC: ${userInfo.userType} ${userInfo.userId} sending offer for call ${data.callId}`);
+    console.log(`📤 WebRTC: Forwarding offer to room ${data.callId}`);
 
     // Forward offer to other participants in the room
     client.to(data.callId).emit('webrtc:offer', {
       callId: data.callId,
       offer: data.offer
     });
+    
+    console.log(`📤 WebRTC: Offer forwarded to room ${data.callId}`);
   }
 
   @SubscribeMessage('webrtc:answer')
@@ -578,12 +581,15 @@ export class VideoCallGateway implements OnGatewayConnection, OnGatewayDisconnec
     if (!userInfo) return;
 
     console.log(`📤 WebRTC: ${userInfo.userType} ${userInfo.userId} sending answer for call ${data.callId}`);
+    console.log(`📤 WebRTC: Forwarding answer to room ${data.callId}`);
 
     // Forward answer to other participants in the room
     client.to(data.callId).emit('webrtc:answer', {
       callId: data.callId,
       answer: data.answer
     });
+    
+    console.log(`📤 WebRTC: Answer forwarded to room ${data.callId}`);
   }
 
   @SubscribeMessage('webrtc:ice-candidate')
