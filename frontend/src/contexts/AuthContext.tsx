@@ -15,9 +15,7 @@ interface AuthContextType {
   isLoading: boolean;
   hasToken: boolean;
   login: (email: string, password: string, userType: 'patient' | 'doctor') => Promise<void>;
-  loginWithOTP: (email: string, password: string, userType: 'patient' | 'doctor', otp: string) => Promise<void>;
-  registerWithOTP: (formData: any, otp: string) => Promise<void>;
-  sendOTP: (email: string, purpose: 'signup' | 'signin') => Promise<void>;
+  register: (formData: any) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   refreshTokenState: () => void;
@@ -75,30 +73,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const sendOTP = async (email: string, purpose: 'signup' | 'signin') => {
+  const register = async (formData: any) => {
     try {
-      const response = await axios.post(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/send-otp`, {
-        email,
-        purpose,
-      });
-      
-      if (response.data.success) {
-        return response.data;
-      } else {
-        throw new Error(response.data.message);
-      }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to send OTP';
-      throw new Error(errorMessage);
-    }
-  };
-
-  const registerWithOTP = async (formData: any, otp: string) => {
-    try {
-      console.log('Registering with OTP:', { email: formData.email, otp: otp.substring(0, 2) + '****' });
-      const response = await axios.post(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/register-with-otp`, {
+      console.log('Registering user:', { email: formData.email, userType: formData.userType });
+      const response = await axios.post(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/register`, {
         ...formData,
-        otp,
       }, { withCredentials: true });
 
       if (response.data.message) {
@@ -147,40 +126,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const loginWithOTP = async (email: string, password: string, userType: 'patient' | 'doctor', otp: string) => {
-    try {
-      console.log('Logging in with OTP:', { email, otp: otp.substring(0, 2) + '****' });
-      const response = await axios.post(`${(import.meta as any).env.VITE_BACKEND_URL}/api/auth/login-with-otp`, {
-        email,
-        password,
-        userType,
-        otp,
-      }, { withCredentials: true });
-
-      console.log('✅ Login response:', response.data);
-
-      if (response.data.userType) {
-        console.log('🔄 Login successful, setting user state directly...');
-        
-        // Set user state directly from login response instead of calling checkAuth
-        setUser({
-          userId: response.data.userId || '',
-          email: email,
-          fullname: response.data.fullname || '',
-          userType: response.data.userType,
-        });
-        
-        // Refresh token state
-        refreshTokenState();
-        
-        console.log('✅ User state set successfully');
-      }
-    } catch (error: any) {
-      console.error('Login error:', error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || 'Login failed';
-      throw new Error(errorMessage);
-    }
-  };
 
   const logout = async () => {
     try {
@@ -216,9 +161,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     hasToken,
     login,
-    loginWithOTP,
-    registerWithOTP,
-    sendOTP,
+    register,
     logout,
     checkAuth,
     refreshTokenState,

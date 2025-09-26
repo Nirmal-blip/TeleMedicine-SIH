@@ -2,7 +2,7 @@ import { Controller, Post, Body, Res, Get, UseGuards, Request } from '@nestjs/co
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, SendOtpDto, VerifyOtpDto, RegisterWithOtpDto, LoginWithOtpDto } from '../dto/auth.dto';
+import { RegisterDto, LoginDto } from '../dto/auth.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('Authentication')
 @Controller('api/auth')
@@ -72,60 +72,6 @@ export class AuthController {
     return res.status(200).json({ message: 'Logged out successfully' });
   }
 
-  @Post('send-otp')
-  @ApiOperation({ summary: 'Send OTP to email for verification' })
-  @ApiBody({ type: SendOtpDto })
-  @ApiResponse({ status: 200, description: 'OTP sent successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  async sendOTP(@Body() sendOtpDto: SendOtpDto) {
-    const result = await this.authService.sendOTP(sendOtpDto.email, sendOtpDto.purpose as 'signup' | 'signin');
-    return result;
-  }
-
-  @Post('verify-otp')
-  @ApiOperation({ summary: 'Verify OTP code' })
-  @ApiBody({ type: VerifyOtpDto })
-  @ApiResponse({ status: 200, description: 'OTP verified successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid OTP or expired' })
-  async verifyOTP(@Body() verifyOtpDto: VerifyOtpDto) {
-    const result = await this.authService.verifyOTP(verifyOtpDto.email, verifyOtpDto.otp, verifyOtpDto.purpose as 'signup' | 'signin');
-    return result;
-  }
-
-  @Post('register-with-otp')
-  @ApiOperation({ summary: 'Register a new user with OTP verification' })
-  @ApiBody({ type: RegisterWithOtpDto })
-  @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid input data or OTP' })
-  @ApiResponse({ status: 409, description: 'User already exists' })
-  async registerWithOTP(@Body() registerDto: RegisterWithOtpDto, @Res() res: Response) {
-    const result = await this.authService.registerWithOTP(registerDto);
-    
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-    
-    res.cookie('token', result.token, this.getCookieOptions(isProduction));
-    
-    return res.status(201).json({ message: result.message });
-  }
-
-  @Post('login-with-otp')
-  @ApiOperation({ summary: 'User login with OTP verification' })
-  @ApiBody({ type: LoginWithOtpDto })
-  @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials or OTP' })
-  async loginWithOTP(@Body() loginDto: LoginWithOtpDto, @Res() res: Response) {
-    const result = await this.authService.loginWithOTP(loginDto);
-    
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-    
-    res.cookie('token', result.token, this.getCookieOptions(isProduction));
-    
-    return res.status(200).json({ 
-      message: result.message, 
-      userType: result.userType,
-      token: result.token 
-    });
-  }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)

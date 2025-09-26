@@ -4,7 +4,6 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from 'react-toastify';
 import GrpImg from '../assets/AuthImg.png';
-import OtpVerification from '../Components/OtpVerification';
 import { useAuth } from '../contexts/AuthContext';
 
 interface FormData {
@@ -32,11 +31,10 @@ const SignupPage: React.FC = () => {
         medicalRegNo: "",
         specialization: ""
     });
-    const [showOtpVerification, setShowOtpVerification] = useState(false);
-    const [isSendingOtp, setIsSendingOtp] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const navigate = useNavigate();
-    const { registerWithOTP, sendOTP } = useAuth();
+    const { register } = useAuth();
 
     // Handle Input Change
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -60,22 +58,9 @@ const SignupPage: React.FC = () => {
             return;
         }
 
-        setIsSendingOtp(true);
+        setIsLoading(true);
         try {
-            await sendOTP(formData.email, 'signup');
-            toast.success('OTP sent to your email address');
-            setShowOtpVerification(true);
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to send OTP');
-        } finally {
-            setIsSendingOtp(false);
-        }
-    };
-
-    // Handle OTP verification success
-    const handleOtpSuccess = async (verifiedOtp: string) => {
-        try {
-            await registerWithOTP({ ...formData, userType }, verifiedOtp);
+            await register({ ...formData, userType });
             toast.success('Registration successful! Welcome to TeleMedicine!', {
                 position: "top-right",
                 autoClose: 3000,
@@ -83,36 +68,11 @@ const SignupPage: React.FC = () => {
             navigate(userType === "patient" ? "/patient-dashboard" : "/doctor-dashboard");
         } catch (error: any) {
             toast.error(error.message || 'Registration failed');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // Handle OTP resend
-    const handleOtpResend = async () => {
-        try {
-            await sendOTP(formData.email, 'signup');
-            toast.success('OTP resent successfully');
-        } catch (error: any) {
-            throw new Error(error.message || 'Failed to resend OTP');
-        }
-    };
-
-    // Handle back from OTP verification
-    const handleBackFromOtp = () => {
-        setShowOtpVerification(false);
-    };
-
-    // Show OTP verification component
-    if (showOtpVerification) {
-        return (
-            <OtpVerification
-                email={formData.email}
-                purpose="signup"
-                onSuccess={handleOtpSuccess}
-                onBack={handleBackFromOtp}
-                onResend={handleOtpResend}
-            />
-        );
-    }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -333,13 +293,13 @@ const SignupPage: React.FC = () => {
                             {/* Submit Button */}
                             <button
                                 type="submit"
-                                disabled={isSendingOtp}
+                                disabled={isLoading}
                                 className="w-full group inline-flex items-center justify-center px-6 py-3 bg-emerald-600 disabled:bg-gray-300 text-white font-semibold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors duration-300"
                             >
-                                {isSendingOtp ? (
+                                {isLoading ? (
                                     <>
                                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                        Sending OTP...
+                                        Registering...
                                     </>
                                 ) : (
                                     <>
