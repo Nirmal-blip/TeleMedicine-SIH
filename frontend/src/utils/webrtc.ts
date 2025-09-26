@@ -109,6 +109,28 @@ export class WebRTCManager {
     }
   }
 
+  // Join call as non-initiator (receiver)
+  public async joinCall(): Promise<void> {
+    if (this.isInitiator) {
+      throw new Error('Initiator should use startCall() instead');
+    }
+
+    try {
+      console.log('🚀 WebRTC: Joining call as receiver...');
+      console.log('🚀 WebRTC: Local stream available:', !!this.localStream);
+      console.log('🚀 WebRTC: Local stream tracks:', this.localStream?.getTracks().length || 0);
+      
+      // Signal that this participant is ready
+      this.signalParticipantReady();
+      
+      console.log('✅ WebRTC: Ready to receive offer from initiator');
+      
+    } catch (error) {
+      console.error('❌ WebRTC: Failed to join call:', error);
+      throw error;
+    }
+  }
+
   // Get user media (camera and microphone)
   public async getUserMedia(): Promise<MediaStream | null> {
     try {
@@ -202,6 +224,29 @@ export class WebRTCManager {
       }
     };
 
+    // Additional debugging for connection state
+    this.peerConnection.onconnectionstatechange = () => {
+      console.log('🔗 WebRTC: Connection state changed to:', this.peerConnection?.connectionState);
+      if (this.peerConnection?.connectionState === 'connected') {
+        console.log('✅ WebRTC: Connection established successfully');
+        // Check if we have remote streams
+        setTimeout(() => {
+          if (!this.remoteStream) {
+            console.warn('⚠️ WebRTC: Connected but no remote stream yet, checking receivers...');
+            const receivers = this.peerConnection?.getReceivers() || [];
+            console.log('📺 WebRTC: Available receivers:', receivers.length);
+            receivers.forEach((receiver, index) => {
+              console.log(`📺 WebRTC: Receiver ${index}:`, {
+                track: receiver.track?.kind,
+                enabled: receiver.track?.enabled,
+                readyState: receiver.track?.readyState
+              });
+            });
+          }
+        }, 1000);
+      }
+    };
+
     // Handle ICE candidates
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate && this.socket) {
@@ -213,17 +258,7 @@ export class WebRTCManager {
       }
     };
 
-    // Handle connection state changes
-    this.peerConnection.onconnectionstatechange = () => {
-      if (this.peerConnection) {
-        console.log('🔗 WebRTC: Connection state changed to:', this.peerConnection.connectionState);
-        this.isConnected = this.peerConnection.connectionState === 'connected';
-        
-        if (this.onConnectionStateChangeCallback) {
-          this.onConnectionStateChangeCallback(this.peerConnection.connectionState);
-        }
-      }
-    };
+    // Handle connection state changes (moved to above for better debugging)
 
     // Handle ICE connection state changes
     this.peerConnection.oniceconnectionstatechange = () => {
@@ -393,6 +428,12 @@ export class WebRTCManager {
       console.log('🚀 WebRTC: Local stream tracks:', this.localStream?.getTracks().length || 0);
       console.log('🚀 WebRTC: Peer connection state:', this.peerConnection?.connectionState);
       
+      // Signal that this participant is ready
+      this.signalParticipantReady();
+      
+      // Wait a bit for the other participant to be ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       await this.createOffer();
       
       // Set up a timeout to check if remote stream arrives
@@ -509,6 +550,35 @@ export class WebRTCManager {
 
   public getCallId(): string {
     return this.callId;
+  }
+
+  // Force check for remote streams (useful for debugging)
+  public checkRemoteStreams(): void {
+    if (this.peerConnection && this.peerConnection.connectionState === 'connected') {
+      console.log('🔍 WebRTC: Manually checking for remote streams...');
+      const receivers = this.peerConnection.getReceivers();
+      console.log('📺 WebRTC: Available receivers:', receivers.length);
+      
+      receivers.forEach((receiver, index) => {
+        console.log(`📺 WebRTC: Receiver ${index}:`, {
+          track: receiver.track?.kind,
+          enabled: receiver.track?.enabled,
+          readyState: receiver.track?.readyState
+        });
+        
+        if (receiver.track && receiver.track.kind === 'video' && !this.remoteStream) {
+          console.log('📺 WebRTC: Found video track in receiver, creating stream...');
+          // Create a new MediaStream with the track
+          const stream = new MediaStream([receiver.track]);
+          this.remoteStream = stream;
+          
+          if (this.onRemoteStreamCallback) {
+            console.log('📺 WebRTC: Calling remote stream callback with manually found stream');
+            this.onRemoteStreamCallback(this.remoteStream);
+          }
+        }
+      });
+    }
   }
 }
 

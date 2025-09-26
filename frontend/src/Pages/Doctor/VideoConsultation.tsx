@@ -240,6 +240,13 @@ const DoctorVideoConsultation: React.FC = () => {
         setIsConnected(state === 'connected');
         if (state === 'connected') {
           setCallStatus('connected');
+          // Check for remote streams after connection is established
+          setTimeout(() => {
+            if (webrtc && !webrtc.getRemoteStream()) {
+              console.log('🔍 DOCTOR: No remote stream detected, checking manually...');
+              webrtc.checkRemoteStreams();
+            }
+          }, 2000);
         } else if (state === 'disconnected' || state === 'failed') {
           setCallStatus('ended');
         }
