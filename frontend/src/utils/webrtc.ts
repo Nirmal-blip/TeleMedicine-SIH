@@ -119,6 +119,7 @@ export class WebRTCManager {
       console.log('🚀 WebRTC: Joining call as receiver...');
       console.log('🚀 WebRTC: Local stream available:', !!this.localStream);
       console.log('🚀 WebRTC: Local stream tracks:', this.localStream?.getTracks().length || 0);
+      console.log('🚀 WebRTC: Peer connection state:', this.peerConnection?.connectionState);
       
       // Signal that this participant is ready
       this.signalParticipantReady();
@@ -213,6 +214,19 @@ export class WebRTCManager {
           id: t.id
         })));
         
+        // Set up event listeners for the remote stream
+        this.remoteStream.getTracks().forEach(track => {
+          track.onended = () => {
+            console.log('📺 WebRTC: Remote track ended:', track.kind);
+          };
+          track.onmute = () => {
+            console.log('📺 WebRTC: Remote track muted:', track.kind);
+          };
+          track.onunmute = () => {
+            console.log('📺 WebRTC: Remote track unmuted:', track.kind);
+          };
+        });
+        
         if (this.onRemoteStreamCallback) {
           console.log('📺 WebRTC: Calling remote stream callback');
           this.onRemoteStreamCallback(this.remoteStream);
@@ -229,21 +243,29 @@ export class WebRTCManager {
       console.log('🔗 WebRTC: Connection state changed to:', this.peerConnection?.connectionState);
       if (this.peerConnection?.connectionState === 'connected') {
         console.log('✅ WebRTC: Connection established successfully');
+        this.isConnected = true;
+        
+        // Notify connection state callback
+        if (this.onConnectionStateChangeCallback) {
+          this.onConnectionStateChangeCallback('connected');
+        }
+        
         // Check if we have remote streams
         setTimeout(() => {
           if (!this.remoteStream) {
             console.warn('⚠️ WebRTC: Connected but no remote stream yet, checking receivers...');
-            const receivers = this.peerConnection?.getReceivers() || [];
-            console.log('📺 WebRTC: Available receivers:', receivers.length);
-            receivers.forEach((receiver, index) => {
-              console.log(`📺 WebRTC: Receiver ${index}:`, {
-                track: receiver.track?.kind,
-                enabled: receiver.track?.enabled,
-                readyState: receiver.track?.readyState
-              });
-            });
+            this.checkRemoteStreams();
           }
         }, 1000);
+      } else if (this.peerConnection?.connectionState === 'disconnected' || 
+                 this.peerConnection?.connectionState === 'failed') {
+        console.log('❌ WebRTC: Connection lost');
+        this.isConnected = false;
+        
+        // Notify connection state callback
+        if (this.onConnectionStateChangeCallback) {
+          this.onConnectionStateChangeCallback(this.peerConnection.connectionState);
+        }
       }
     };
 
@@ -559,6 +581,9 @@ export class WebRTCManager {
       const receivers = this.peerConnection.getReceivers();
       console.log('📺 WebRTC: Available receivers:', receivers.length);
       
+      const videoTracks: MediaStreamTrack[] = [];
+      const audioTracks: MediaStreamTrack[] = [];
+      
       receivers.forEach((receiver, index) => {
         console.log(`📺 WebRTC: Receiver ${index}:`, {
           track: receiver.track?.kind,
@@ -566,18 +591,46 @@ export class WebRTCManager {
           readyState: receiver.track?.readyState
         });
         
-        if (receiver.track && receiver.track.kind === 'video' && !this.remoteStream) {
-          console.log('📺 WebRTC: Found video track in receiver, creating stream...');
-          // Create a new MediaStream with the track
-          const stream = new MediaStream([receiver.track]);
-          this.remoteStream = stream;
-          
-          if (this.onRemoteStreamCallback) {
-            console.log('📺 WebRTC: Calling remote stream callback with manually found stream');
-            this.onRemoteStreamCallback(this.remoteStream);
+        if (receiver.track) {
+          if (receiver.track.kind === 'video') {
+            videoTracks.push(receiver.track);
+          } else if (receiver.track.kind === 'audio') {
+            audioTracks.push(receiver.track);
           }
         }
       });
+      
+      // Create remote stream if we have tracks but no stream yet
+      if ((videoTracks.length > 0 || audioTracks.length > 0) && !this.remoteStream) {
+        console.log('📺 WebRTC: Found tracks, creating remote stream...');
+        const allTracks = [...videoTracks, ...audioTracks];
+        const stream = new MediaStream(allTracks);
+        this.remoteStream = stream;
+        
+        // Set up event listeners for the remote stream
+        stream.getTracks().forEach(track => {
+          track.onended = () => {
+            console.log('📺 WebRTC: Remote track ended:', track.kind);
+          };
+          track.onmute = () => {
+            console.log('📺 WebRTC: Remote track muted:', track.kind);
+          };
+          track.onunmute = () => {
+            console.log('📺 WebRTC: Remote track unmuted:', track.kind);
+          };
+        });
+        
+        if (this.onRemoteStreamCallback) {
+          console.log('📺 WebRTC: Calling remote stream callback with manually found stream');
+          this.onRemoteStreamCallback(this.remoteStream);
+        }
+      } else if (this.remoteStream) {
+        console.log('📺 WebRTC: Remote stream already exists');
+      } else {
+        console.log('❌ WebRTC: No remote tracks found');
+      }
+    } else {
+      console.log('❌ WebRTC: Cannot check remote streams - connection not established');
     }
   }
 }

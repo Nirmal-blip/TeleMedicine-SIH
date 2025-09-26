@@ -200,15 +200,10 @@ const PatientVideoCall: React.FC = () => {
         setIsConnected(state === 'connected');
         if (state === 'connected') {
           setCallStatus('connected');
-          // Check for remote streams after connection is established
-          setTimeout(() => {
-            if (webrtc && !webrtc.getRemoteStream()) {
-              console.log('🔍 PATIENT: No remote stream detected, checking manually...');
-              webrtc.checkRemoteStreams();
-            }
-          }, 2000);
+          console.log('✅ PATIENT: Connected to doctor');
         } else if (state === 'disconnected' || state === 'failed') {
           setCallStatus('ended');
+          console.log('❌ PATIENT: Connection lost');
         }
       });
 
@@ -216,19 +211,24 @@ const PatientVideoCall: React.FC = () => {
       const success = await webrtc.initialize(
         socket,
         callId,
-        false // Patient is not the initiator
+        true // Patient is the initiator
       );
 
       if (!success) {
         throw new Error('Failed to initialize WebRTC');
       }
 
-      // Join the call as receiver
-      await webrtc.joinCall();
-
-      // Join the video room
+      // Join the video room first
       videoCallService.joinVideoRoom(callId);
-      setCallStatus('connecting');
+      
+      // Start the call as initiator
+      try {
+        console.log('🚀 PATIENT: Starting call as initiator...');
+        await webrtc.startCall();
+        setCallStatus('connecting');
+      } catch (error) {
+        console.error('❌ PATIENT: Failed to start call:', error);
+      }
 
     } catch (error) {
       console.error('❌ PATIENT: Failed to initialize WebRTC:', error);
